@@ -52,3 +52,34 @@
 - 타이포: 큰 굵은 한글 제목(자간 -0.02em), 작은 영문 대문자 아이브로우(자간 넓게, 예: "TRY BEFORE YOU BUY · 01"), 본문 16–17px/행간 1.7, `word-break: keep-all`.
 - 일러스트: 직접 그린 인라인 SVG — 히어로(기울어진 노트북 두 대: 얇은 Air 청록 화면 "가볍게", Pro 보라 화면 "끝까지", 뒤에 따뜻한 해 원), 미션 장면 아이콘 6개(가방·재생 화면·해와 달·키보드·폰→노트북·게이지), 리워드(작은 선물 봉투). 선+부드러운 면, 같은 굵기. Apple 로고·제품 사진 금지.
 - 움직임: 은은한 페이드업, `prefers-reduced-motion` 존중.
+
+---
+
+# 다크 모드 (2026-09-30 Administrator 요청)
+
+## 원칙
+- 모드 3개: **시스템 설정 따라가기(기본) / 라이트 / 다크**. 고른 값은 기기에 저장(웹 `tbyb-miku-theme`, 앱 UI 상태). 데모 데이터와 별개라 저장 실패해도 데모 상태에 영향 없음 — 다만 실패는 조용히 무시하지 말고 현재 화면에만 적용됐다고 짧게 알린다.
+- 색만 뒤집지 않는다: "밤에 켠 스탠드" 같은 **따뜻한 다크**. 순검정·순백 금지.
+- 모든 본문·작은 글자 대비 4.5:1 이상, 큰 제목 3:1 이상. 실제 값으로 계산해서 확인.
+- 일러스트도 다크용으로: 노트북 테두리·선은 밝은 잉크, 해는 은은한 호박색 빛, 화면(청록/보라)은 채도 살짝 낮춰 눈부심 줄이기.
+- 웹은 첫 화면에서 번쩍임(흰 화면 → 다크) 없게 `<head>` 인라인 스크립트로 먼저 적용.
+
+## 다크 팔레트 (라이트 토큰과 같은 이름)
+| 토큰 | 라이트 | 다크 |
+|---|---|---|
+| bg | #FAF6EF | #16130F |
+| cream/sunk | #F4EDE2 | #1E1A15 |
+| surface | #FFFFFF | #221E19 |
+| ink (본문·잉크 버튼 바탕) | #1F1B16 | #F3ECE2 |
+| ivory (잉크 버튼 위 글자) | #FAF6EF | #16130F |
+| sub | #6B635A | #B4AA9D |
+| line / line-strong | #EAE3D8 / #D9CFBF | #342E27 / #4A4238 |
+| air / air-ink / air-soft | #1E9E8A / #13786A / #E3F4F0 | #3CC4AE / #7FE0CF / #13322D |
+| pro / pro-ink / pro-soft | #6D4AFF / #5635E0 / #EEEAFF | #9A85FF / #C2B6FF / #251E47 |
+| coral / coral-ink / coral-soft | #FF6B4A / #B93F22 / #FFEDE7 | #FF8A6B / #FFB39E / #3A1F17 |
+| sun | #FFD9AE | #5C4128 |
+| warn-bg / warn / warn-line | #FFF4E0 / #8A5A00 / #F0DCB4 | #33270F / #F2C46B / #5A4520 |
+| danger / danger-ink / danger-soft | #D92D20 / #B42318 / #FEF1EF | #FF6B5E / #FFA39B / #3A1614 |
+| success / success-ink / success-soft | #12B76A / #067647 / #E8F7EE | #3DD68C / #86E8B8 / #10301F |
+| mute-ink / mute-soft | #5A5249 / #F1EBE1 | #CBC1B4 / #2A251F |
+위 값은 출발점 — 대비 계산에서 기준 미달이면 조정하고 최종 값을 이 표에 반영한다.
