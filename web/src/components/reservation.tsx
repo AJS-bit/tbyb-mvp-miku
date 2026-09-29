@@ -9,7 +9,7 @@ import {
   LEANING_LABEL,
   STATUS_FLOW,
   STATUS_LABEL,
-  WORK_TYPES,
+  USAGE_LABEL,
   type Decision,
   type HistoryItem,
   type Reservation,
@@ -31,18 +31,20 @@ export function decisionText(d: Decision | undefined): string {
   return `${DECISION_LABEL[d.choice]}${model}`;
 }
 
+export const myHref = (id: string, page: "" | "missions/" | "decide/" = "") => `/my/${page}?id=${encodeURIComponent(id)}`;
+
 export function RequestSummary({ r }: { r: Reservation }) {
   return (
     <DefList
       items={[
         { label: "희망 시작일", value: fmtDateKey(r.request.startDate) },
         { label: "픽업 매장", value: r.request.pickupStore },
-        { label: "작업 유형", value: WORK_TYPES[r.request.workType].label },
+        { label: "주로 할 것 같은 일", value: USAGE_LABEL[r.request.usage] },
         {
-          label: "체험 전 생각",
+          label: "체험 전 마음",
           value: `${LEANING_LABEL[r.request.leaningBefore]} · 확신 ${r.request.confidenceBefore}/5`,
         },
-        { label: "비교하고 싶은 점", value: r.request.wantToCompare || <span className="text-sub">적지 않음</span> },
+        { label: "궁금한 점", value: r.request.question || <span className="text-sub">적지 않음</span> },
         { label: "요청 시각", value: fmtDateTime(r.createdAt) },
       ]}
     />
@@ -50,7 +52,7 @@ export function RequestSummary({ r }: { r: Reservation }) {
 }
 
 function lastAt(history: HistoryItem[], to: string): string | undefined {
-  for (let i = history.length - 1; i >= 0; i--) if (history[i].to === to) return history[i].at;
+  for (let i = history.length - 1; i >= 0; i--) if (history[i].to === to && history[i].from !== to) return history[i].at;
   return undefined;
 }
 
@@ -63,7 +65,7 @@ export function Timeline({ r }: { r: Reservation }) {
   return (
     <div>
       {cancelled ? (
-        <Notice tone="info" className="mb-4 bg-muted-soft" title="취소된 요청입니다">
+        <Notice tone="info" className="mb-5" title="취소된 요청입니다">
           {fmtDateTime(cancelItem?.at)} · {cancelItem ? ACTOR_LABEL[cancelItem.actor] : ""} · 사유: {cancelItem?.reason}
         </Notice>
       ) : null}
@@ -74,27 +76,28 @@ export function Timeline({ r }: { r: Reservation }) {
           const at = i <= reached ? lastAt(r.history, s) : undefined;
           const last = i === STATUS_FLOW.length - 1;
           return (
-            <li key={s} className="relative flex gap-3 pb-5 last:pb-0" aria-current={current ? "step" : undefined}>
+            <li key={s} className="relative flex gap-3.5 pb-5 last:pb-0" aria-current={current ? "step" : undefined}>
               {!last ? (
                 <span
                   aria-hidden
-                  className={cx("absolute top-6 left-[11px] h-[calc(100%-20px)] w-0.5", i < reached ? "bg-primary" : "bg-line")}
+                  className={cx("absolute top-7 left-[13px] h-[calc(100%-24px)] w-0.5 rounded-full", i < reached ? "bg-ink" : "bg-line")}
                 />
               ) : null}
               <span
                 aria-hidden
                 className={cx(
-                  "relative z-10 mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold",
-                  done && (cancelled ? "bg-sub text-white" : "bg-primary text-white"),
-                  current && "bg-surface text-primary ring-[5px] ring-primary/25 outline-2 outline-primary",
-                  !done && !current && "bg-surface text-sub ring-1 ring-line",
+                  "relative z-10 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold",
+                  done && (cancelled ? "bg-sub text-white" : "bg-ink text-ivory"),
+                  current && "bg-coral text-white ring-[6px] ring-coral/20",
+                  !done && !current && "bg-surface text-sub ring-1 ring-line-strong",
                 )}
               >
                 {done ? "✓" : i + 1}
               </span>
               <div className="min-w-0 pt-0.5">
-                <p className={cx("text-[15px] leading-snug", current ? "font-bold text-ink" : done ? "font-medium text-ink" : "text-sub")}>
+                <p className={cx("text-[15px] leading-snug", current ? "font-extrabold text-ink" : done ? "font-semibold text-ink" : "text-sub")}>
                   {STATUS_LABEL[s]}
+                  {current ? <span className="ml-2 text-xs font-bold text-coral-ink">지금</span> : null}
                   {current ? <span className="sr-only"> (현재 단계)</span> : null}
                 </p>
                 {at ? <p className="tabular mt-0.5 text-xs text-sub">{fmtDateTime(at)}</p> : null}
@@ -107,13 +110,14 @@ export function Timeline({ r }: { r: Reservation }) {
   );
 }
 
+/** 고객 화면용 변경 이력 (운영 화면은 전체 사유를 표로 보여 준다) */
 export function HistoryList({ history }: { history: HistoryItem[] }) {
   return (
     <ol className="space-y-2">
       {[...history].reverse().map((h, i) => (
-        <li key={`${h.at}-${i}`} className="rounded-lg bg-bg px-3 py-2.5 text-sm">
+        <li key={`${h.at}-${i}`} className="rounded-2xl bg-bg px-4 py-3 text-sm">
           <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
-            <span className="font-medium text-ink">
+            <span className="font-semibold text-ink">
               {h.from === h.to
                 ? `${STATUS_LABEL[h.to]} · 운영 기록`
                 : `${h.from ? STATUS_LABEL[h.from] : "시작"} → ${STATUS_LABEL[h.to]}`}
@@ -121,7 +125,7 @@ export function HistoryList({ history }: { history: HistoryItem[] }) {
             <span className="tabular text-xs text-sub">{fmtDateTime(h.at)}</span>
           </div>
           <p className="mt-0.5 text-sub">
-            {ACTOR_LABEL[h.actor]} · {h.reason}
+            {ACTOR_LABEL[h.actor]} · {h.reason /* internalNote 는 운영자 전용 — 고객 화면에 표시하지 않는다 */}
           </p>
         </li>
       ))}
@@ -131,10 +135,10 @@ export function HistoryList({ history }: { history: HistoryItem[] }) {
 
 export function NotFound({ id }: { id: string }) {
   return (
-    <Notice tone="warn" title={`${id} 예약을 이 기기에서 찾을 수 없습니다`}>
-      <p>데모 데이터는 이 브라우저 안에만 저장됩니다. 다른 기기·브라우저에서 만든 요청은 보이지 않습니다.</p>
+    <Notice tone="warn" title={`${id} 예약을 이 기기에서 찾을 수 없어요`}>
+      <p>데모 데이터는 이 브라우저 안에만 저장돼요. 다른 기기·브라우저에서 만든 요청은 보이지 않아요.</p>
       <p className="mt-2">
-        <Link href="/my/" className="font-semibold underline underline-offset-2">
+        <Link href="/my/" className="font-bold underline underline-offset-2">
           내 체험 목록
         </Link>
         으로 돌아가기
@@ -145,7 +149,10 @@ export function NotFound({ id }: { id: string }) {
 
 export function BackLink({ href, children }: { href: string; children: ReactNode }) {
   return (
-    <Link href={href} className="mb-4 inline-flex min-h-9 items-center gap-1 rounded-lg text-sm font-medium text-primary-ink hover:underline">
+    <Link
+      href={href}
+      className="mb-6 inline-flex min-h-9 items-center gap-1.5 rounded-full text-sm font-semibold text-sub hover:text-ink"
+    >
       <span aria-hidden>←</span> {children}
     </Link>
   );

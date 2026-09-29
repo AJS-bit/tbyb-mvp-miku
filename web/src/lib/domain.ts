@@ -7,7 +7,8 @@
 
 export type DeviceKey = 'air' | 'pro';
 export type Leaning = DeviceKey | 'unsure';
-export type WorkType = 'video' | 'dev' | 'photo' | 'docs' | 'other';
+// 맥을 처음 쓰는 손님이 대부분 — 용도는 선택이고 기본값은 '잘 모르겠어요' (Administrator 피드백 2026-09-29)
+export type Usage = 'unsure' | 'watch' | 'school' | 'photo' | 'dev' | 'other';
 
 export type ReservationStatus =
   | 'requested' // 요청 접수 (미확정)
@@ -45,8 +46,8 @@ export interface Device {
 export interface RequestInfo {
   startDate: string; // YYYY-MM-DD 희망 시작일
   pickupStore: string;
-  workType: WorkType;
-  wantToCompare: string;
+  usage: Usage; // 주로 할 것 같은 일 (선택, 기본 unsure)
+  question: string; // 궁금한 점 (선택)
   leaningBefore: Leaning; // 체험 전 기울어진 쪽
   confidenceBefore: Score; // 체험 전 확신 1–5
 }
@@ -66,21 +67,44 @@ export interface Ops {
   checkout: Record<DeviceKey, boolean>; // 출고 기록(상태·부속품) 완료
   inspection: Record<DeviceKey, Inspection>;
   sale: SaleStatus; // 체험 기기 구매(buy_used)일 때만 의미 있음
+  wallCodes?: Record<DeviceKey, string>; // 출고 때 두 맥 바탕화면에 띄우는 예약별 코드 (운영자만 봄)
 }
 
-export interface DeviceEntry {
-  minutes: number | null; // 같은 작업 소요 시간(분). 측정 안 했으면 null
-  portability: Score | null; // 휴대성
-  display: Score | null; // 화면
-  feel: Score | null; // 사용감(키보드·트랙패드·발열·소음)
+// ─ 미션: 맥을 처음 써 보는 사람도 할 수 있는 일상 과제. 답은 선택형이고 '비슷/모르겠음'도 유효하다.
+export type MissionId = 'carry' | 'video' | 'screen' | 'typing' | 'daily' | 'heavy';
+export type Pick = 'air' | 'same' | 'pro' | 'unsure';
+
+export interface BatteryReading {
+  before: number; // %
+  after: number; // %
 }
 
-export interface CompareLog {
-  id: string;
-  createdAt: string;
-  task: string; // 두 기기에서 똑같이 해 본 작업
-  entries: Record<DeviceKey, DeviceEntry>;
-  note: string;
+export interface MissionAnswer {
+  id: MissionId;
+  pick: Pick;
+  followUp?: string; // 미션별 후속 선택지 중 하나
+  battery?: Record<DeviceKey, BatteryReading>; // video
+  minutes?: Record<DeviceKey, number>; // heavy
+  daily?: string; // daily — 무엇을 했는지
+  answeredAt: string;
+}
+
+export interface CodeCheck {
+  air: string;
+  pro: string;
+  at: string;
+}
+
+// ─ 리워드: 체험 건당 1회. 자동 거절 없음 — 표시(flag)는 운영자 검토 신호일 뿐이다.
+export type RewardStatus = 'none' | 'submitted' | 'approved' | 'rejected';
+export type RewardFlag = 'code_missing' | 'code_mismatch' | 'rushed' | 'battery_odd' | 'all_unsure' | 'after_return';
+
+export interface Reward {
+  status: RewardStatus;
+  submittedAt?: string;
+  flags: RewardFlag[];
+  reviewedAt?: string;
+  reviewNote?: string;
 }
 
 export interface Decision {
@@ -96,7 +120,8 @@ export interface HistoryItem {
   from: ReservationStatus | null;
   to: ReservationStatus;
   actor: Actor;
-  reason: string;
+  reason: string; // 고객 화면에도 보이는 문구
+  internalNote?: string; // 운영자만 보는 메모 (고객 화면에 표시하지 않는다)
 }
 
 export interface Reservation {
@@ -105,13 +130,15 @@ export interface Reservation {
   status: ReservationStatus;
   request: RequestInfo;
   ops: Ops;
-  logs: CompareLog[];
+  missions: Partial<Record<MissionId, MissionAnswer>>;
+  codeCheck?: CodeCheck;
+  reward: Reward;
   decision?: Decision;
   history: HistoryItem[];
 }
 
 export interface DemoState {
-  version: 1;
+  version: 2;
   reservations: Reservation[];
   devices: Device[];
   dealerTermsConfirmed: boolean; // 딜러 판매 조건 확정 여부 — false 면 구매 선택지 비활성
@@ -128,10 +155,10 @@ export const PACK_NAME = 'MacBook Air · 14형 Pro 비교팩';
 export const DEMO_NOTICE =
   '시연용 데모입니다. 실제 예약·결제·연락이 일어나지 않고, 입력한 내용은 이 기기 안에만 저장됩니다.';
 export const PRICE_TBD =
-  '체험료·기간·보증 조건은 딜러 계약 후 확정합니다. 확정 전에는 금액을 표시하지 않습니다.';
+  '체험료·기간·보증 조건은 딜러 계약 후 정해져요. 정해지기 전에는 금액을 보여 드리지 않아요.';
 export const RESPONSE_TARGET = '운영 목표: 영업일 1일 내 확인 (대표자 확인 전 제안값)';
 export const PAYMENT_RULE =
-  '예약은 운영자가 결제 서비스의 실제 거래내역을 확인한 뒤에만 확정됩니다. 결제 화면 캡처로는 확정되지 않습니다.';
+  '예약은 운영자가 결제 서비스의 실제 거래내역을 확인한 뒤에만 확정돼요. 결제 화면 캡처로는 확정되지 않아요.';
 export const DEALER_TERMS_TBD = '딜러 판매 조건이 확정되면 열립니다. 구매·할인을 보장하지 않습니다.';
 
 export const DEVICE_LABEL: Record<DeviceKey, string> = {
@@ -156,7 +183,7 @@ export const STATUS_HELP: Record<ReservationStatus, string> = {
   operator_check: '딜러에게 Air와 Pro 두 대, 반납 후 검수 여유 시간까지 확인하고 있습니다.',
   payment_pending: '두 기기를 보류했습니다. 기한 안에 결제해 주세요. 운영자가 거래내역을 확인하면 확정됩니다.',
   confirmed: '예약이 확정됐습니다. 픽업 때 두 기기의 상태와 부속품을 함께 확인합니다.',
-  in_trial: '두 기기로 같은 작업을 해 보고 기록하세요. 마지막 날 기록을 보고 결정합니다.',
+  in_trial: '평소처럼 써 보면서 미션을 하나씩 해 보세요. 마지막 날 미션 답을 보고 결정해요.',
   return_received: '반납을 접수했습니다. 운영자가 기기별로 검수합니다.',
   inspecting: '상태·부속품·로그아웃·초기화를 확인하고 있습니다.',
   completed: '체험이 끝났습니다. 7일·30일 뒤 짧은 후속 설문을 드립니다.',
@@ -212,53 +239,107 @@ export const INSPECTION_LABEL: Record<keyof Inspection, string> = {
 
 export const PICKUP_STORES = ['제휴 매장 A (계약 전 · 위치 미정)', '제휴 매장 B (계약 전 · 위치 미정)'];
 
-export const WORK_TYPES: Record<WorkType, { label: string; checklist: string[] }> = {
-  video: {
-    label: '영상 편집',
-    checklist: [
-      '같은 프로젝트로 타임라인 재생·스크럽이 끊기는지',
-      '같은 영상 내보내기에 걸린 시간',
-      '긴 렌더링 중 속도 유지·발열·소음 (Air는 팬이 없는 설계)',
-      '외장 SSD·모니터 연결에 필요한 포트',
-    ],
-  },
-  dev: {
-    label: '개발',
-    checklist: [
-      '같은 저장소 클린 빌드에 걸린 시간',
-      '에디터·브라우저·컨테이너를 함께 띄웠을 때 반응',
-      '외부 모니터 연결 작업 환경',
-      '전원 없이 반나절 작업 후 배터리 잔량',
-    ],
-  },
-  photo: {
-    label: '사진',
-    checklist: [
-      '같은 RAW 묶음 불러오기·보정·내보내기 시간',
-      '화면 밝기·색이 작업에 충분한지',
-      'SD 카드 등 연결 방식',
-      '들고 다니며 현장에서 쓸 때 무게감',
-    ],
-  },
-  docs: {
-    label: '문서·학업',
-    checklist: [
-      '가방에 넣고 하루 들고 다녀 보기',
-      '강의실·카페에서 배터리 지속',
-      '화면 크기와 글자 가독성',
-      '키보드·트랙패드 사용감',
-    ],
-  },
-  other: {
-    label: '기타',
-    checklist: [
-      '평소 가장 오래 하는 작업을 두 기기에서 똑같이',
-      '가장 무거운 작업을 두 기기에서 똑같이',
-      '들고 다닐 때 차이',
-      '화면·키보드 사용감',
-    ],
-  },
+export const USAGE_LABEL: Record<Usage, string> = {
+  unsure: '잘 모르겠어요',
+  watch: '유튜브·넷플릭스·웹서핑',
+  school: '과제·문서',
+  photo: '사진·영상 조금',
+  dev: '코딩',
+  other: '기타',
 };
+
+export const PICK_LABEL: Record<Pick, string> = {
+  air: 'Air가 나았어요',
+  same: '비슷했어요',
+  pro: 'Pro가 나았어요',
+  unsure: '잘 모르겠어요',
+};
+
+export interface MissionDef {
+  id: MissionId;
+  title: string;
+  how: string; // 무엇을 하면 되는지 — 맥을 처음 쓰는 사람 기준
+  question: string;
+  followUps: string[];
+  input?: 'battery' | 'minutes' | 'daily';
+  optional?: boolean;
+}
+
+export const DAILY_OPTIONS = ['영상 보기', '과제·문서', '쇼핑·검색', '웹툰·SNS', '사진 정리', '기타'];
+
+export const MISSIONS: MissionDef[] = [
+  {
+    id: 'carry',
+    title: '들고 나가 보기',
+    how: '하루 한 번은 가방에 넣고 평소처럼 나가 보세요. 학교, 회사, 카페 어디든 괜찮아요.',
+    question: '들고 다니기 편했던 쪽은?',
+    followUps: ['가방이 가벼웠어요', '한 손으로 들기 편했어요', '두께가 신경 쓰였어요', '무게 차이는 잘 몰랐어요'],
+  },
+  {
+    id: 'video',
+    title: '같은 영상 틀어 보기',
+    how: '두 맥에서 같은 유튜브 영상을 틀어 보세요. 짧게 봐도 괜찮아요. 30분쯤 틀어 두고 배터리 %를 적어 주면 더 정확해요 (선택).',
+    question: '화면과 소리가 더 좋았던 쪽은?',
+    followUps: ['화면이 더 선명했어요', '소리가 더 꽉 찼어요', '배터리가 덜 닳았어요', '차이를 못 느꼈어요'],
+    input: 'battery',
+  },
+  {
+    id: 'screen',
+    title: '밝은 곳·어두운 곳에서 보기',
+    how: '창가처럼 밝은 곳과 불 끈 방에서 각각 화면을 봐 주세요. 스크롤도 해 보세요.',
+    question: '보기 편했던 쪽은?',
+    followUps: ['밝은 곳에서 잘 보였어요', '어두운 곳에서 눈이 편했어요', '스크롤이 부드러웠어요', '차이를 못 느꼈어요'],
+  },
+  {
+    id: 'typing',
+    title: '메모 5분 쓰기',
+    how: '메모 앱에 아무 글이나 5분 써 보세요. 오늘 일기도 좋아요. 트랙패드로 이것저것 눌러 보세요.',
+    question: '손에 잘 맞았던 쪽은?',
+    followUps: ['키보드 느낌이 좋았어요', '트랙패드가 편했어요', '손목이 편했어요', '차이를 못 느꼈어요'],
+  },
+  {
+    id: 'daily',
+    title: '평소 폰으로 오래 하는 일',
+    how: '평소 폰으로 가장 오래 하는 일을 맥으로 해 보세요. 쇼핑, 웹툰, 과제 검색 무엇이든요.',
+    question: '계속 쓰고 싶었던 쪽은?',
+    followUps: ['큰 화면이 좋았어요', '가벼워서 자주 열었어요', '빨라서 답답하지 않았어요', '둘 다 비슷했어요'],
+    input: 'daily',
+  },
+  {
+    id: 'heavy',
+    title: '무거운 작업 (해 본 사람만)',
+    how: '사진 여러 장 편집이나 영상 내보내기를 해 봤다면, 두 맥에서 같은 작업에 걸린 시간을 적어 주세요.',
+    question: '더 빨랐던 쪽은?',
+    followUps: ['끝까지 속도가 유지됐어요', '팬 소리가 났어요', '뜨거워졌어요', '차이를 못 느꼈어요'],
+    input: 'minutes',
+    optional: true,
+  },
+];
+
+export const CORE_MISSIONS: MissionId[] = MISSIONS.filter((m) => !m.optional).map((m) => m.id);
+
+export const REWARD_AMOUNT_LABEL = '1,000원 (가정 · 금액 미정)';
+export const REWARD_RULE =
+  '체험 건당 한 번, 반납 검수 뒤 운영자가 확인하고 드려요. 데모에서는 실제 지급이 없어요. 비슷함·모르겠음도 정직한 답이면 괜찮아요.';
+export const REWARD_REJECT_NOTE_VISIBLE = '거절 사유는 고객에게 보여요. 승인 메모는 운영자만 봐요.';
+export const REWARD_STATUS_LABEL: Record<RewardStatus, string> = {
+  none: '아직 신청 전',
+  submitted: '운영자 확인 대기',
+  approved: '확인 완료 · 지급 예정',
+  rejected: '지급 안 함',
+};
+export const REWARD_FLAG_LABEL: Record<RewardFlag, string> = {
+  code_missing: '바탕화면 코드 미입력',
+  code_mismatch: '바탕화면 코드 불일치',
+  rushed: '모든 미션을 10분 안에 몰아서 답함',
+  battery_odd: '배터리 기록이 이상함',
+  all_unsure: '모든 답이 모르겠음',
+  after_return: '반납 뒤 기억으로 답한 미션 있음',
+};
+
+// 미션·코드·리워드 신청은 체험 중부터 검수 중까지 가능 — 반납 뒤 기억으로 쓴 답도 받되 검토 표시만 한다
+export const MISSION_OPEN: ReservationStatus[] = ['in_trial', 'return_received', 'inspecting'];
+export const RUSHED_MINUTES = 10;
 
 // 기기를 고를 때 같은 기준으로 확인할 점 — 수치 없이 확인 포인트만 제시
 export const COMPARE_POINTS: { title: string; air: string; pro: string }[] = [
@@ -272,11 +353,11 @@ export const COMPARE_POINTS: { title: string; air: string; pro: string }[] = [
 
 // ───────────────────────── 초기 데이터 ─────────────────────────
 
-export const STORAGE_KEY = 'tbyb-miku-demo-v1';
+export const STORAGE_KEY = 'tbyb-miku-demo-v2';
 
 export function createInitialState(now: Date = new Date()): DemoState {
   return {
-    version: 1,
+    version: 2,
     reservations: [],
     devices: [
       { id: 'AIR-01', kind: 'air', state: 'available' },
@@ -301,7 +382,7 @@ export function newReservationId(state: DemoState): string {
 export function createReservation(state: DemoState, request: RequestInfo, now: Date = new Date()): Result<DemoState> {
   if (!request.startDate) return { ok: false, error: '희망 시작일을 골라 주세요.' };
   if (!request.pickupStore) return { ok: false, error: '픽업 매장을 골라 주세요.' };
-  if (!WORK_TYPES[request.workType]) return { ok: false, error: '작업 유형을 골라 주세요.' };
+  if (!(request.usage in USAGE_LABEL)) return { ok: false, error: '주로 할 일을 다시 골라 주세요.' };
   if (!(request.leaningBefore in LEANING_LABEL)) return { ok: false, error: '지금 기울어진 쪽을 골라 주세요.' };
   if (![1, 2, 3, 4, 5].includes(request.confidenceBefore)) return { ok: false, error: '체험 전 확신을 1–5 중에서 골라 주세요.' };
   const days = calendarDays(state, now, CALENDAR_DAYS);
@@ -313,7 +394,7 @@ export function createReservation(state: DemoState, request: RequestInfo, now: D
     id: newReservationId(state),
     createdAt: at,
     status: 'requested',
-    request: { ...request, wantToCompare: request.wantToCompare.trim() },
+    request: { ...request, question: request.question.trim() },
     ops: {
       deviceIds: {},
       demoTxId: '',
@@ -322,7 +403,8 @@ export function createReservation(state: DemoState, request: RequestInfo, now: D
       inspection: { air: emptyInspection(), pro: emptyInspection() },
       sale: 'none',
     },
-    logs: [],
+    missions: {},
+    reward: { status: 'none', flags: [] },
     history: [{ at, from: null, to: 'requested', actor: 'customer', reason: '데모 일정 요청' }],
   };
   return { ok: true, value: { ...state, reservations: [r, ...state.reservations] } };
@@ -387,8 +469,10 @@ function replaceRes(state: DemoState, r: Reservation): DemoState {
 }
 
 // 상태가 바뀌지 않는 운영자 조작도 이력에 남긴다 (from === to)
-function note(r: Reservation, reason: string, now: Date): Reservation {
-  return { ...r, history: [...r.history, { at: now.toISOString(), from: r.status, to: r.status, actor: 'operator', reason }] };
+function note(r: Reservation, reason: string, now: Date, internalNote?: string): Reservation {
+  const item: HistoryItem = { at: now.toISOString(), from: r.status, to: r.status, actor: 'operator', reason };
+  if (internalNote) item.internalNote = internalNote;
+  return { ...r, history: [...r.history, item] };
 }
 
 function setDevices(devices: Device[], ids: string[], patch: Partial<Device>): Device[] {
@@ -467,7 +551,10 @@ export function transition(
   if (to === 'payment_pending') {
     ops.paymentDeadline = new Date(now.getTime() + PAYMENT_WINDOW_HOURS * 3600_000).toISOString();
   }
-  if (to === 'in_trial') devices = setDevices(devices, ids, { state: 'out' });
+  if (to === 'in_trial') {
+    devices = setDevices(devices, ids, { state: 'out' });
+    ops.wallCodes = { air: wallCode(r.id, 'air', now), pro: wallCode(r.id, 'pro', now) };
+  }
   if (to === 'return_received') {
     const back = devicesToReturn(r.decision);
     for (const k of ['air', 'pro'] as DeviceKey[]) {
@@ -588,25 +675,148 @@ export function isPaymentExpired(r: Reservation, now: Date = new Date()): boolea
 
 // ───────────────────────── 고객 조작 ─────────────────────────
 
-export function addCompareLog(
+// 예약·기기·시각으로 만든 4자리 코드. 헷갈리는 글자(0·O·1·I)는 뺀다.
+const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+export function wallCode(id: string, kind: DeviceKey, now: Date): string {
+  let h = 2166136261;
+  for (const ch of `${id}:${kind}:${now.getTime()}`) {
+    h ^= ch.charCodeAt(0);
+    h = Math.imul(h, 16777619) >>> 0;
+  }
+  let out = '';
+  for (let i = 0; i < 4; i++) {
+    out += CODE_CHARS[h % CODE_CHARS.length];
+    h = (Math.floor(h / CODE_CHARS.length) ^ Math.imul(h, 2654435761)) >>> 0;
+  }
+  return out;
+}
+
+function missionDef(id: MissionId): MissionDef | undefined {
+  return MISSIONS.find((m) => m.id === id);
+}
+
+const validPct = (n: number) => Number.isInteger(n) && n >= 0 && n <= 100;
+
+export function answerMission(
   state: DemoState,
   id: string,
-  log: Omit<CompareLog, 'id' | 'createdAt'>,
+  answer: Omit<MissionAnswer, 'answeredAt'>,
   now: Date = new Date(),
 ): Result<DemoState> {
   const r = findRes(state, id);
   if (!r) return { ok: false, error: '예약을 찾을 수 없습니다.' };
-  if (r.status !== 'in_trial') return { ok: false, error: '비교 기록은 체험 중에만 남길 수 있습니다.' };
-  if (!log.task.trim()) return { ok: false, error: '두 기기에서 해 본 작업 이름을 적어 주세요.' };
-  const paired = METRICS.some((m) => log.entries.air[m] !== null && log.entries.pro[m] !== null);
-  if (!paired) {
-    return { ok: false, error: '같은 기준으로 비교하려면 같은 항목을 두 기기 모두 기록해 주세요.' };
+  if (!MISSION_OPEN.includes(r.status)) return { ok: false, error: '미션은 픽업한 뒤부터 검수가 끝나기 전까지 할 수 있어요.' };
+  if (r.reward.status !== 'none') return { ok: false, error: '리워드를 신청한 뒤에는 답을 바꿀 수 없어요.' };
+  const def = missionDef(answer.id);
+  if (!def) return { ok: false, error: '없는 미션입니다.' };
+  if (!(answer.pick in PICK_LABEL)) return { ok: false, error: '어느 쪽이었는지 골라 주세요. 모르겠으면 "잘 모르겠어요"도 괜찮아요.' };
+  if (answer.followUp !== undefined && !def.followUps.includes(answer.followUp)) {
+    return { ok: false, error: '후속 선택지를 다시 골라 주세요.' };
   }
-  if ([log.entries.air.minutes, log.entries.pro.minutes].some((m) => m !== null && !(m > 0 && m <= 1440))) {
-    return { ok: false, error: '소요 시간은 0분보다 크고 1,440분 이하로 적어 주세요.' };
+  const a: MissionAnswer = { id: def.id, pick: answer.pick, answeredAt: now.toISOString() };
+  if (answer.followUp) a.followUp = answer.followUp;
+  if (def.input === 'battery' && answer.battery) {
+    // 선택 입력 — 적었다면 두 맥 모두 올바른 값이어야 한다
+    const b = answer.battery;
+    for (const k of ['air', 'pro'] as DeviceKey[]) {
+      if (!validPct(b[k].before) || !validPct(b[k].after)) return { ok: false, error: '배터리는 0–100 사이 정수로 적어 주세요.' };
+      if (b[k].after > b[k].before) return { ok: false, error: `${DEVICE_LABEL[k]}: 끝 배터리가 시작보다 높아요. 충전 중이었다면 충전기를 빼고 다시 해 주세요.` };
+    }
+    a.battery = { air: { ...b.air }, pro: { ...b.pro } };
   }
-  const entry: CompareLog = { ...log, task: log.task.trim(), id: `${id}-L${r.logs.length + 1}`, createdAt: now.toISOString() };
-  return { ok: true, value: replaceRes(state, { ...r, logs: [...r.logs, entry] }) };
+  if (def.input === 'minutes') {
+    const m = answer.minutes;
+    if (!m || ![m.air, m.pro].every((x) => x > 0 && x <= 1440)) {
+      return { ok: false, error: '두 맥에서 걸린 시간을 0분보다 크고 1,440분 이하로 적어 주세요.' };
+    }
+    a.minutes = { air: m.air, pro: m.pro };
+  }
+  if (def.input === 'daily') {
+    if (!answer.daily || !DAILY_OPTIONS.includes(answer.daily)) return { ok: false, error: '무엇을 해 봤는지 골라 주세요.' };
+    a.daily = answer.daily;
+  }
+  return { ok: true, value: replaceRes(state, { ...r, missions: { ...r.missions, [def.id]: a } }) };
+}
+
+export function setCodeCheck(state: DemoState, id: string, air: string, pro: string, now: Date = new Date()): Result<DemoState> {
+  const r = findRes(state, id);
+  if (!r) return { ok: false, error: '예약을 찾을 수 없습니다.' };
+  if (!MISSION_OPEN.includes(r.status)) return { ok: false, error: '코드는 픽업한 뒤부터 검수가 끝나기 전까지 적을 수 있어요.' };
+  if (r.reward.status !== 'none') return { ok: false, error: '리워드를 신청한 뒤에는 바꿀 수 없어요.' };
+  const norm = (x: string) => x.trim().toUpperCase().replace(/\s+/g, '');
+  if (!norm(air) || !norm(pro)) return { ok: false, error: '두 맥의 바탕화면 코드를 모두 적어 주세요.' };
+  return { ok: true, value: replaceRes(state, { ...r, codeCheck: { air: norm(air), pro: norm(pro), at: now.toISOString() } }) };
+}
+
+export function missionProgress(r: Reservation): { done: number; total: number; missing: MissionId[] } {
+  const missing = CORE_MISSIONS.filter((m) => !r.missions[m]);
+  return { done: CORE_MISSIONS.length - missing.length, total: CORE_MISSIONS.length, missing };
+}
+
+// 운영자 검토용 신호. 자동으로 거절하지 않는다.
+export function rewardFlags(r: Reservation): RewardFlag[] {
+  const flags: RewardFlag[] = [];
+  const codes = r.ops.wallCodes;
+  if (!r.codeCheck) flags.push('code_missing');
+  else if (!codes || r.codeCheck.air !== codes.air || r.codeCheck.pro !== codes.pro) flags.push('code_mismatch');
+  const answers = Object.values(r.missions).filter((a): a is MissionAnswer => Boolean(a));
+  const times = answers.map((a) => new Date(a.answeredAt).getTime());
+  if (answers.length >= CORE_MISSIONS.length && Math.max(...times) - Math.min(...times) < RUSHED_MINUTES * 60_000) {
+    flags.push('rushed');
+  }
+  const b = r.missions.video?.battery;
+  if (b) {
+    const drops = [b.air.before - b.air.after, b.pro.before - b.pro.after];
+    if (drops.some((d) => d > 40) || drops.every((d) => d === 0)) flags.push('battery_odd');
+  }
+  if (answers.length && answers.every((a) => a.pick === 'unsure')) flags.push('all_unsure');
+  const returnedAt = r.history.find((h) => h.to === 'return_received')?.at;
+  if (returnedAt && answers.some((a) => a.answeredAt > returnedAt)) flags.push('after_return');
+  return flags;
+}
+
+export function submitReward(state: DemoState, id: string, now: Date = new Date()): Result<DemoState> {
+  const r = findRes(state, id);
+  if (!r) return { ok: false, error: '예약을 찾을 수 없습니다.' };
+  if (!MISSION_OPEN.includes(r.status)) return { ok: false, error: '리워드는 픽업한 뒤부터 검수가 끝나기 전까지 신청할 수 있어요.' };
+  if (r.reward.status !== 'none') return { ok: false, error: '리워드는 체험 건당 한 번만 신청할 수 있어요.' };
+  const p = missionProgress(r);
+  if (p.missing.length) {
+    const names = p.missing.map((m) => missionDef(m)!.title).join(', ');
+    return { ok: false, error: `남은 미션을 먼저 해 주세요: ${names}` };
+  }
+  if (!r.codeCheck) return { ok: false, error: '두 맥의 바탕화면 코드를 먼저 적어 주세요.' };
+  const reward: Reward = { status: 'submitted', submittedAt: now.toISOString(), flags: rewardFlags(r) };
+  return { ok: true, value: replaceRes(state, { ...r, reward }) };
+}
+
+// 운영자 검토 — 반납 검수 단계 이후에만 (기기 사용 흔적을 함께 대조하기 위해)
+export function reviewReward(
+  state: DemoState,
+  id: string,
+  result: 'approved' | 'rejected',
+  reviewNote: string,
+  now: Date = new Date(),
+): Result<DemoState> {
+  const r = findRes(state, id);
+  if (!r) return { ok: false, error: '예약을 찾을 수 없습니다.' };
+  if (r.reward.status !== 'submitted') return { ok: false, error: '확인 대기 중인 리워드가 아닙니다.' };
+  if (!(r.status === 'inspecting' || r.status === 'completed')) {
+    return { ok: false, error: '리워드 확인은 반납 검수 단계부터 합니다 (기기 사용 흔적과 함께 대조).' };
+  }
+  if (!reviewNote.trim() && (result === 'rejected' || r.reward.flags.length)) {
+    return { ok: false, error: '거절하거나 표시가 있는 건을 승인할 때는 확인 메모가 필요합니다.' };
+  }
+  const reward: Reward = { ...r.reward, status: result, reviewedAt: now.toISOString(), reviewNote: reviewNote.trim() };
+  // 검토 메모는 운영자 전용 — 판별 기준이 고객에게 드러나지 않게. 거절 사유는 reward.reviewNote 로 고객에게 보인다.
+  const next = note({ ...r, reward }, `리워드 ${REWARD_STATUS_LABEL[result]}`, now, reviewNote.trim() || undefined);
+  return { ok: true, value: replaceRes(state, next) };
+}
+
+export function missionSummary(r: Reservation): Record<Pick, number> {
+  const out: Record<Pick, number> = { air: 0, same: 0, pro: 0, unsure: 0 };
+  for (const a of Object.values(r.missions)) if (a) out[a.pick] += 1;
+  return out;
 }
 
 export function setDecision(state: DemoState, id: string, d: Omit<Decision, 'decidedAt'>, now: Date = new Date()): Result<DemoState> {
@@ -631,55 +841,6 @@ export function setDecision(state: DemoState, id: string, d: Omit<Decision, 'dec
 }
 
 // ───────────────────────── 요약·캘린더 ─────────────────────────
-
-export type Metric = 'minutes' | 'portability' | 'display' | 'feel';
-export const METRICS: Metric[] = ['minutes', 'portability', 'display', 'feel'];
-export const METRIC_LABEL: Record<Metric, string> = {
-  minutes: '소요 시간(분)',
-  portability: '휴대성',
-  display: '화면',
-  feel: '사용감',
-};
-
-export interface DeviceSummary {
-  count: number; // 전체 기록 수
-  avgMinutes: number | null;
-  portability: number | null;
-  display: number | null;
-  feel: number | null;
-}
-
-function avg(xs: (number | null)[]): number | null {
-  const v = xs.filter((x): x is number => x !== null);
-  if (!v.length) return null;
-  return Math.round((v.reduce((a, b) => a + b, 0) / v.length) * 10) / 10;
-}
-
-// 같은 기록에서 두 기기 모두 측정한 항목만 평균낸다 — 서로 다른 작업의 값을 섞어 비교하지 않기 위해
-function pairedLogs(logs: CompareLog[], m: Metric): CompareLog[] {
-  return logs.filter((l) => l.entries.air[m] !== null && l.entries.pro[m] !== null);
-}
-
-export function summarize(logs: CompareLog[]): Record<DeviceKey, DeviceSummary> {
-  const one = (k: DeviceKey): DeviceSummary => ({
-    count: logs.length,
-    avgMinutes: avg(pairedLogs(logs, 'minutes').map((l) => l.entries[k].minutes)),
-    portability: avg(pairedLogs(logs, 'portability').map((l) => l.entries[k].portability)),
-    display: avg(pairedLogs(logs, 'display').map((l) => l.entries[k].display)),
-    feel: avg(pairedLogs(logs, 'feel').map((l) => l.entries[k].feel)),
-  });
-  return { air: one('air'), pro: one('pro') };
-}
-
-// 항목별로 몇 개 기록(두 기기 모두 측정)을 근거로 한 평균인지 — 요약 옆에 "n개 기록 기준"으로 표시
-export function pairedCounts(logs: CompareLog[]): Record<Metric, number> {
-  return {
-    minutes: pairedLogs(logs, 'minutes').length,
-    portability: pairedLogs(logs, 'portability').length,
-    display: pairedLogs(logs, 'display').length,
-    feel: pairedLogs(logs, 'feel').length,
-  };
-}
 
 export type DayStatus = 'open' | 'closed' | 'check';
 export const CALENDAR_DAYS = 14;
@@ -728,11 +889,7 @@ export function readSaved(raw: string | null | undefined): Result<DemoState> {
   if (!raw) return { ok: true, value: createInitialState() };
   try {
     const s = JSON.parse(raw) as DemoState;
-    if (s && s.version === 1 && Array.isArray(s.reservations) && Array.isArray(s.devices)) {
-      // 판매 상태 필드가 없던 이전 저장본 보정
-      for (const r of s.reservations) if (r.ops && !r.ops.sale) r.ops.sale = 'none';
-      return { ok: true, value: s };
-    }
+    if (s && s.version === 2 && Array.isArray(s.reservations) && Array.isArray(s.devices)) return { ok: true, value: s };
   } catch {
     // 아래 오류로 알린다
   }

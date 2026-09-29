@@ -16,7 +16,7 @@ export function StorageBanner() {
   if (!snap.loadError) {
     return (
       <div role="alert" data-testid="storage-write-error" className="border-b border-danger/30 bg-danger-soft">
-        <p className="mx-auto max-w-6xl px-4 py-2.5 text-sm font-medium text-danger sm:px-6">{snap.writeError}</p>
+        <p className="mx-auto max-w-6xl px-5 py-2.5 text-sm font-semibold text-danger-ink sm:px-8">{snap.writeError}</p>
       </div>
     );
   }
@@ -44,9 +44,9 @@ export function StorageBanner() {
 
   return (
     <div role="alert" data-testid="storage-load-error" className="border-b border-danger/30 bg-danger-soft">
-      <div className="mx-auto max-w-6xl px-4 py-4 text-sm text-danger sm:px-6">
+      <div className="mx-auto max-w-6xl px-5 py-4 text-sm text-danger-ink sm:px-8">
         <p className="font-semibold">{snap.loadError}</p>
-        <p className="mt-1 text-danger/90">이 상태에서는 어떤 변경도 저장하지 않습니다.</p>
+        <p className="mt-1 text-danger-ink/90">이 상태에서는 어떤 변경도 저장하지 않습니다.</p>
         <div className="mt-3 flex flex-wrap gap-2">
           <button type="button" onClick={copy} className={cx(btn.secondary, btn.small)}>
             원본 복사
@@ -75,7 +75,7 @@ export function StorageBanner() {
               value={raw || "(비어 있음 — 저장소 자체에 접근하지 못했습니다)"}
               rows={3}
               onFocus={(e) => e.currentTarget.select()}
-              className="tabular block w-full rounded-lg border border-line bg-surface p-2 font-mono text-xs text-ink"
+              className="tabular block w-full rounded-xl border border-line bg-surface p-2 font-mono text-xs text-ink"
             />
           </label>
         ) : null}

@@ -1,180 +1,246 @@
-import Link from "next/link";
-import { DEVICE_LABEL, PACK_NAME, PRICE_TBD, WORK_TYPES } from "@/lib/domain";
-import { ButtonLink, Card, cx, deviceTone } from "@/components/ui";
-import type { DeviceKey } from "@/lib/domain";
+import {
+  CORE_MISSIONS,
+  MISSIONS,
+  PICK_LABEL,
+  PRICE_TBD,
+  REWARD_AMOUNT_LABEL,
+  REWARD_RULE,
+  type Pick,
+} from "@/lib/domain";
+import { UNDECIDED } from "@/lib/copy";
+import { ButtonLink, Eyebrow, Tag, cx, delay } from "@/components/ui";
+import { GiftEnvelope, HeroIllustration, MissionIcon, StepIcon, type StepArt } from "@/components/illustrations";
 
-const STEPS = [
+const WORRIES = [
   {
-    title: "데모 일정 요청",
-    body: "희망 시작일·픽업 매장·작업 유형만 고릅니다. 이름과 전화번호는 받지 않습니다. 요청만으로는 확정되지 않습니다.",
+    quote: "유튜브랑 과제 정도인데, Pro까지 필요할까?",
+    who: "맥은 처음인 새내기",
+    tone: "bg-air-soft",
+    mark: "text-air-ink",
   },
   {
-    title: "운영자 두 기기 확인·결제",
-    body: "운영자가 Air와 Pro 두 대를 확보하면 결제 기한을 안내합니다. 실제 거래내역을 대조한 뒤에만 예약이 확정됩니다.",
+    quote: "가벼운 게 좋을까, 화면 큰 게 좋을까?",
+    who: "매일 가방을 드는 직장인",
+    tone: "bg-pro-soft",
+    mark: "text-pro-ink",
   },
   {
-    title: "픽업 후 같은 작업으로 비교 기록",
-    body: "작업 유형별 체크리스트대로 두 기기에서 똑같이 해 보고, 소요 시간·휴대성·화면·사용감을 같은 기준으로 적습니다.",
-  },
-  {
-    title: "마지막 날 반납/구매 결정",
-    body: "기록을 나란히 보고 결정합니다. 두 대 모두 반납하거나, 한 대를 사기로 하면 나머지 한 대만 반납·검수합니다. 구매는 딜러 판매 확인 후 확정됩니다.",
+    quote: "리뷰는 다 좋다는데, 나한테는?",
+    who: "리뷰 영상만 한참 본 사람",
+    tone: "bg-coral-soft",
+    mark: "text-coral-ink",
   },
 ];
 
-const DIFFS = [
+const STEPS: { art: StepArt; title: string; body: string }[] = [
   {
-    title: "작업 유형 기반 비교 가이드",
-    body: `${Object.values(WORK_TYPES)
-      .map((w) => w.label)
-      .join(" · ")} — 내 작업에 맞춘 확인 항목을 따라 비교합니다.`,
+    art: "calendar",
+    title: "일정 요청",
+    body: "희망 시작일과 픽업 매장만 골라요. 이름·전화번호는 받지 않고, 요청만으로는 아직 확정이 아니에요.",
   },
   {
-    title: "두 기기, 같은 기준 기록",
-    body: "같은 작업을 두 기기에서 해 보고 같은 항목으로 적어 나란히 봅니다. 스펙표가 아니라 내 결과로 비교합니다.",
+    art: "check",
+    title: "운영자가 두 대 확인·결제",
+    body: "운영자가 Air와 Pro 두 대를 확보하면 결제 기한을 알려 드려요. 실제 거래내역을 확인한 뒤에만 확정되고, 결제 화면 캡처로는 확정되지 않아요.",
   },
   {
+    art: "missions",
+    title: "평소처럼 쓰며 미션",
+    body: "가방에 넣고 나가고, 영상을 틀고, 메모를 써 보세요. 느낀 쪽을 고르기만 하면 돼요.",
+  },
+  {
+    art: "decide",
     title: "마지막 날 결정",
-    body: "체험 전 기울기·확신과 체험 후 확신을 함께 남겨, 직접 써 보고 생각이 어떻게 바뀌었는지 확인합니다.",
-  },
-  {
-    title: "반납 개인정보 체크",
-    body: "백업·로그아웃·나의 찾기 해제를 안내하고, 운영자가 검수에서 초기화까지 확인합니다. 검수 전 기기는 다시 빌려주지 않습니다.",
+    body: "둘 다 반납해도, 한 대를 사도, 아직 모르겠어도 괜찮아요. 한 대를 사면 나머지 한 대만 반납·검수해요. 구매는 딜러 판매 확인 후 확정돼요.",
   },
 ];
 
-const UNDECIDED = ["체험료", "체험 기간", "보증", "할인", "제휴 매장"];
+const PICKS: Pick[] = ["air", "same", "pro", "unsure"];
+const pickTone: Record<Pick, string> = {
+  air: "bg-air-soft text-air-ink",
+  same: "bg-mute-soft text-mute-ink",
+  pro: "bg-pro-soft text-pro-ink",
+  unsure: "bg-surface text-mute-ink ring-1 ring-inset ring-line-strong",
+};
 
-function Laptop({ kind }: { kind: DeviceKey }) {
-  const t = deviceTone[kind];
-  const wide = kind === "pro";
+function SectionHead({ eyebrow, title, children, className }: { eyebrow: string; title: React.ReactNode; children?: React.ReactNode; className?: string }) {
   return (
-    <div className={cx("rounded-xl border bg-surface p-4 sm:p-5", "border-line")}>
-      <svg viewBox="0 0 120 76" className="mx-auto h-auto w-full max-w-[150px]" aria-hidden>
-        <rect x={wide ? 14 : 18} y="6" width={wide ? 92 : 84} height="54" rx="5" fill="none" strokeWidth="3" className={kind === "air" ? "stroke-air" : "stroke-pro"} />
-        <rect x={wide ? 20 : 24} y="12" width={wide ? 80 : 72} height="42" rx="2" className={kind === "air" ? "fill-air-soft" : "fill-pro-soft"} />
-        <path d={wide ? "M4 64h112l-6 7H10z" : "M8 64h104l-5 6H13z"} className={kind === "air" ? "fill-air" : "fill-pro"} />
-      </svg>
-      <p className={cx("mt-3 text-center text-sm font-semibold", t.text)}>{DEVICE_LABEL[kind]}</p>
+    <div className={className}>
+      <Eyebrow className="mb-3">{eyebrow}</Eyebrow>
+      <h2 className="text-[28px] font-extrabold leading-[1.3] text-ink sm:text-[36px]">{title}</h2>
+      {children ? <div className="mt-3 text-[16px] leading-[1.75] text-sub sm:text-[17px]">{children}</div> : null}
     </div>
   );
 }
 
 export default function Home() {
   return (
-    <div className="space-y-14 sm:space-y-20">
-      {/* 첫 화면 */}
-      <section className="grid items-center gap-8 lg:grid-cols-[1.15fr_1fr] lg:gap-12">
+    <div className="space-y-24 sm:space-y-32">
+      {/* 히어로 */}
+      <section className="grid items-center gap-8 pt-2 lg:grid-cols-[1fr_1.05fr] lg:gap-6">
         <div>
-          <p className="mb-3 inline-flex rounded-full bg-surface px-3 py-1 text-xs font-semibold text-sub ring-1 ring-line">
-            {PACK_NAME}
-          </p>
-          <h1 className="text-[30px] font-bold leading-[1.25] tracking-tight text-ink sm:text-[44px]">
+          <Eyebrow className="fade-up mb-5">
+            <span>
+              Try before you buy<span className="hidden sm:inline"> · MacBook Air &amp; Pro 14</span>
+            </span>
+          </Eyebrow>
+          <h1 className="fade-up text-[40px] font-extrabold leading-[1.2] text-ink sm:text-[58px]" style={delay(1)}>
             사기 전에,
             <br />
-            <span className="text-primary">내 작업</span>으로 두 MacBook을
-            <br className="hidden sm:inline" /> 비교해 보세요
+            먼저 같이
+            <br className="sm:hidden" /> 지내 보기
           </h1>
-          <p className="mt-5 max-w-xl text-base leading-relaxed text-sub sm:text-lg">
-            스펙표보다 중요한 건 <strong className="font-semibold text-ink">내가 샀을 때 만족할 제품</strong>인지입니다.
-            MacBook Air와 14형 Pro를 함께 받아 평소 하는 작업을 두 기기에서 똑같이 해 보고, 마지막 날 반납하거나 구매를
-            결정하세요.
+          <p className="fade-up mt-6 max-w-md text-[17px] leading-[1.8] text-sub sm:text-[18px]" style={delay(2)}>
+            맥은 처음이어도 괜찮아요. MacBook Air와 14형 Pro를 함께 빌려 평소처럼 써 보고, 마음이 가는 쪽을 천천히
+            고르세요.
           </p>
-          <div className="mt-7 flex flex-col gap-3 sm:flex-row">
-            <ButtonLink href="/request/" className="sm:px-6">
+          <div className="fade-up mt-8 flex flex-col gap-3 sm:flex-row" style={delay(3)}>
+            <ButtonLink href="/request/" className="sm:px-7">
               데모 일정 요청
             </ButtonLink>
-            <ButtonLink href="/pack/" variant="secondary" className="sm:px-6">
-              비교팩 자세히 보기
+            <ButtonLink href="/pack/" variant="secondary" className="sm:px-7">
+              비교팩 둘러보기
             </ButtonLink>
           </div>
+          <p className="fade-up mt-5 text-sm text-sub" style={delay(4)}>
+            이름·전화번호 없이 요청해요 · 요청은 아직 확정이 아니에요
+          </p>
         </div>
-        <div className="rounded-2xl border border-line bg-linear-to-b from-surface to-bg p-4 sm:p-6">
-          <div className="grid grid-cols-2 gap-3 sm:gap-4">
-            <Laptop kind="air" />
-            <Laptop kind="pro" />
-          </div>
-          <div className="mt-4 rounded-xl bg-surface p-4 ring-1 ring-line">
-            <p className="text-xs font-medium text-sub">같은 작업 · 같은 기준</p>
-            <ul className="mt-2 space-y-1.5 text-sm text-ink">
-              <li className="flex gap-2">
-                <span aria-hidden className="text-sub">·</span>같은 영상 내보내기에 걸린 시간
-              </li>
-              <li className="flex gap-2">
-                <span aria-hidden className="text-sub">·</span>하루 들고 다녀 본 휴대성
-              </li>
-              <li className="flex gap-2">
-                <span aria-hidden className="text-sub">·</span>화면·키보드·발열 사용감
-              </li>
-            </ul>
-          </div>
+        <div className="fade-up -mx-2 sm:mx-0" style={delay(2)}>
+          <HeroIllustration className="mx-auto h-auto w-full max-w-[560px]" />
         </div>
+      </section>
+
+      {/* 이런 고민 */}
+      <section aria-labelledby="worry" className="grid gap-8 lg:grid-cols-[minmax(0,340px)_1fr] lg:gap-14">
+        <SectionHead eyebrow="Sound familiar? · 01" title={<span id="worry">이런 고민 해 본 적 있죠?</span>}>
+          스펙표로는 답이 잘 안 나와요. 내 하루에 두 대를 같이 넣어 보면, 생각보다 쉽게 알게 돼요.
+        </SectionHead>
+        <ul className="grid gap-4 sm:grid-cols-3">
+          {WORRIES.map((w, i) => (
+            <li key={w.quote} className="fade-up flex flex-col" style={delay(i + 1)}>
+              <div className={cx("relative flex-1 rounded-[28px] rounded-bl-md px-5 pt-5 pb-6", w.tone)}>
+                <span aria-hidden className={cx("block font-serif text-[44px] leading-none", w.mark)}>
+                  &ldquo;
+                </span>
+                <p className="mt-1 text-[19px] font-bold leading-[1.5] text-ink">{w.quote}</p>
+              </div>
+              <p className="mt-3 pl-2 text-sm font-medium text-sub">— {w.who}</p>
+            </li>
+          ))}
+        </ul>
       </section>
 
       {/* 이용 흐름 */}
       <section aria-labelledby="how">
-        <h2 id="how" className="text-xl font-bold tracking-tight text-ink sm:text-2xl">
-          이렇게 진행됩니다
-        </h2>
-        <ol className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <SectionHead eyebrow="How it works · 02" title={<span id="how">이렇게 진행돼요</span>} className="max-w-2xl">
+          요청부터 결정까지 네 걸음이에요. 확정되지 않은 건 확정됐다고 말하지 않아요.
+        </SectionHead>
+        <ol className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {STEPS.map((s, i) => (
-            <li key={s.title} className="rounded-xl border border-line bg-surface p-5">
-              <span className="tabular inline-flex h-7 w-7 items-center justify-center rounded-full bg-ink text-sm font-bold text-white">
-                {i + 1}
-              </span>
-              <h3 className="mt-3 font-semibold text-ink">{s.title}</h3>
-              <p className="mt-1.5 text-sm leading-relaxed text-sub">{s.body}</p>
+            <li key={s.title} className="fade-up rounded-3xl border border-line bg-surface p-6" style={delay(i)}>
+              <div className="flex items-start justify-between">
+                <StepIcon art={s.art} className="h-16 w-16" />
+                <span className="eyebrow tabular text-sub">Step 0{i + 1}</span>
+              </div>
+              <h3 className="mt-5 text-[19px] font-bold text-ink">{s.title}</h3>
+              <p className="mt-2 text-[15px] leading-[1.7] text-sub">{s.body}</p>
             </li>
           ))}
         </ol>
       </section>
 
-      {/* 차별점 */}
-      <section aria-labelledby="diff">
-        <h2 id="diff" className="text-xl font-bold tracking-tight text-ink sm:text-2xl">
-          단순 대여와 다른 점
-        </h2>
-        <div className="mt-5 grid gap-3 sm:grid-cols-2">
-          {DIFFS.map((d) => (
-            <Card key={d.title} className="sm:p-5!">
-              <h3 className="font-semibold text-ink">{d.title}</h3>
-              <p className="mt-1.5 text-sm leading-relaxed text-sub">{d.body}</p>
-            </Card>
+      {/* 미션 미리보기 */}
+      <section aria-labelledby="missions" className="-mx-5 bg-surface px-5 py-14 sm:mx-0 sm:rounded-[40px] sm:px-12 sm:py-16">
+        <div className="grid gap-6 lg:grid-cols-[1fr_auto] lg:items-end">
+          <SectionHead eyebrow="Missions · 03" title={<span id="missions">맥이 처음이어도 할 수 있는 미션 6개</span>}>
+            숙제가 아니라 평소 하던 일이에요. 해 보고 나은 쪽을 고르면 끝. 비슷했다면 그것도 답이에요.
+          </SectionHead>
+          <ul className="flex flex-wrap gap-2 lg:max-w-[300px] lg:justify-end" aria-label="답은 이렇게 골라요">
+            {PICKS.map((p) => (
+              <li key={p} className={cx("rounded-full px-3 py-1.5 text-[13px] font-bold", pickTone[p])}>
+                {PICK_LABEL[p]}
+              </li>
+            ))}
+          </ul>
+        </div>
+        <ul className="mt-10 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {MISSIONS.map((m, i) => (
+            <li key={m.id} className="fade-up flex gap-4 rounded-3xl bg-bg p-5" style={delay(i)}>
+              <MissionIcon id={m.id} className="h-14 w-14 shrink-0" />
+              <div className="min-w-0">
+                <p className="flex flex-wrap items-center gap-2 text-[16px] font-bold leading-snug text-ink">
+                  {m.title.replace(" (해 본 사람만)", "")}
+                  {m.optional ? <Tag>선택</Tag> : null}
+                </p>
+                <p className="mt-1 text-sm leading-[1.65] text-sub">{m.question}</p>
+              </div>
+            </li>
           ))}
+        </ul>
+      </section>
+
+      {/* 리워드 */}
+      <section
+        aria-labelledby="reward"
+        className="grid items-center gap-8 rounded-[40px] bg-coral-soft px-6 py-12 sm:px-12 sm:py-14 lg:grid-cols-[auto_1fr] lg:gap-14"
+      >
+        <GiftEnvelope className="mx-auto h-auto w-40 sm:w-52" />
+        <div>
+          <Eyebrow tone="coral" className="mb-3">
+            A small thank-you · 04
+          </Eyebrow>
+          <h2 id="reward" className="text-[28px] font-extrabold leading-[1.3] text-ink sm:text-[36px]">
+            미션 {CORE_MISSIONS.length}개를 마치면, 작은 고마움
+          </h2>
+          <p className="mt-4 inline-flex rounded-full bg-surface px-4 py-2 text-[17px] font-extrabold text-coral-ink ring-1 ring-coral/30">
+            {REWARD_AMOUNT_LABEL}
+          </p>
+          <p className="mt-4 max-w-2xl text-[16px] leading-[1.75] text-ink/80">{REWARD_RULE}</p>
+          <p className="mt-2 text-sm text-sub">몇 자 이상 쓰라고 하지 않아요. 해 본 대로 고르기만 하면 돼요.</p>
         </div>
       </section>
 
       {/* 미확정 */}
-      <section aria-labelledby="tbd" className="rounded-xl border border-warn-line bg-warn-bg p-5 sm:p-6">
-        <h2 id="tbd" className="text-lg font-bold text-warn">
-          아직 확정되지 않은 것
+      <section aria-labelledby="tbd" className="rounded-[32px] border border-warn-line bg-warn-bg px-6 py-8 sm:px-10">
+        <p className="eyebrow text-warn">Not decided yet</p>
+        <h2 id="tbd" className="mt-2 text-[22px] font-extrabold text-warn">
+          아직 정해지지 않은 것
         </h2>
-        <ul className="mt-3 flex flex-wrap gap-2">
+        <ul className="mt-4 flex flex-wrap gap-2">
           {UNDECIDED.map((x) => (
-            <li key={x} className="rounded-full bg-surface/70 px-3 py-1 text-sm font-medium text-warn ring-1 ring-warn-line">
-              {x} — 딜러 계약 후 확정
+            <li key={x} className="rounded-full bg-surface/80 px-3 py-1 text-sm font-semibold text-warn ring-1 ring-warn-line">
+              {x}
             </li>
           ))}
         </ul>
-        <p className="mt-3 text-sm leading-relaxed text-warn">{PRICE_TBD}</p>
+        <p className="mt-4 text-[15px] leading-relaxed text-warn">{PRICE_TBD} 위 항목은 모두 딜러 계약 후 정해져요.</p>
       </section>
 
       {/* 마무리 CTA */}
-      <section className="rounded-2xl bg-ink px-5 py-8 text-center sm:px-10 sm:py-12">
-        <h2 className="text-xl font-bold text-white sm:text-2xl">내 작업으로 먼저 비교해 보세요</h2>
-        <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-white/75">
-          요청은 확정이 아닙니다. 운영자가 두 기기를 확인한 뒤 안내합니다.
-        </p>
-        <div className="mt-6 flex flex-col justify-center gap-3 sm:flex-row">
-          <ButtonLink href="/request/" className="sm:px-6">
-            데모 일정 요청
-          </ButtonLink>
-          <Link
-            href="/pack/"
-            className="inline-flex min-h-11 items-center justify-center rounded-xl border border-white/25 px-6 py-2.5 text-[15px] font-semibold text-white transition-colors hover:bg-white/10"
-          >
-            비교팩 보기
-          </Link>
+      <section className="relative overflow-hidden rounded-[40px] bg-ink px-6 py-14 text-center sm:px-12 sm:py-20">
+        <span aria-hidden className="absolute -top-24 -right-16 h-64 w-64 rounded-full bg-coral/25 blur-2xl" />
+        <span aria-hidden className="absolute -bottom-28 -left-10 h-64 w-64 rounded-full bg-air/25 blur-2xl" />
+        <div className="relative">
+          <Eyebrow tone="ivory" className="justify-center">
+            Let&rsquo;s try
+          </Eyebrow>
+          <h2 className="mt-4 text-[28px] font-extrabold leading-[1.35] text-ivory sm:text-[40px]">
+            먼저 같이 지내 보고
+            <br />
+            골라도 늦지 않아요
+          </h2>
+          <p className="mx-auto mt-4 max-w-md text-[15px] leading-relaxed text-ivory/70">
+            요청은 확정이 아니에요. 운영자가 두 기기를 확인한 뒤 안내해 드려요.
+          </p>
+          <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
+            <ButtonLink href="/request/" variant="light" className="sm:px-8">
+              데모 일정 요청
+            </ButtonLink>
+            <ButtonLink href="/pack/" variant="ghostLight" className="sm:px-8">
+              비교팩 보기
+            </ButtonLink>
+          </div>
         </div>
       </section>
     </div>

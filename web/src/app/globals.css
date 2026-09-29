@@ -1,38 +1,46 @@
 @import "tailwindcss";
 
-/* SPEC.md 디자인 토큰 (웹·앱 공통). 작은 글자에 쓰는 *-ink 는 흰 배경 대비 4.5:1 이상으로 어둡게 맞춘 값. */
+/*
+ * SPEC.md v2 감성 디자인 토큰 — 따뜻한 아이보리 바탕, 잉크 주 버튼, Air 청록 · Pro 보라 · 리워드 코랄.
+ * 작은 글자에 쓰는 *-ink 값은 흰 바탕·아이보리 바탕에서 4.5:1 이상이 되도록 어둡게 맞췄다.
+ */
 @theme {
   --font-sans: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Pretendard", system-ui, "Segoe UI",
     "Noto Sans KR", "Malgun Gothic", sans-serif;
+  --font-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
 
-  --color-ink: #111418;
-  --color-sub: #5b6470;
-  --color-line: #e4e7ec;
-  --color-bg: #f7f8fa;
+  --color-bg: #faf6ef;
+  --color-ivory: #faf6ef;
+  --color-cream: #f4ede2;
   --color-surface: #ffffff;
+  --color-ink: #1f1b16;
+  --color-ink-hover: #3a342d;
+  --color-sub: #6b635a;
+  --color-line: #eae3d8;
+  --color-line-strong: #d9cfbf;
 
-  --color-primary: #2b59ff;
-  --color-primary-ink: #1e44d8;
-  --color-primary-soft: #ebf0ff;
-
-  --color-air: #0f9d8a;
-  --color-air-ink: #0b7a6b;
-  --color-air-soft: #e7f5f3;
+  --color-air: #1e9e8a;
+  --color-air-ink: #13786a;
+  --color-air-soft: #e3f4f0;
   --color-pro: #6d4aff;
-  --color-pro-ink: #5a38e8;
-  --color-pro-soft: #f0edff;
+  --color-pro-ink: #5635e0;
+  --color-pro-soft: #eeeaff;
+  --color-coral: #ff6b4a;
+  --color-coral-ink: #b93f22;
+  --color-coral-soft: #ffede7;
+  --color-sun: #ffd9ae;
 
-  --color-warn-bg: #fff7e6;
+  --color-warn-bg: #fff4e0;
   --color-warn: #8a5a00;
-  --color-warn-line: #f3dcae;
+  --color-warn-line: #f0dcb4;
   --color-danger: #d92d20;
-  --color-danger-soft: #fef3f2;
+  --color-danger-ink: #b42318;
+  --color-danger-soft: #fef1ef;
   --color-success: #12b76a;
   --color-success-ink: #067647;
-  --color-success-soft: #ecfdf3;
-  --color-slate-ink: #44546f;
-  --color-slate-soft: #eef2f6;
-  --color-muted-soft: #f2f4f7;
+  --color-success-soft: #e8f7ee;
+  --color-mute-ink: #5a5249;
+  --color-mute-soft: #f1ebe1;
 }
 
 html {
@@ -43,15 +51,32 @@ body {
   background: var(--color-bg);
   color: var(--color-ink);
   font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.7;
   /* 한국어는 어절 단위로 줄바꿈 */
   word-break: keep-all;
   overflow-wrap: break-word;
   -webkit-font-smoothing: antialiased;
 }
 
+h1,
+h2,
+h3 {
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+
+p {
+  text-wrap: pretty;
+}
+
+::selection {
+  background: var(--color-coral-soft);
+}
+
 /* 키보드 초점은 항상 보이게 */
 :focus-visible {
-  outline: 2px solid var(--color-primary);
+  outline: 2px solid var(--color-ink);
   outline-offset: 2px;
 }
 
@@ -61,4 +86,32 @@ input[type="number"]::-webkit-inner-spin-button {
 
 .tabular {
   font-variant-numeric: tabular-nums;
+}
+
+/* 작은 영문 대문자 아이브로우 */
+.eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  line-height: 1.4;
+}
+
+/* 은은한 페이드업 — 움직임 줄이기 설정이면 처음부터 제자리 */
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .fade-up {
+    animation: fade-up 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+    animation-delay: var(--delay, 0ms);
+  }
 }

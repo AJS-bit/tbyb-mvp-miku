@@ -10,15 +10,23 @@ import {
   PAYMENT_RULE,
   PAYMENT_WINDOW_HOURS,
   SALE_LABEL,
+  MISSION_OPEN,
+  REWARD_FLAG_LABEL,
+  REWARD_REJECT_NOTE_VISIBLE,
+  REWARD_STATUS_LABEL,
+  STATUS_FLOW,
   STATUS_HELP,
   STATUS_LABEL,
-  WORK_TYPES,
+  USAGE_LABEL,
   assignDevice,
   availableDevices,
   canTransition,
   isInspectionDone,
   isPaymentExpired,
+  missionProgress,
   requiredInspections,
+  reviewReward,
+  rewardFlags,
   saleDevice,
   setCheckout,
   setInspection,
@@ -34,18 +42,21 @@ import {
 import { apply, demoNow, resetDemo, setClockOffsetHours, useDemo, type DemoSnapshot } from "@/lib/store";
 import { fmtDateKey, fmtDateTime, fmtRemaining } from "@/lib/format";
 import { ACTOR_LABEL, RequestSummary, decisionText } from "@/components/reservation";
+import { MissionAnswerTable, RewardStatusChip } from "@/components/mission";
 import {
   Card,
   CardTitle,
   DeviceName,
   DeviceStateChip,
   ErrorText,
+  Eyebrow,
   Notice,
   Skeleton,
   StatusChip,
   SuccessText,
   btn,
   cx,
+  deviceTone,
   inputClass,
 } from "@/components/ui";
 
@@ -67,17 +78,19 @@ export function OpsView() {
 
   return (
     <div className="space-y-6">
-      <header className="rounded-xl border-2 border-warn-line bg-warn-bg px-5 py-5 sm:px-6">
-        <h1 className="text-2xl font-bold tracking-tight text-warn sm:text-[28px]">운영 시뮬레이터 — 데모, 실제 운영자 인증 없음</h1>
-        <p className="mt-2 max-w-3xl text-sm leading-relaxed text-warn">
+      <header className="rounded-3xl border-2 border-warn-line bg-warn-bg px-5 py-6 sm:px-8">
+        <p className="eyebrow text-warn">Operator simulator · demo only</p>
+        <h1 className="mt-2 text-[26px] font-extrabold leading-snug text-warn sm:text-[32px]">운영 시뮬레이터 — 데모, 실제 운영자 인증 없음</h1>
+        <p className="mt-2 max-w-3xl text-[15px] leading-relaxed text-warn">
           시연용으로 누구나 열 수 있는 화면입니다. 실제 운영에서는 인증된 운영자만 이 기능을 씁니다. 모든 변경은 이 브라우저의
           데모 데이터에만 저장됩니다. 운영자 상태 변경에는 사유가 필요하고, 허용된 다음 단계로만 이동합니다.
         </p>
       </header>
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_300px]">
+      <Ledger state={state} selectedId={selectedId} onSelect={select} />
+
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
         <div className="min-w-0 space-y-6">
-          <Ledger state={state} selectedId={selectedId} onSelect={select} />
           <div id="ops-panel" className="scroll-mt-28">
             {selected ? (
               <ReservationPanel key={selected.id} r={selected} state={state} />
@@ -85,14 +98,15 @@ export function OpsView() {
               <Card>
                 <p className="text-sm text-sub">
                   {state.reservations.length
-                    ? "대장에서 예약을 고르면 단계 변경·기기 확보·거래 대조·출고·검수를 할 수 있습니다."
+                    ? "대장에서 예약을 고르면 단계 변경·기기 확보·거래 대조·출고·검수·리워드 확인을 할 수 있습니다."
                     : "아직 요청이 없습니다."}
                 </p>
               </Card>
             )}
           </div>
         </div>
-        <aside className="space-y-6" aria-label="기기 보드와 데모 설정">
+        <aside className="space-y-6" aria-label="리워드 확인 목록, 기기 보드와 데모 설정">
+          <RewardQueue state={state} selectedId={selectedId} onSelect={select} />
           <DeviceBoard state={state} onSelect={select} />
           <DemoControls snap={snap} onReset={() => setSelectedId(null)} />
         </aside>
@@ -115,11 +129,25 @@ function paymentCell(r: Reservation, now: Date) {
   return <span className="text-sub">—</span>;
 }
 
+function started(r: Reservation): boolean {
+  return STATUS_FLOW.indexOf(r.status) >= STATUS_FLOW.indexOf("in_trial");
+}
+
+function missionCell(r: Reservation) {
+  if (!started(r)) return <span className="text-sub">—</span>;
+  const p = missionProgress(r);
+  return (
+    <span className={cx("font-semibold", p.done === p.total ? "text-ink" : "text-sub")}>
+      {p.done}/{p.total}
+    </span>
+  );
+}
+
 function Ledger({ state, selectedId, onSelect }: { state: DemoState; selectedId: string | null; onSelect: (id: string) => void }) {
   const now = demoNow();
   return (
-    <section aria-labelledby="ledger" className="rounded-xl border border-line bg-surface">
-      <div className="px-5 pt-5 sm:px-6">
+    <section aria-labelledby="ledger" className="rounded-3xl border border-line bg-surface">
+      <div className="px-5 pt-6 sm:px-7">
         <CardTitle id="ledger" sub="이 브라우저에 저장된 모든 데모 요청 (최신순)">
           예약 대장
         </CardTitle>
@@ -127,18 +155,18 @@ function Ledger({ state, selectedId, onSelect }: { state: DemoState; selectedId:
       {state.reservations.length === 0 ? (
         <p className="px-5 pb-6 text-sm text-sub sm:px-6">
           아직 요청이 없습니다.{" "}
-          <Link href="/request/" className="font-semibold text-primary-ink underline underline-offset-2">
+          <Link href="/request/" className="font-semibold text-ink underline underline-offset-2">
             일정 요청
           </Link>
           에서 데모 요청을 만들어 보세요.
         </p>
       ) : (
         <div className="overflow-x-auto pb-2">
-          <table className="w-full min-w-[760px] border-collapse text-left text-sm">
+          <table className="w-full min-w-[820px] border-collapse text-left text-sm">
             <thead>
               <tr className="border-y border-line bg-bg text-xs text-sub">
-                {["예약 ID", "상태", "희망일", "작업 유형", "배정 기기", "결제 대조", "생성"].map((h) => (
-                  <th key={h} scope="col" className="px-3 py-2.5 font-medium whitespace-nowrap first:pl-5 sm:first:pl-6">
+                {["예약 ID", "상태", "희망일", "용도", "배정 기기", "결제 대조", "미션", "리워드"].map((h) => (
+                  <th key={h} scope="col" className="px-3 py-2.5 font-semibold whitespace-nowrap first:pl-5 sm:first:pl-7">
                     {h}
                   </th>
                 ))}
@@ -153,16 +181,16 @@ function Ledger({ state, selectedId, onSelect }: { state: DemoState; selectedId:
                     data-testid={`ledger-row-${r.id}`}
                     data-selected={sel ? "true" : undefined}
                     onClick={() => onSelect(r.id)}
-                    className={cx("cursor-pointer border-b border-line last:border-b-0", sel ? "bg-primary-soft" : "hover:bg-bg")}
+                    className={cx("cursor-pointer border-b border-line last:border-b-0", sel ? "bg-cream" : "hover:bg-bg")}
                   >
-                    <td className="py-3 pr-3 pl-5 sm:pl-6">
+                    <td className="py-3 pr-3 pl-5 sm:pl-7">
                       <button
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
                           onSelect(r.id);
                         }}
-                        className="tabular whitespace-nowrap rounded font-bold text-primary-ink underline-offset-2 hover:underline"
+                        className="tabular whitespace-nowrap rounded font-bold text-ink underline underline-offset-4 decoration-line-strong hover:decoration-ink"
                         aria-label={`${r.id} 열기`}
                       >
                         {r.id}
@@ -172,7 +200,7 @@ function Ledger({ state, selectedId, onSelect }: { state: DemoState; selectedId:
                       <StatusChip status={r.status} />
                     </td>
                     <td className="px-3 py-3 whitespace-nowrap">{fmtDateKey(r.request.startDate)}</td>
-                    <td className="px-3 py-3 whitespace-nowrap">{WORK_TYPES[r.request.workType].label}</td>
+                    <td className="px-3 py-3 whitespace-nowrap">{USAGE_LABEL[r.request.usage]}</td>
                     <td className="tabular px-3 py-3 whitespace-nowrap">
                       {r.ops.deviceIds.air || r.ops.deviceIds.pro ? (
                         [r.ops.deviceIds.air, r.ops.deviceIds.pro].filter(Boolean).join(" · ")
@@ -181,7 +209,10 @@ function Ledger({ state, selectedId, onSelect }: { state: DemoState; selectedId:
                       )}
                     </td>
                     <td className="px-3 py-3 whitespace-nowrap">{paymentCell(r, now)}</td>
-                    <td className="tabular px-3 py-3 whitespace-nowrap text-sub">{fmtDateTime(r.createdAt)}</td>
+                    <td className="tabular px-3 py-3 whitespace-nowrap">{missionCell(r)}</td>
+                    <td className="px-3 py-3 whitespace-nowrap">
+                      <RewardStatusChip status={r.reward.status} />
+                    </td>
                   </tr>
                 );
               })}
@@ -253,8 +284,10 @@ function ReservationPanel({ r, state }: { r: Reservation; state: DemoState }) {
         </div>
       </Card>
 
+      {r.ops.wallCodes ? <WallCodes r={r} /> : null}
+
       {/* 단계 변경 */}
-      <Card aria-labelledby="move" className="border-primary/30">
+      <Card aria-labelledby="move" className="border-ink/20">
         <CardTitle id="move" sub="허용된 다음 단계만 보입니다. 단계를 건너뛸 수 없습니다.">
           단계 변경
         </CardTitle>
@@ -318,6 +351,8 @@ function ReservationPanel({ r, state }: { r: Reservation; state: DemoState }) {
 
       <StageTools r={r} state={state} now={now} act={act} />
 
+      {started(r) || r.reward.status !== "none" ? <RewardReview key={`${r.id}-${r.reward.status}`} r={r} state={state} /> : null}
+
       <Card aria-labelledby="history">
         <CardTitle id="history">전체 이력</CardTitle>
         <div className="overflow-x-auto">
@@ -340,7 +375,10 @@ function ReservationPanel({ r, state }: { r: Reservation; state: DemoState }) {
                     {h.from === h.to ? <span className="font-normal text-sub">상태 유지</span> : STATUS_LABEL[h.to]}
                   </td>
                   <td className="py-2 pr-4 whitespace-nowrap">{ACTOR_LABEL[h.actor]}</td>
-                  <td className="py-2 text-ink">{h.reason}</td>
+                  <td className="py-2 text-ink">
+                    {h.reason}
+                    {h.internalNote ? <span className="mt-0.5 block text-xs text-sub">운영 메모: {h.internalNote}</span> : null}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -373,7 +411,8 @@ function StageTools({ r, state, now, act }: { r: Reservation; state: DemoState; 
         <Card aria-labelledby="trial">
           <CardTitle id="trial">고객 체험 중</CardTitle>
           <p className="text-sm text-ink">
-            비교 기록 {r.logs.length}건 · 마지막 날 결정: <strong className="font-semibold">{decisionText(r.decision)}</strong>
+            미션 {missionProgress(r).done}/{missionProgress(r).total} · 리워드 {REWARD_STATUS_LABEL[r.reward.status]} · 마지막 날 결정:{" "}
+            <strong className="font-semibold">{decisionText(r.decision)}</strong>
           </p>
           <p className="mt-2 text-sm text-sub">
             고객이 마지막 날 결정(아직 결정 못 함 포함)을 남겨야 반납 접수를 할 수 있습니다. 반납 접수 때 결정에 따라 반납 기기는
@@ -402,7 +441,7 @@ function DeviceAssign({ r, state, act }: { r: Reservation; state: DemoState; act
           const avail = availableDevices(state, k);
           const others = state.devices.filter((d) => d.kind === k && d.state !== "available" && d.id !== current);
           return (
-            <div key={k} className="min-w-0 rounded-xl bg-bg p-4">
+            <div key={k} className="min-w-0 rounded-2xl bg-bg p-4">
               <label htmlFor={`assign-${k}`} className="mb-2 block">
                 <DeviceName kind={k} />
               </label>
@@ -443,7 +482,7 @@ function DeviceAssign({ r, state, act }: { r: Reservation; state: DemoState; act
                 </div>
               ) : null}
               {!current && avail.length === 0 ? (
-                <p className="mt-2 text-sm font-medium text-danger">배정할 수 있는 {DEVICE_LABEL[k]}가 없습니다. 대체 일정이나 취소를 안내하세요.</p>
+                <p className="mt-2 text-sm font-medium text-danger-ink">배정할 수 있는 {DEVICE_LABEL[k]}가 없습니다. 대체 일정이나 취소를 안내하세요.</p>
               ) : null}
             </div>
           );
@@ -462,7 +501,7 @@ function PaymentCheck({ r, now, act }: { r: Reservation; now: Date; act: Act }) 
       </CardTitle>
       <div
         data-testid="payment-expiry"
-        className={cx("rounded-xl px-4 py-3 text-sm", expired ? "bg-danger-soft text-danger" : "bg-warn-bg text-warn")}
+        className={cx("rounded-2xl px-4 py-3 text-sm", expired ? "bg-danger-soft text-danger-ink" : "bg-warn-bg text-warn")}
       >
         <p className="font-semibold">
           결제 기한 {fmtDateTime(r.ops.paymentDeadline)} · {expired ? "기한 지남 — 자동 확정하지 않음" : fmtRemaining(r.ops.paymentDeadline, now)}
@@ -483,12 +522,12 @@ function PaymentCheck({ r, now, act }: { r: Reservation; now: Date; act: Act }) 
           />
           <p className="mt-1 text-xs text-sub">결제 서비스 거래내역에서 확인한 값 (데모 — 실제 조회 없음)</p>
         </div>
-        <label className="flex cursor-pointer items-start gap-3 self-start rounded-xl border border-line p-4 text-sm text-ink has-[:checked]:border-success has-[:checked]:bg-success-soft sm:mt-6">
+        <label className="flex cursor-pointer items-start gap-3 self-start rounded-2xl border border-line p-4 text-sm text-ink has-[:checked]:border-success has-[:checked]:bg-success-soft sm:mt-6">
           <input
             type="checkbox"
             checked={r.ops.txMatched}
             onChange={(e) => act((s) => setPaymentCheck(s, r.id, r.ops.demoTxId, e.target.checked))}
-            className="mt-0.5 h-4 w-4 shrink-0 accent-primary"
+            className="mt-0.5 h-4 w-4 shrink-0 accent-ink"
           />
           거래내역·예약ID 대조 완료
         </label>
@@ -522,13 +561,13 @@ function Checkout({ r, act }: { r: Reservation; act: Act }) {
         {KEYS.map((k) => (
           <label
             key={k}
-            className="flex cursor-pointer items-center gap-3 rounded-xl border border-line p-4 text-sm has-[:checked]:border-success has-[:checked]:bg-success-soft"
+            className="flex cursor-pointer items-center gap-3 rounded-2xl border border-line p-4 text-sm has-[:checked]:border-success has-[:checked]:bg-success-soft"
           >
             <input
               type="checkbox"
               checked={r.ops.checkout[k]}
               onChange={(e) => act((s) => setCheckout(s, r.id, k, e.target.checked))}
-              className="h-4 w-4 shrink-0 accent-primary"
+              className="h-4 w-4 shrink-0 accent-ink"
               aria-label={`${DEVICE_LABEL[k]} 출고 기록 완료`}
             />
             <span className="flex flex-wrap items-center gap-x-2">
@@ -566,7 +605,7 @@ function Inspect({ r, act }: { r: Reservation; act: Act }) {
           const mustInspect = required.includes(k);
           const done = isInspectionDone(r.ops.inspection[k]);
           return (
-            <div key={k} data-testid={`inspect-${k}`} className="min-w-0 rounded-xl bg-bg p-4">
+            <div key={k} data-testid={`inspect-${k}`} className="min-w-0 rounded-2xl bg-bg p-4">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <span className="flex items-center gap-2">
                   <DeviceName kind={k} />
@@ -586,7 +625,7 @@ function Inspect({ r, act }: { r: Reservation; act: Act }) {
               {k === sale ? (
                 <div
                   className={cx(
-                    "mt-3 rounded-lg px-3 py-2.5 text-sm",
+                    "mt-3 rounded-xl px-3 py-2.5 text-sm",
                     r.ops.sale === "confirmed" ? "bg-success-soft text-success-ink" : "bg-warn-bg text-warn",
                   )}
                   data-testid={`sale-${k}`}
@@ -636,7 +675,7 @@ function Inspect({ r, act }: { r: Reservation; act: Act }) {
                         disabled={!editable}
                         checked={r.ops.inspection[k][f]}
                         onChange={(e) => act((s) => setInspection(s, r.id, k, f, e.target.checked))}
-                        className="mt-0.5 h-4 w-4 shrink-0 accent-primary"
+                        className="mt-0.5 h-4 w-4 shrink-0 accent-ink"
                         aria-label={`${DEVICE_LABEL[k]} ${INSPECTION_LABEL[f]}`}
                       />
                       {INSPECTION_LABEL[f]}
@@ -662,7 +701,7 @@ function DeviceBoard({ state, onSelect }: { state: DemoState; onSelect: (id: str
       </CardTitle>
       <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-1">
         {state.devices.map((d) => (
-          <li key={d.id} data-testid={`device-${d.id}`} className="rounded-xl border border-line p-3">
+          <li key={d.id} data-testid={`device-${d.id}`} className="rounded-2xl border border-line p-3">
             <div className="flex items-center justify-between gap-2">
               <span className="tabular font-bold text-ink">{d.id}</span>
               <DeviceName kind={d.kind} short className="text-xs" />
@@ -673,7 +712,7 @@ function DeviceBoard({ state, onSelect }: { state: DemoState; onSelect: (id: str
                 <button
                   type="button"
                   onClick={() => onSelect(d.heldBy!)}
-                  className="tabular rounded text-xs font-semibold text-primary-ink underline-offset-2 hover:underline"
+                  className="tabular rounded text-xs font-semibold text-ink underline-offset-2 hover:underline"
                 >
                   {d.heldBy}
                 </button>
@@ -697,7 +736,7 @@ function DemoControls({ snap, onReset }: { snap: DemoSnapshot; onReset: () => vo
         데모 설정
       </CardTitle>
       <div className="space-y-3">
-        <label className="flex cursor-pointer items-start gap-3 rounded-xl bg-bg p-3 text-sm text-ink">
+        <label className="flex cursor-pointer items-start gap-3 rounded-2xl bg-bg p-3 text-sm text-ink">
           <input
             type="checkbox"
             checked={state.dealerTermsConfirmed}
@@ -706,19 +745,19 @@ function DemoControls({ snap, onReset }: { snap: DemoSnapshot; onReset: () => vo
               // domain 에 setter 가 없어 플래그 하나만 바꾼다 (domain.test.ts 와 같은 방식).
               report(apply((s) => ({ ok: true, value: { ...s, dealerTermsConfirmed: v } })));
             }}
-            className="mt-0.5 h-4 w-4 shrink-0 accent-primary"
+            className="mt-0.5 h-4 w-4 shrink-0 accent-ink"
           />
           <span>
             <span className="font-semibold">데모 설정: 딜러 판매 조건 확정됨</span>
             <span className="mt-0.5 block text-xs text-sub">켜면 고객 결정 화면의 구매 선택지가 열립니다.</span>
           </span>
         </label>
-        <label className="flex cursor-pointer items-start gap-3 rounded-xl bg-bg p-3 text-sm text-ink">
+        <label className="flex cursor-pointer items-start gap-3 rounded-2xl bg-bg p-3 text-sm text-ink">
           <input
             type="checkbox"
             checked={clockOffsetHours > 0}
             onChange={(e) => report(setClockOffsetHours(e.target.checked ? DEMO_CLOCK_HOURS : 0))}
-            className="mt-0.5 h-4 w-4 shrink-0 accent-primary"
+            className="mt-0.5 h-4 w-4 shrink-0 accent-ink"
           />
           <span>
             <span className="font-semibold">데모 시계 +{DEMO_CLOCK_HOURS}시간</span>
@@ -729,8 +768,8 @@ function DemoControls({ snap, onReset }: { snap: DemoSnapshot; onReset: () => vo
         </label>
         <div className="border-t border-line pt-3">
           {confirming ? (
-            <div className="rounded-xl bg-danger-soft p-3">
-              <p className="text-sm font-medium text-danger">모든 예약·기록·기기 상태를 처음으로 되돌립니다. 계속할까요?</p>
+            <div className="rounded-2xl bg-danger-soft p-3">
+              <p className="text-sm font-medium text-danger-ink">모든 예약·기록·기기 상태를 처음으로 되돌립니다. 계속할까요?</p>
               <div className="mt-2 flex gap-2">
                 <button
                   type="button"
@@ -759,6 +798,230 @@ function DemoControls({ snap, onReset }: { snap: DemoSnapshot; onReset: () => vo
         </div>
         <ErrorText>{error}</ErrorText>
       </div>
+    </Card>
+  );
+}
+
+// ───────── 바탕화면 코드 · 리워드 확인 ─────────
+
+function WallCodes({ r }: { r: Reservation }) {
+  const codes = r.ops.wallCodes!;
+  return (
+    <Card aria-labelledby="wall" data-testid="wall-codes">
+      <CardTitle
+        id="wall"
+        eyebrow="Wallpaper codes"
+        sub="출고할 때 두 맥 바탕화면에 크게 띄워 두세요. 고객은 미션 화면에 이 코드를 적습니다. 운영자만 보는 값이며, 참고 단서일 뿐 사용 여부를 증명하지 않습니다."
+      >
+        출고 때 바탕화면에 띄울 코드
+      </CardTitle>
+      <div className="grid grid-cols-2 gap-3">
+        {KEYS.map((k) => (
+          <div key={k} className={cx("rounded-2xl px-4 py-4", deviceTone[k].soft)}>
+            <DeviceName kind={k} className="text-sm" />
+            <p className="tabular mt-0.5 text-xs text-sub">{r.ops.deviceIds[k]}</p>
+            <p data-testid={`wall-code-${k}`} className="mt-2 font-mono text-[30px] font-extrabold tracking-[0.25em] text-ink">
+              {codes[k]}
+            </p>
+          </div>
+        ))}
+      </div>
+    </Card>
+  );
+}
+
+function RewardReview({ r, state }: { r: Reservation; state: DemoState }) {
+  const [note, setNote] = useState(r.reward.reviewNote ?? "");
+  const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
+  const submitted = r.reward.status !== "none";
+  // 신청 전에는 지금 기준 미리보기, 신청 뒤에는 신청 때 고정된 표시를 쓴다 (reviewReward 가 쓰는 값)
+  const flags = submitted ? r.reward.flags : rewardFlags(r);
+  const codes = r.ops.wallCodes;
+  const p = missionProgress(r);
+  // 승인·거절 가능 여부는 domain 이 판단한다 — 메모 조건만 빼고 미리 확인
+  const dry = reviewReward(state, r.id, "approved", "확인");
+  const canReview = r.reward.status === "submitted" && dry.ok;
+
+  function review(result: "approved" | "rejected") {
+    const res = apply((s, now) => reviewReward(s, r.id, result, note, now));
+    if (!res.ok) {
+      setError(res.error);
+      setMessage("");
+    } else {
+      setError("");
+      setMessage(`리워드를 '${REWARD_STATUS_LABEL[result]}'(으)로 기록했습니다.`);
+    }
+  }
+
+  return (
+    <Card aria-labelledby="reward-review" data-testid="reward-review" className="border-coral/30">
+      <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <Eyebrow tone="coral" className="mb-2">
+            Reward review
+          </Eyebrow>
+          <h2 id="reward-review" className="text-[19px] font-bold text-ink">
+            리워드 확인
+          </h2>
+          <p className="mt-1 text-sm text-sub">
+            핵심 미션 {p.done}/{p.total}
+            {r.reward.submittedAt ? ` · 신청 ${fmtDateTime(r.reward.submittedAt)}` : ""}
+            {r.reward.reviewedAt ? ` · 확인 ${fmtDateTime(r.reward.reviewedAt)}` : ""}
+          </p>
+        </div>
+        <RewardStatusChip status={r.reward.status} />
+      </div>
+
+      <div className="grid gap-5 lg:grid-cols-2">
+        <div className="min-w-0">
+          <p className="mb-2 text-sm font-bold text-ink">미션 답</p>
+          <MissionAnswerTable r={r} />
+        </div>
+        <div className="min-w-0 space-y-5">
+          <div>
+            <p className="mb-2 text-sm font-bold text-ink">바탕화면 코드 (참고)</p>
+            <table className="w-full border-collapse text-sm" data-testid="code-compare">
+              <thead>
+                <tr className="border-b border-line text-xs text-sub">
+                  <th scope="col" className="py-1.5 pr-2 text-left font-semibold">기기</th>
+                  <th scope="col" className="py-1.5 pr-2 text-left font-semibold">고객 입력</th>
+                  <th scope="col" className="py-1.5 pr-2 text-left font-semibold">띄운 코드</th>
+                  <th scope="col" className="py-1.5 text-left font-semibold">비교</th>
+                </tr>
+              </thead>
+              <tbody>
+                {KEYS.map((k) => {
+                  const typed = r.codeCheck?.[k];
+                  const expected = codes?.[k];
+                  const same = Boolean(typed && expected && typed === expected);
+                  return (
+                    <tr key={k} className="border-b border-line/70 last:border-b-0">
+                      <td className="py-2 pr-2">
+                        <DeviceName kind={k} short className="text-xs" />
+                      </td>
+                      <td className="py-2 pr-2 font-mono font-bold text-ink">{typed ?? <span className="font-sans font-normal text-sub">미입력</span>}</td>
+                      <td className="py-2 pr-2 font-mono font-bold text-ink">{expected ?? "—"}</td>
+                      <td className="py-2">
+                        {typed ? (
+                          <span
+                            data-testid={`code-match-${k}`}
+                            className={cx("rounded-full px-2 py-0.5 text-xs font-bold", same ? "bg-success-soft text-success-ink" : "bg-warn-bg text-warn")}
+                          >
+                            {same ? "일치" : "불일치"}
+                          </span>
+                        ) : (
+                          <span className="text-xs text-sub">—</span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          <div>
+            <p className="text-sm font-bold text-ink">
+              검토 표시 {submitted ? <span className="font-medium text-sub">(신청 때 기준)</span> : <span className="font-medium text-sub">(신청 전 미리보기)</span>}
+            </p>
+            <p className="mt-0.5 text-xs text-sub">자동 거절하지 않습니다. 고객 화면에는 보이지 않습니다.</p>
+            {flags.length ? (
+              <ul className="mt-2 flex flex-wrap gap-1.5" data-testid="reward-flags">
+                {flags.map((f) => (
+                  <li key={f} className="rounded-full bg-warn-bg px-2.5 py-1 text-xs font-bold text-warn ring-1 ring-inset ring-warn-line">
+                    {REWARD_FLAG_LABEL[f]}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="mt-2 text-sm text-success-ink" data-testid="reward-flags">
+                표시 없음
+              </p>
+            )}
+          </div>
+
+          {r.reward.status === "submitted" ? (
+            <div>
+              <label htmlFor="reward-note" className="mb-1.5 block text-sm font-bold text-ink">
+                확인 메모 <span className="font-medium text-sub">(거절하거나 표시가 있는 건을 승인할 때 필수)</span>
+                <span className="mt-0.5 block text-xs font-normal text-sub">{REWARD_REJECT_NOTE_VISIBLE}</span>
+              </label>
+              <textarea
+                id="reward-note"
+                rows={2}
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                maxLength={300}
+                className={inputClass}
+                placeholder="예: 코드 오타. 두 기기 사용 흔적 확인"
+              />
+              <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+                <button type="button" disabled={!canReview} onClick={() => review("approved")} className={cx(btn.primary, btn.small, "sm:px-5")}>
+                  리워드 승인
+                </button>
+                <button type="button" disabled={!canReview} onClick={() => review("rejected")} className={cx(btn.danger, btn.small, "sm:px-5")}>
+                  리워드 거절
+                </button>
+              </div>
+              {!canReview && !dry.ok ? (
+                <p className="mt-2 text-sm font-medium text-warn" data-testid="reward-review-blocked">
+                  {dry.error}
+                </p>
+              ) : null}
+            </div>
+          ) : r.reward.status === "none" ? (
+            <p className="rounded-2xl bg-bg px-4 py-3 text-sm text-sub">
+              {MISSION_OPEN.includes(r.status) ? "고객이 아직 리워드를 신청하지 않았습니다." : "리워드 신청 없이 끝난 체험입니다."}
+            </p>
+          ) : (
+            <p className="rounded-2xl bg-bg px-4 py-3 text-sm text-ink">
+              {REWARD_STATUS_LABEL[r.reward.status]}
+              {r.reward.reviewNote ? ` — 메모: ${r.reward.reviewNote}` : ""}
+            </p>
+          )}
+          <ErrorText>{error}</ErrorText>
+          <SuccessText>{message}</SuccessText>
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+function RewardQueue({ state, selectedId, onSelect }: { state: DemoState; selectedId: string | null; onSelect: (id: string) => void }) {
+  const rows = state.reservations.filter((r) => started(r) || r.reward.status !== "none");
+  return (
+    <Card aria-labelledby="queue" className="sm:p-5" data-testid="reward-queue">
+      <CardTitle id="queue" eyebrow="Rewards" sub="픽업한 예약의 리워드 상태입니다. 승인·거절은 검수 단계부터 합니다.">
+        리워드 확인
+      </CardTitle>
+      {rows.length === 0 ? (
+        <p className="text-sm text-sub">아직 픽업한 예약이 없습니다.</p>
+      ) : (
+        <ul className="space-y-2">
+          {rows.map((r) => (
+            <li key={r.id}>
+              <button
+                type="button"
+                onClick={() => onSelect(r.id)}
+                aria-label={`${r.id} 리워드 확인 열기`}
+                className={cx(
+                  "flex w-full flex-wrap items-center justify-between gap-2 rounded-2xl border px-3 py-2.5 text-left transition-colors",
+                  r.id === selectedId ? "border-ink/40 bg-cream" : "border-line hover:bg-bg",
+                )}
+              >
+                <span className="tabular text-sm font-bold text-ink">{r.id}</span>
+                <span className="flex items-center gap-1.5">
+                  {r.reward.status === "submitted" && r.reward.flags.length ? (
+                    <span className="rounded-full bg-warn-bg px-2 py-0.5 text-[11px] font-bold text-warn">표시 {r.reward.flags.length}</span>
+                  ) : null}
+                  <RewardStatusChip status={r.reward.status} />
+                </span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
     </Card>
   );
 }
