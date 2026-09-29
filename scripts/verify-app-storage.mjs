@@ -146,7 +146,7 @@ await check('비교 기록 저장 실패 → 기록 추가 없음·입력 유지
 await check('운영 시뮬레이터 상태 변경 저장 실패 → 단계 그대로', async () => {
   const s = trialState();
   const page = await newPage(browser, s);
-  await page.goto(`${base}simulator/`, { waitUntil: 'domcontentloaded', timeout: 60_000 });
+  await page.goto(`${base}simulator`, { waitUntil: 'domcontentloaded', timeout: 60_000 });
   await page.getByRole('switch', { name: /딜러 판매 조건 확정/ }).waitFor();
   await failWrites(page);
   await page.getByRole('switch', { name: /딜러 판매 조건 확정/ }).click();
