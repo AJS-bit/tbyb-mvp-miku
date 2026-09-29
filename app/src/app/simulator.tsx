@@ -71,8 +71,8 @@ const SUGGESTED_REASON: Partial<Record<ReservationStatus, string>> = {
 };
 
 /** 도메인 함수 실행 + 결과를 오류 문구로 */
-function run(fn: (s: DemoState) => Result<DemoState>): string | null {
-  const r = apply(fn);
+async function run(fn: (s: DemoState) => Result<DemoState>): Promise<string | null> {
+  const r = await apply(fn);
   if (!r.ok) {
     haptic.error();
     return r.error;
@@ -174,7 +174,7 @@ function StepPanel({ r, demo }: { r: Reservation; demo: DemoState }) {
                       key={d.id}
                       accessibilityRole="button"
                       accessibilityLabel={`${d.id} 배정`}
-                      onPress={() => setError(run((s) => assignDevice(s, r.id, k, d.id)))}
+                      onPress={() => run((s) => assignDevice(s, r.id, k, d.id)).then(setError)}
                       style={({ pressed }) => [styles.devChip, { borderColor: DEVICE_COLOR[k].main }, pressed && { opacity: 0.7 }]}>
                       <T variant="callout" weight="700" color={C.ink}>
                         {d.id} 배정
@@ -218,7 +218,7 @@ function StepPanel({ r, demo }: { r: Reservation; demo: DemoState }) {
                 value={txDraft}
                 onChangeText={(v) => {
                   setTxDraft(v);
-                  setError(run((s) => setPaymentCheck(s, r.id, v, r.ops.txMatched)));
+                  run((s) => setPaymentCheck(s, r.id, v, r.ops.txMatched)).then(setError);
                 }}
                 placeholder="예: DEMO-TX-0001"
                 autoCapitalize="characters"
@@ -233,7 +233,7 @@ function StepPanel({ r, demo }: { r: Reservation; demo: DemoState }) {
                 onPress={() => {
                   const v = `DEMO-TX-${r.id.replace('TB-', '')}`;
                   setTxDraft(v);
-                  setError(run((s) => setPaymentCheck(s, r.id, v, r.ops.txMatched)));
+                  run((s) => setPaymentCheck(s, r.id, v, r.ops.txMatched)).then(setError);
                 }}
               />
             </Row>
@@ -242,7 +242,7 @@ function StepPanel({ r, demo }: { r: Reservation; demo: DemoState }) {
             label="거래내역·예약ID 대조 완료"
             sub="결제 서비스의 실제 거래내역을 봤다는 뜻입니다 (데모에서는 흉내만)."
             value={r.ops.txMatched}
-            onValueChange={(v) => setError(run((s) => setPaymentCheck(s, r.id, txDraft, v)))}
+            onValueChange={(v) => run((s) => setPaymentCheck(s, r.id, txDraft, v)).then(setError)}
           />
         </View>
       );
@@ -259,7 +259,7 @@ function StepPanel({ r, demo }: { r: Reservation; demo: DemoState }) {
               sub={r.ops.deviceIds[k] ? `기기 ${r.ops.deviceIds[k]}` : undefined}
               color={DEVICE_COLOR[k].main}
               value={r.ops.checkout[k]}
-              onValueChange={(v) => setError(run((s) => setCheckout(s, r.id, k, v)))}
+              onValueChange={(v) => run((s) => setCheckout(s, r.id, k, v)).then(setError)}
             />
           ))}
         </View>
@@ -311,7 +311,7 @@ function StepPanel({ r, demo }: { r: Reservation; demo: DemoState }) {
                         label={INSPECTION_LABEL[f]}
                         color={DEVICE_COLOR[k].main}
                         value={r.ops.inspection[k][f]}
-                        onValueChange={(v) => setError(run((s) => setInspection(s, r.id, k, f, v)))}
+                        onValueChange={(v) => run((s) => setInspection(s, r.id, k, f, v)).then(setError)}
                       />
                     ))
                   ) : (
@@ -389,11 +389,11 @@ function SalePanel({
             <Button
               small
               label="딜러 판매 확인"
-              onPress={() => onError(run((s) => setSaleResult(s, r.id, 'confirmed')))}
+              onPress={() => run((s) => setSaleResult(s, r.id, 'confirmed')).then(onError)}
               style={{ flex: 1 }}
               accessibilityHint={dealerTermsConfirmed ? undefined : '딜러 판매 조건이 확정돼야 합니다'}
             />
-            <Button small variant="secondary" label="판매 불성립 → 반납·검수" onPress={() => onError(run((s) => setSaleResult(s, r.id, 'failed')))} style={{ flex: 1.2 }} />
+            <Button small variant="secondary" label="판매 불성립 → 반납·검수" onPress={() => run((s) => setSaleResult(s, r.id, 'failed')).then(onError)} style={{ flex: 1.2 }} />
           </Row>
         </>
       ) : null}
@@ -422,8 +422,8 @@ function NextStep({ r, demo }: { r: Reservation; demo: DemoState }) {
   }
 
 
-  const go = (to: ReservationStatus) => {
-    const res = apply((s) => transition(s, r.id, to, 'operator', reason));
+  const go = async (to: ReservationStatus) => {
+    const res = await apply((s) => transition(s, r.id, to, 'operator', reason));
     if (!res.ok) {
       haptic.error();
       setError(res.error);
@@ -578,8 +578,8 @@ function DemoSettings({ dealerTermsConfirmed }: { dealerTermsConfirmed: boolean 
           label="딜러 판매 조건 확정 (데모 설정)"
           sub="켜면 고객 화면의 구매 선택지와 딜러 판매 확인이 열립니다. 실제 딜러 조건과 무관합니다."
           value={dealerTermsConfirmed}
-          onValueChange={(v) => {
-            const r = setDealerTermsConfirmed(v);
+          onValueChange={async (v) => {
+            const r = await setDealerTermsConfirmed(v);
             setError(r.ok ? null : r.error);
           }}
         />

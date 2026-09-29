@@ -213,8 +213,8 @@ function CancelBlock({ r }: { r: Reservation }) {
   const [confirming, setConfirming] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const cancel = () => {
-    const res = apply((s) => transition(s, r.id, 'cancelled', 'customer', '고객이 요청 취소'));
+  const cancel = async () => {
+    const res = await apply((s) => transition(s, r.id, 'cancelled', 'customer', '고객이 요청 취소'));
     if (!res.ok) {
       haptic.error();
       setError(res.error);

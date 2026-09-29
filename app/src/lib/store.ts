@@ -94,34 +94,29 @@ function setWriteError(e: string | null) {
   emit();
 }
 
-function persist(): Promise<boolean> {
-  if (snapshot.loadError) return Promise.resolve(false); // 손상된 원본을 덮어쓰지 않는다
-  const demo = JSON.stringify(snapshot.demo);
-  const ui = JSON.stringify(snapshot.ui);
-  // 순서대로 저장 — 빠르게 연속 변경해도 마지막 값이 남는다
-  const p = writeChain.then(() =>
-    AsyncStorage.multiSet([
-      [STORAGE_KEY, demo],
-      [UI_STORAGE_KEY, ui],
-    ]).then(
-      () => {
-        setWriteError(null);
-        return true;
-      },
-      (e) => {
-        console.warn('[store] 저장 실패', e);
-        setWriteError(STORAGE_WRITE_ERROR);
-        return false;
-      },
-    ),
+function write(demo: DemoState, ui: UiState): Promise<boolean> {
+  return AsyncStorage.multiSet([
+    [STORAGE_KEY, JSON.stringify(demo)],
+    [UI_STORAGE_KEY, JSON.stringify(ui)],
+  ]).then(
+    () => true,
+    (e) => {
+      console.warn('[store] 저장 실패', e);
+      return false;
+    },
   );
-  writeChain = p;
+}
+
+// 변경은 한 줄로 세워 처리한다 — 앞 변경의 저장이 끝난 상태를 기준으로 다음 변경을 계산한다
+function enqueue<T>(task: () => Promise<T>): Promise<T> {
+  const p = writeChain.then(task, task);
+  writeChain = p.catch(() => undefined);
   return p;
 }
 
-/** 저장 실패 후 다시 시도 */
-export function retryPersist(): Promise<boolean> {
-  return persist();
+/** 저장 실패 안내 닫기 (실패한 변경은 이미 반영되지 않았다) */
+export function dismissWriteError() {
+  setWriteError(null);
 }
 
 /** 실행 시 한 번: 저장본 복원 */
@@ -168,41 +163,63 @@ export function getApp(): AppSnapshot {
   return snapshot;
 }
 
-/** 도메인 함수 실행 → 성공하면 저장. 실패하면 상태를 바꾸지 않고 오류를 돌려준다. */
-export function apply(fn: (s: DemoState) => Result<DemoState>): Result<DemoState> {
-  if (snapshot.loadError) return { ok: false, error: STORAGE_READ_ERROR };
-  const r = fn(snapshot.demo);
-  if (r.ok) {
-    snapshot = { ...snapshot, demo: r.value };
+/**
+ * 도메인 함수 실행 → 기기 저장이 끝난 뒤에만 화면 상태를 바꾸고 성공을 돌려준다.
+ * 도메인이 거부하거나, 저장본을 읽지 못한 상태이거나, 저장에 실패하면 아무것도 바꾸지 않고 오류를 돌려준다.
+ * (화면은 입력값을 그대로 두고 다시 시도할 수 있다)
+ */
+export function apply(fn: (s: DemoState) => Result<DemoState>): Promise<Result<DemoState>> {
+  return enqueue(async () => {
+    if (snapshot.loadError) return { ok: false, error: STORAGE_READ_ERROR };
+    const r = fn(snapshot.demo);
+    if (!r.ok) return r;
+    if (!(await write(r.value, snapshot.ui))) {
+      setWriteError(STORAGE_WRITE_ERROR);
+      return { ok: false, error: STORAGE_WRITE_ERROR };
+    }
+    snapshot = { ...snapshot, demo: r.value, writeError: null };
     emit();
-    persist();
-  }
-  return r;
+    return r;
+  });
 }
 
-/** 앱 UI 상태 변경. 저장본을 읽지 못한 상태면 바꾸지 않고 false. */
-export function updateUi(fn: (u: UiState) => UiState): boolean {
-  if (snapshot.loadError) return false;
-  snapshot = { ...snapshot, ui: fn(snapshot.ui) };
-  emit();
-  persist();
-  return true;
+/** 앱 UI 상태 변경 — apply 와 같이 저장이 끝난 뒤에만 반영. 실패하거나 저장본을 읽지 못한 상태면 false. */
+export function updateUi(fn: (u: UiState) => UiState): Promise<boolean> {
+  return enqueue(async () => {
+    if (snapshot.loadError) return false;
+    const ui = fn(snapshot.ui);
+    if (!(await write(snapshot.demo, ui))) {
+      setWriteError(STORAGE_WRITE_ERROR);
+      return false;
+    }
+    snapshot = { ...snapshot, ui, writeError: null };
+    emit();
+    return true;
+  });
 }
 
-export function selectReservation(id: string) {
-  updateUi((u) => ({ ...u, selectedId: id }));
+export function selectReservation(id: string): Promise<boolean> {
+  return updateUi((u) => ({ ...u, selectedId: id }));
 }
 
 /** 데모 설정: 딜러 판매 조건 확정 여부 (domain.ts 에 setter 가 없어 필드만 바꾼다) */
-export function setDealerTermsConfirmed(value: boolean): Result<DemoState> {
+export function setDealerTermsConfirmed(value: boolean): Promise<Result<DemoState>> {
   return apply((s) => ({ ok: true, value: { ...s, dealerTermsConfirmed: value } }));
 }
 
-/** 데모 초기화 — 도메인 초기 상태 + 앱 UI 상태 비움. 손상된 저장본을 덮어쓰는 유일한 경로. */
+/** 데모 초기화 — 도메인 초기 상태 + 앱 UI 상태 비움. 손상된 저장본을 덮어쓰는 유일한 경로. 저장이 끝나야 반영된다. */
 export function resetAll(): Promise<boolean> {
-  snapshot = { ready: true, demo: createInitialState(), ui: emptyUi(), loadError: null, writeError: null };
-  emit();
-  return persist();
+  return enqueue(async () => {
+    const demo = createInitialState();
+    const ui = emptyUi();
+    if (!(await write(demo, ui))) {
+      setWriteError(STORAGE_WRITE_ERROR);
+      return false;
+    }
+    snapshot = { ready: true, demo, ui, loadError: null, writeError: null };
+    emit();
+    return true;
+  });
 }
 
 export function currentReservation(s: AppSnapshot): Reservation | undefined {

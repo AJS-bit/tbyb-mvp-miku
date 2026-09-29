@@ -1,11 +1,11 @@
-// 저장소 오류를 숨기지 않는다: 읽기 실패(원본 보존 + 원본 보기/복사 + 명시적 초기화), 쓰기 실패(다시 저장)
+// 저장소 오류를 숨기지 않는다: 읽기 실패(원본 보존 + 원본 보기/복사 + 명시적 초기화), 쓰기 실패(반영 안 됨 안내)
 import * as Clipboard from 'expo-clipboard';
 import { useState } from 'react';
 import { Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { STORAGE_READ_ERROR, STORAGE_WRITE_ERROR } from '@/domain';
 import { cancelAllReminders } from '@/lib/reminders';
-import { resetAll, retryPersist, useApp } from '@/lib/store';
+import { dismissWriteError, resetAll, useApp } from '@/lib/store';
 import { C, RADIUS } from '@/lib/theme';
 
 import { Button, Icon, Row, T } from './ui';
@@ -87,7 +87,6 @@ function ReadErrorCard({ items }: { items: { key: string; raw: string }[] }) {
 }
 
 function WriteErrorCard() {
-  const [busy, setBusy] = useState(false);
   return (
     <View style={styles.card} accessibilityRole="alert" accessibilityLiveRegion="polite">
       <Row gap={8} style={{ alignItems: 'flex-start' }}>
@@ -96,17 +95,10 @@ function WriteErrorCard() {
           {STORAGE_WRITE_ERROR}
         </T>
       </Row>
-      <Button
-        small
-        variant="secondary"
-        label={busy ? '저장 중…' : '다시 저장'}
-        disabled={busy}
-        onPress={async () => {
-          setBusy(true);
-          await retryPersist();
-          setBusy(false);
-        }}
-      />
+      <T variant="footnote">
+        방금 변경은 반영하지 않았습니다. 입력한 내용은 화면에 그대로 있으니 저장 공간을 확인한 뒤 같은 버튼을 다시 눌러 주세요.
+      </T>
+      <Button small variant="secondary" label="확인" onPress={dismissWriteError} />
     </View>
   );
 }

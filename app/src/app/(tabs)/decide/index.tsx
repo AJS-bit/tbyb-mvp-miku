@@ -97,14 +97,13 @@ export default function DecideScreen() {
 // ───────── 체험 중: 결정 ─────────
 
 function DecisionForm({ r, dealerTermsConfirmed }: { r: Reservation; dealerTermsConfirmed: boolean }) {
-  const app = useApp();
   const saved = r.decision;
   const [choice, setChoice] = useState<DecisionChoice | null>(saved?.choice ?? null);
   const [model, setModel] = useState<DeviceKey | null>(saved?.model ?? null);
   const [confidence, setConfidence] = useState<Score | null>(saved?.confidenceAfter ?? null);
   const [reason, setReason] = useState(saved?.reason ?? '');
   const [error, setError] = useState<string | null>(null);
-
+  const [saving, setSaving] = useState(false);
 
   const isBuy = choice === 'buy_new' || choice === 'buy_used';
   const buyLocked = !dealerTermsConfirmed;
@@ -115,15 +114,19 @@ function DecisionForm({ r, dealerTermsConfirmed }: { r: Reservation; dealerTerms
     saved.confidenceAfter !== confidence ||
     saved.reason !== reason.trim();
 
-  const save = () => {
+  const save = async () => {
+    if (saving) return;
     setError(null);
-    const res = apply((s) =>
+    setSaving(true);
+    const res = await apply((s) =>
       !choice
         ? { ok: false, error: '결정을 하나 골라 주세요.' }
         : !confidence
           ? { ok: false, error: '체험 후 확신(1–5)을 골라 주세요.' }
           : setDecision(s, r.id, { choice, model: isBuy ? (model ?? undefined) : undefined, confidenceAfter: confidence, reason }),
     );
+    setSaving(false);
+    // 저장 실패면 r.decision 이 바뀌지 않아 버튼은 계속 '결정 저장'으로 남고 입력값도 유지된다
     if (!res.ok) {
       haptic.error();
       setError(res.error);
@@ -236,12 +239,16 @@ function DecisionForm({ r, dealerTermsConfirmed }: { r: Reservation; dealerTerms
 
       <View style={{ gap: 10 }}>
         <ErrorText message={error} />
-        {saved && !dirty && !app.writeError ? (
+        {saved && !dirty ? (
           <Notice tone="done" title="결정이 저장됐습니다">
             {`${formatDateTime(saved.decidedAt)} · 반납 접수 때 운영자가 이 결정을 기준으로 처리합니다.`}
           </Notice>
         ) : null}
-        <Button label={saved ? (dirty ? '바뀐 결정 저장' : '저장됨') : '결정 저장'} onPress={save} disabled={!!saved && !dirty} />
+        <Button
+          label={saving ? '저장 중…' : saved ? (dirty ? '바뀐 결정 저장' : '저장됨') : '결정 저장'}
+          onPress={save}
+          disabled={saving || (!!saved && !dirty)}
+        />
       </View>
 
       <ReturnChecklist r={r} devices={devicesToReturn(saved)} />

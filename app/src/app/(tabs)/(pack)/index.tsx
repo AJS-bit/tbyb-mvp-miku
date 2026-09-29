@@ -40,7 +40,7 @@ import {
 } from '@/domain';
 import { formatDateKey, formatDateTime, weekday } from '@/lib/format';
 import { haptic } from '@/lib/haptics';
-import { apply, getApp, selectReservation, useApp } from '@/lib/store';
+import { apply, selectReservation, useApp } from '@/lib/store';
 import { C, DEVICE_COLOR, RADIUS } from '@/lib/theme';
 
 export default function PackScreen() {
@@ -163,6 +163,7 @@ function RequestForm() {
   const [leaning, setLeaning] = useState<Leaning | null>(null);
   const [confidence, setConfidence] = useState<Score | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
 
   // 입력을 고치면 이전 오류는 지운다
   useEffect(() => {
@@ -172,10 +173,12 @@ function RequestForm() {
   const days = calendarDays(demo, new Date(), CALENDAR_DAYS);
   const selectedDay = days.find((d) => d.date === startDate);
 
-  const submit = () => {
+  const submit = async () => {
+    if (saving) return;
     setError(null);
+    setSaving(true);
     // 선택하지 않은 값은 그대로 넘겨 domain.createReservation 이 오류를 알려 준다
-    const r = apply((s) =>
+    const r = await apply((s) =>
       createReservation(s, {
         startDate,
         pickupStore,
@@ -185,14 +188,16 @@ function RequestForm() {
         confidenceBefore: confidence as Score,
       }),
     );
+    setSaving(false);
     if (!r.ok) {
+      // 저장 실패 포함 — 입력값은 그대로 두고 다시 누를 수 있다
       haptic.error();
       setError(r.error);
       return;
     }
     haptic.success();
-    const created = getApp().demo.reservations[0];
-    if (created) selectReservation(created.id);
+    const created = r.value.reservations[0];
+    if (created) void selectReservation(created.id);
     setStartDate('');
     setPickupStore('');
     setWorkType(null);
@@ -341,7 +346,7 @@ function RequestForm() {
 
         <View style={{ gap: 10 }}>
           <ErrorText message={error} />
-          <Button label="데모 일정 요청" onPress={submit} accessibilityHint="요청을 이 기기에 저장하고 내 체험 탭으로 이동합니다" />
+          <Button label={saving ? '저장 중…' : '데모 일정 요청'} onPress={submit} disabled={saving} accessibilityHint="요청을 이 기기에 저장하고 내 체험 탭으로 이동합니다" />
           <Row gap={6} style={{ justifyContent: 'center' }}>
             <Icon ios="clock" web="schedule" size={13} color={C.sub} />
             <T variant="caption">{RESPONSE_TARGET}</T>

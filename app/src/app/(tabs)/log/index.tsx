@@ -301,12 +301,14 @@ function LogForm({ r }: { r: Reservation }) {
   const [note, setNote] = useState('');
   const [entries, setEntries] = useState<Record<DeviceKey, Draft>>({ air: emptyDraft(), pro: emptyDraft() });
   const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
   const suggestions = WORK_TYPES[r.request.workType].checklist;
 
   const set = (k: DeviceKey, patch: Partial<Draft>) => setEntries((e) => ({ ...e, [k]: { ...e[k], ...patch } }));
 
 
-  const save = () => {
+  const save = async () => {
+    if (saving) return;
     setError(null);
     const toEntry = (d: Draft): DeviceEntry | string => {
       const t = d.minutes.trim().replace(',', '.');
@@ -320,12 +322,15 @@ function LogForm({ r }: { r: Reservation }) {
     };
     const air = toEntry(entries.air);
     const pro = toEntry(entries.pro);
-    const res = apply((s) =>
+    setSaving(true);
+    const res = await apply((s) =>
       typeof air === 'string' || typeof pro === 'string'
         ? { ok: false, error: (typeof air === 'string' ? air : pro) as string }
         : addCompareLog(s, r.id, { task, note: note.trim(), entries: { air, pro } }),
     );
+    setSaving(false);
     if (!res.ok) {
+      // 저장 실패 포함 — 입력값은 그대로 두고 다시 누를 수 있다
       haptic.error();
       setError(res.error);
       return;
@@ -396,7 +401,7 @@ function LogForm({ r }: { r: Reservation }) {
         </Field>
 
         <ErrorText message={error} />
-        <Button label="기록 저장" icon={['tray.and.arrow.down', 'save']} onPress={save} />
+        <Button label={saving ? '저장 중…' : '기록 저장'} icon={['tray.and.arrow.down', 'save']} onPress={save} disabled={saving} />
       </Card>
     </Section>
   );
