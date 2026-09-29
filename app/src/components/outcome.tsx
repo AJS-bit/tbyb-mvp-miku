@@ -83,7 +83,7 @@ function deviceLine(r: Reservation, k: DeviceKey): { text: string; tone: 'done' 
 const LINE_TONE = {
   done: { bg: C.doneSoft, fg: C.doneText },
   warn: { bg: C.warnBg, fg: C.warnText },
-  pro: { bg: C.proSoft, fg: C.pro },
+  pro: { bg: C.proSoft, fg: C.proInk },
   grey: { bg: C.greySoft, fg: C.grey },
 };
 
@@ -113,7 +113,7 @@ export function ReturnOutcome({ r }: { r: Reservation }) {
       })}
       {buy && r.ops.sale === 'none' ? <Notice tone="warn">{SALE_PENDING_COPY}</Notice> : null}
       {buy && r.ops.sale === 'failed' ? (
-        <Notice tone="info">딜러 판매가 성립하지 않아 선택한 기기도 반납·검수합니다. 구매로 처리되지 않았습니다.</Notice>
+        <Notice tone="info">딜러 판매가 성립하지 않아 선택한 기기도 반납·검수해요. 구매로 처리되지 않았어요.</Notice>
       ) : null}
     </View>
   );

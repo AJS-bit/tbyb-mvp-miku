@@ -209,7 +209,8 @@ test("요청 → 운영 확인 → 결제 대조 → 체험 → 미션·코드·
   await expect(panel.getByTestId("blocked-confirmed")).toContainText("대조를 완료해야");
   await page.getByLabel("거래내역·예약ID 대조 완료").check();
   await move(page, "예약 확정", "거래내역·예약ID 대조 완료");
-  await expect(panel.getByTestId("wall-codes")).toHaveCount(0); // 코드는 출고(체험 중) 때 생긴다
+  // 코드는 예약 확정 때 생긴다 — 출고 전에 두 맥 바탕화면에 띄워 둘 수 있게
+  await expect(panel.getByTestId("wall-codes")).toContainText("출고 때 바탕화면에 띄울 코드");
   await page.getByLabel("MacBook Air 출고 기록 완료").check();
   await expect(panel.getByRole("button", { name: "다음 단계: 체험 중" })).toBeDisabled();
   await page.getByLabel("MacBook Pro 14형 출고 기록 완료").check();
@@ -217,8 +218,7 @@ test("요청 → 운영 확인 → 결제 대조 → 체험 → 미션·코드·
   await expect(device(page, "AIR-01")).toContainText("고객 사용 중");
   await expect(panel.getByTestId("blocked-return_received")).toContainText("마지막 날 결정");
 
-  // ── 7. 운영: 출고 때 바탕화면에 띄울 코드
-  await expect(panel.getByTestId("wall-codes")).toContainText("출고 때 바탕화면에 띄울 코드");
+  // ── 7. 운영: 체험 중에도 같은 코드가 보인다
   const airCode = (await page.getByTestId("wall-code-air").innerText()).trim();
   const proCode = (await page.getByTestId("wall-code-pro").innerText()).trim();
   expect(airCode).toMatch(/^[A-Z2-9]{4}$/);
@@ -568,7 +568,7 @@ test("결제 기한 만료는 자동 확정하지 않고 취소로 처리, 고�
   await page.getByRole("button", { name: "요청 취소" }).click();
   await page.getByRole("button", { name: "네, 취소합니다" }).click();
   await expect(page.getByTestId("status-chip").first()).toHaveText("취소");
-  await expect(page.getByText("취소된 요청입니다").first()).toBeVisible();
+  await expect(page.getByText("취소된 요청이에요").first()).toBeVisible();
   await expect(page.getByRole("button", { name: "요청 취소" })).toHaveCount(0);
 
   // 데모 데이터 초기화

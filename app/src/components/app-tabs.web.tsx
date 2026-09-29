@@ -10,10 +10,10 @@ export default function AppTabs() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: C.primary,
-        tabBarInactiveTintColor: C.sub,
-        tabBarLabelStyle: { fontFamily: FONT_FAMILY, fontSize: 12, lineHeight: 18, fontWeight: '600' },
-        tabBarStyle: { backgroundColor: C.surface, borderTopColor: C.line, height: 60 },
+        tabBarActiveTintColor: C.ink,
+        tabBarInactiveTintColor: C.muted,
+        tabBarLabelStyle: { fontFamily: FONT_FAMILY, fontSize: 12, lineHeight: 18, fontWeight: '700' },
+        tabBarStyle: { backgroundColor: C.surface, borderTopColor: C.line, height: 62 },
       }}>
       <Tabs.Screen
         name="(pack)"
@@ -24,8 +24,8 @@ export default function AppTabs() {
         options={{ title: '내 체험', tabBarIcon: ({ color }) => <Icon ios="calendar.badge.clock" web="event" size={22} color={color} /> }}
       />
       <Tabs.Screen
-        name="log"
-        options={{ title: '비교 기록', tabBarIcon: ({ color }) => <Icon ios="square.and.pencil" web="edit_note" size={22} color={color} /> }}
+        name="missions"
+        options={{ title: '미션', tabBarIcon: ({ color }) => <Icon ios="gift" web="redeem" size={22} color={color} /> }}
       />
       <Tabs.Screen
         name="decide"

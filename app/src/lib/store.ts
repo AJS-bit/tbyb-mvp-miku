@@ -1,6 +1,6 @@
 // 앱 전체 상태 저장소 (하나) — useSyncExternalStore.
 // demo: shared/domain.ts 의 DemoState 그대로 (STORAGE_KEY 에 저장, readSaved 로 읽음 — 손상되면 원본을 덮어쓰지 않는다)
-// ui:   앱에서만 쓰는 로컬 UI 상태 (선택한 예약, 체크리스트, 리마인드) — 별도 키에 저장
+// ui:   앱에서만 쓰는 로컬 UI 상태 (선택한 예약, 반납 준비 체크, 리마인드) — 별도 키에 저장
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSyncExternalStore } from 'react';
 
@@ -38,7 +38,6 @@ export interface ReminderRecord {
 export interface UiState {
   version: 1;
   selectedId: string | null;
-  checklist: Record<string, number[]>; // 예약ID → 확인한 체크리스트 항목 번호
   returnChecklist: Record<string, string[]>; // 예약ID → 'air:backup' 형식
   reminders: Record<string, ReminderRecord>;
 }
@@ -54,14 +53,14 @@ export interface AppSnapshot {
 }
 
 function emptyUi(): UiState {
-  return { version: 1, selectedId: null, checklist: {}, returnChecklist: {}, reminders: {} };
+  return { version: 1, selectedId: null, returnChecklist: {}, reminders: {} };
 }
 
 function readUi(raw: string | null | undefined): Result<UiState> {
   if (!raw) return { ok: true, value: emptyUi() };
   try {
     const u = JSON.parse(raw) as UiState;
-    if (u && u.version === 1 && typeof u.checklist === 'object') return { ok: true, value: { ...emptyUi(), ...u } };
+    if (u && u.version === 1 && typeof u.reminders === 'object' && u.reminders !== null) return { ok: true, value: { ...emptyUi(), ...u } };
   } catch {
     // 아래 오류로 알린다
   }

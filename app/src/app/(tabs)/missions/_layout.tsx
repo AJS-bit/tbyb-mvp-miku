@@ -1,5 +1,5 @@
 import { TabStack } from '@/components/header';
 
 export default function Layout() {
-  return <TabStack title="비교 기록" />;
+  return <TabStack title="미션" />;
 }

@@ -66,7 +66,7 @@ export interface Ops {
   checkout: Record<DeviceKey, boolean>; // 출고 기록(상태·부속품) 완료
   inspection: Record<DeviceKey, Inspection>;
   sale: SaleStatus; // 체험 기기 구매(buy_used)일 때만 의미 있음
-  wallCodes?: Record<DeviceKey, string>; // 출고 때 두 맥 바탕화면에 띄우는 예약별 코드 (운영자만 봄)
+  wallCodes?: Record<DeviceKey, string>; // 예약 확정 때 생성 — 출고 전 두 맥 바탕화면에 띄우는 예약별 코드 (운영자만 봄)
 }
 
 // ─ 미션: 맥을 처음 써 보는 사람도 할 수 있는 일상 과제. 답은 선택형이고 '비슷/모르겠음'도 유효하다.
@@ -158,7 +158,7 @@ export const PRICE_TBD =
 export const RESPONSE_TARGET = '운영 목표: 영업일 1일 내 확인 (대표자 확인 전 제안값)';
 export const PAYMENT_RULE =
   '예약은 운영자가 결제 서비스의 실제 거래내역을 확인한 뒤에만 확정돼요. 결제 화면 캡처로는 확정되지 않아요.';
-export const DEALER_TERMS_TBD = '딜러 판매 조건이 확정되면 열립니다. 구매·할인을 보장하지 않습니다.';
+export const DEALER_TERMS_TBD = '딜러 판매 조건이 정해지면 열려요. 구매·할인을 약속하지는 않아요.';
 
 export const DEVICE_LABEL: Record<DeviceKey, string> = {
   air: 'MacBook Air',
@@ -178,15 +178,15 @@ export const STATUS_LABEL: Record<ReservationStatus, string> = {
 };
 
 export const STATUS_HELP: Record<ReservationStatus, string> = {
-  requested: '아직 확정되지 않았습니다. 운영자가 두 기기와 픽업 일정을 확인합니다.',
-  operator_check: '딜러에게 Air와 Pro 두 대, 반납 후 검수 여유 시간까지 확인하고 있습니다.',
-  payment_pending: '두 기기를 보류했습니다. 기한 안에 결제해 주세요. 운영자가 거래내역을 확인하면 확정됩니다.',
-  confirmed: '예약이 확정됐습니다. 픽업 때 두 기기의 상태와 부속품을 함께 확인합니다.',
+  requested: '아직 확정 전이에요. 운영자가 두 기기와 픽업 일정을 확인해요.',
+  operator_check: '딜러에게 Air와 Pro 두 대, 반납 뒤 검수 여유 시간까지 확인하고 있어요.',
+  payment_pending: '두 기기를 잡아 뒀어요. 기한 안에 결제해 주세요. 운영자가 거래내역을 확인하면 확정돼요.',
+  confirmed: '예약이 확정됐어요. 픽업 때 두 기기의 상태와 부속품을 함께 확인해요.',
   in_trial: '평소처럼 써 보면서 미션을 하나씩 해 보세요. 마지막 날 미션 답을 보고 결정해요.',
-  return_received: '반납을 접수했습니다. 운영자가 기기별로 검수합니다.',
-  inspecting: '상태·부속품·로그아웃·초기화를 확인하고 있습니다.',
-  completed: '체험이 끝났습니다. 7일·30일 뒤 짧은 후속 설문을 드립니다.',
-  cancelled: '취소된 요청입니다.',
+  return_received: '반납을 받았어요. 운영자가 기기별로 검수해요.',
+  inspecting: '상태·부속품·로그아웃·초기화를 확인하고 있어요.',
+  completed: '체험이 끝났어요. 7일·30일 뒤 짧은 후속 설문을 보내 드려요.',
+  cancelled: '취소된 요청이에요.',
 };
 
 // 고객 화면 타임라인 순서 (cancelled 제외)
@@ -550,10 +550,9 @@ export function transition(
   if (to === 'payment_pending') {
     ops.paymentDeadline = new Date(now.getTime() + PAYMENT_WINDOW_HOURS * 3600_000).toISOString();
   }
-  if (to === 'in_trial') {
-    devices = setDevices(devices, ids, { state: 'out' });
-    ops.wallCodes = { air: wallCode(r.id, 'air', now), pro: wallCode(r.id, 'pro', now) };
-  }
+  // 예약 확정 때 코드를 만든다 — 운영자가 출고 전에 두 맥 바탕화면에 띄워 둘 수 있게
+  if (to === 'confirmed') ops.wallCodes = { air: wallCode(r.id, 'air', now), pro: wallCode(r.id, 'pro', now) };
+  if (to === 'in_trial') devices = setDevices(devices, ids, { state: 'out' });
   if (to === 'return_received') {
     const back = devicesToReturn(r.decision);
     for (const k of ['air', 'pro'] as DeviceKey[]) {
@@ -879,8 +878,8 @@ export function calendarDays(state: DemoState, from: Date, n = 14): { date: stri
 }
 
 export const STORAGE_READ_ERROR =
-  '저장된 데모 데이터를 읽을 수 없습니다. 원본은 지우지 않았습니다. 원본을 복사해 둔 뒤 직접 초기화해 주세요.';
-export const STORAGE_WRITE_ERROR = '이 기기에 저장하지 못했습니다. 방금 변경은 저장되지 않았을 수 있습니다.';
+  '저장된 데모 데이터를 읽을 수 없어요. 원본은 지우지 않았어요. 원본을 복사해 둔 뒤 직접 초기화해 주세요.';
+export const STORAGE_WRITE_ERROR = '이 기기에 저장하지 못했어요. 방금 변경은 저장되지 않았을 수 있어요.';
 
 // 저장본 읽기. 비어 있으면 초기 상태, 손상됐으면 오류 — 호출 측은 오류일 때 그 키에 쓰지 말고(원본 보존)
 // 오류를 보여 준 뒤 사용자가 명시적으로 초기화할 때만 덮어쓴다.

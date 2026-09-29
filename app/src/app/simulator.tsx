@@ -1,7 +1,9 @@
-import { router } from 'expo-router';
-import { useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { router, useLocalSearchParams } from 'expo-router';
+import { useEffect, useRef, useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
+import { MissionIcon } from '@/components/illustrations';
+import { PickChip, RewardStatusPill } from '@/components/mission';
 import { RequestSummary, ReservationSwitcher } from '@/components/shared';
 import {
   Button,
@@ -9,6 +11,7 @@ import {
   DeviceTag,
   Divider,
   ErrorText,
+  Eyebrow,
   Icon,
   Input,
   KeyValue,
@@ -26,8 +29,14 @@ import {
   DEVICE_LABEL,
   DEVICE_STATE_LABEL,
   INSPECTION_LABEL,
+  MISSIONS,
+  MISSION_OPEN,
   NEXT,
   PAYMENT_RULE,
+  REWARD_AMOUNT_LABEL,
+  REWARD_FLAG_LABEL,
+  REWARD_REJECT_NOTE_VISIBLE,
+  REWARD_STATUS_LABEL,
   SALE_LABEL,
   STATUS_LABEL,
   assignDevice,
@@ -35,7 +44,10 @@ import {
   canTransition,
   isInspectionDone,
   isPaymentExpired,
+  missionProgress,
   requiredInspections,
+  reviewReward,
+  rewardFlags,
   saleDevice,
   setCheckout,
   setInspection,
@@ -46,6 +58,7 @@ import {
   type DeviceKey,
   type DeviceState,
   type Inspection,
+  type MissionAnswer,
   type Reservation,
   type ReservationStatus,
   type Result,
@@ -55,7 +68,7 @@ import { haptic } from '@/lib/haptics';
 import { clearFor } from '@/lib/reminder-actions';
 import { cancelAllReminders } from '@/lib/reminders';
 import { apply, resetAll, setDealerTermsConfirmed, useCurrent } from '@/lib/store';
-import { C, DEVICE_COLOR, RADIUS } from '@/lib/theme';
+import { C, DEVICE_COLOR, MONO_FAMILY, RADIUS } from '@/lib/theme';
 
 const KINDS: DeviceKey[] = ['air', 'pro'];
 
@@ -84,16 +97,26 @@ async function run(fn: (s: DemoState) => Result<DemoState>): Promise<string | nu
 export default function SimulatorScreen() {
   const { app, current } = useCurrent();
   const demo = app.demo;
+  const scrollRef = useRef<ScrollView>(null);
+  const [rewardY, setRewardY] = useState(0);
+  const { section } = useLocalSearchParams<{ section?: string }>();
+
+  // ?section=reward 로 열면 리워드 확인으로 바로 내려간다
+  useEffect(() => {
+    if (section === 'reward' && rewardY > 0) scrollRef.current?.scrollTo({ y: rewardY - 12, animated: false });
+  }, [section, rewardY]);
+
+  const showReward = !!current && (MISSION_OPEN.includes(current.status) || current.status === 'completed');
 
   return (
-    <Screen>
+    <Screen scrollRef={scrollRef}>
       <View style={styles.banner} accessibilityRole="summary">
         <Icon ios="exclamationmark.triangle.fill" web="warning" size={18} color="#FFFFFF" style={{ marginTop: 2 }} />
         <View style={{ flex: 1, gap: 2 }}>
           <T variant="headline" color="#FFFFFF">
             데모 — 실제 운영자 기능 아님
           </T>
-          <T variant="footnote" color="#D0D5DD">
+          <T variant="footnote" color="#D9CFC2">
             운영자 인증 없이 이 기기에 저장된 데모 데이터만 바꿉니다. 고객 흐름을 끝까지 시연하기 위한 화면입니다.
           </T>
         </View>
@@ -126,7 +149,13 @@ export default function SimulatorScreen() {
             <RequestSummary r={current} compact />
           </Card>
           <StepPanel key={`${current.id}-${current.status}`} r={current} demo={demo} />
+          {current.ops.wallCodes ? <WallCodes r={current} /> : null}
           <NextStep key={`next-${current.id}-${current.status}`} r={current} demo={demo} />
+          {showReward ? (
+            <View onLayout={(e) => setRewardY(e.nativeEvent.layout.y)}>
+              <RewardReview key={`reward-${current.id}-${current.reward.status}`} r={current} />
+            </View>
+          ) : null}
           <History r={current} />
         </>
       )}
@@ -269,7 +298,8 @@ function StepPanel({ r, demo }: { r: Reservation; demo: DemoState }) {
       title = '체험 중';
       body = (
         <View style={{ gap: 8 }}>
-          <KeyValue k="비교 기록" v={`${r.logs.length}건`} />
+          <KeyValue k="핵심 미션" v={`${missionProgress(r).done}/${missionProgress(r).total}`} />
+          <KeyValue k="리워드" v={REWARD_STATUS_LABEL[r.reward.status]} />
           <KeyValue
             k="고객 결정"
             v={r.decision ? `${DECISION_LABEL[r.decision.choice]}${r.decision.model ? ` · ${DEVICE_LABEL[r.decision.model]}` : ''}` : '아직 없음'}
@@ -300,7 +330,7 @@ function StepPanel({ r, demo }: { r: Reservation; demo: DemoState }) {
                     <T variant="caption">{r.ops.deviceIds[k]}</T>
                   </Row>
                   {inspect ? (
-                    <Pill label={done ? '검수 완료' : `${count}/4`} bg={done ? C.doneSoft : C.proSoft} fg={done ? C.doneText : C.pro} />
+                    <Pill label={done ? '검수 완료' : `${count}/4`} bg={done ? C.doneSoft : C.proSoft} fg={done ? C.doneText : C.proInk} />
                   ) : null}
                 </Row>
                 {inspect ? (
@@ -401,6 +431,217 @@ function SalePanel({
   );
 }
 
+// ───────── 바탕화면 코드 (운영자만 봄) ─────────
+
+function WallCodes({ r }: { r: Reservation }) {
+  const codes = r.ops.wallCodes!;
+  return (
+    <Section eyebrow="Wallpaper codes" title="출고 때 바탕화면에 띄울 코드" caption="예약·기기마다 다른 4자리 — 고객 화면에는 보이지 않아요">
+      <Card style={{ gap: 12 }}>
+        <Row gap={10}>
+          {KINDS.map((k) => (
+            <View key={k} style={[styles.codeBox, { backgroundColor: DEVICE_COLOR[k].soft }]} accessible accessibilityLabel={`${DEVICE_LABEL[k]} 바탕화면 코드 ${codes[k].split('').join(' ')}`}>
+              <Row gap={6}>
+                <View style={[styles.dot, { backgroundColor: DEVICE_COLOR[k].main }]} />
+                <T variant="footnote" weight="800" color={DEVICE_COLOR[k].ink}>
+                  {DEVICE_COLOR[k].short} {r.ops.deviceIds[k] ?? ''}
+                </T>
+              </Row>
+              <T variant="title" style={styles.codeText}>
+                {codes[k]}
+              </T>
+            </View>
+          ))}
+        </Row>
+        <T variant="footnote">
+          픽업 전에 두 맥 바탕화면에 크게 띄워 두세요. 고객은 미션 탭에서 이 코드를 적고, 리워드 확인 때 참고 단서로만 봐요.
+        </T>
+      </Card>
+    </Section>
+  );
+}
+
+// ───────── 리워드 확인 ─────────
+
+function answerExtras(a: MissionAnswer): string {
+  const parts: string[] = [];
+  if (a.battery) parts.push(`배터리 Air ${a.battery.air.before}→${a.battery.air.after}% · Pro ${a.battery.pro.before}→${a.battery.pro.after}%`);
+  if (a.minutes) parts.push(`걸린 시간 Air ${a.minutes.air}분 · Pro ${a.minutes.pro}분`);
+  if (a.daily) parts.push(`해 본 일: ${a.daily}`);
+  return parts.join('\n');
+}
+
+function RewardReview({ r }: { r: Reservation }) {
+  const [note, setNote] = useState(r.reward.reviewNote ?? '');
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const status = r.reward.status;
+  const flags = status === 'none' ? rewardFlags(r) : r.reward.flags;
+  const p = missionProgress(r);
+  const codes = r.ops.wallCodes;
+
+  const review = async (result: 'approved' | 'rejected') => {
+    if (busy) return;
+    setBusy(true);
+    setError(await run((s) => reviewReward(s, r.id, result, note)));
+    setBusy(false);
+  };
+
+  return (
+    <Section
+      eyebrow="Reward review"
+      title="리워드 확인"
+      caption="표시는 자동 거절이 아니라 검토 신호예요. 고객 화면에는 상태만 보이고 표시 내용은 보이지 않아요.">
+      <Card style={{ gap: 16 }}>
+        <Row style={{ justifyContent: 'space-between', flexWrap: 'wrap' }} gap={8}>
+          <Row gap={8}>
+            <T variant="footnote" weight="700">
+              상태
+            </T>
+            <RewardStatusPill status={status} />
+          </Row>
+          <T variant="caption">{REWARD_AMOUNT_LABEL}</T>
+        </Row>
+        <T variant="footnote">
+          {`핵심 미션 ${p.done}/${p.total}`}
+          {r.reward.submittedAt ? ` · 신청 ${formatShortDateTime(r.reward.submittedAt)}` : ''}
+        </T>
+
+        <View style={{ gap: 8 }}>
+          <Eyebrow>{status === 'none' ? 'Flags · 신청 전 미리보기' : 'Flags · 신청 시점'}</Eyebrow>
+          {flags.length ? (
+            <View style={{ gap: 6 }}>
+              {flags.map((f) => (
+                <Row key={f} gap={8} style={styles.flag}>
+                  <Icon ios="flag.fill" web="flag" size={13} color={C.warnText} />
+                  <T variant="footnote" weight="700" color={C.warnText} style={{ flex: 1 }}>
+                    {REWARD_FLAG_LABEL[f]}
+                  </T>
+                </Row>
+              ))}
+            </View>
+          ) : (
+            <T variant="footnote">표시 없음</T>
+          )}
+        </View>
+
+        <View style={{ gap: 8 }}>
+          <Eyebrow>Wallpaper code · 참고</Eyebrow>
+          <View style={styles.codeTable}>
+            <Row style={styles.codeRowHead}>
+              <T variant="caption" style={{ flex: 1 }}>
+                기기
+              </T>
+              <T variant="caption" style={styles.codeCell}>
+                고객 입력
+              </T>
+              <T variant="caption" style={styles.codeCell}>
+                출고 코드
+              </T>
+              <View style={{ width: 22 }} />
+            </Row>
+            {KINDS.map((k) => {
+              const typed = r.codeCheck?.[k];
+              const expected = codes?.[k];
+              const same = !!typed && typed === expected;
+              return (
+                <Row key={k} style={styles.codeRow}>
+                  <View style={{ flex: 1 }}>
+                    <DeviceTag kind={k} />
+                  </View>
+                  <T variant="callout" weight="700" color={typed ? C.ink : C.muted} style={[styles.codeCell, styles.mono]}>
+                    {typed ?? '—'}
+                  </T>
+                  <T variant="callout" weight="700" style={[styles.codeCell, styles.mono]}>
+                    {expected ?? '—'}
+                  </T>
+                  <View style={{ width: 22, alignItems: 'center' }}>
+                    {typed ? (
+                      <Icon ios={same ? 'checkmark.circle.fill' : 'xmark.circle.fill'} web={same ? 'check_circle' : 'cancel'} size={17} color={same ? C.done : C.error} />
+                    ) : null}
+                  </View>
+                </Row>
+              );
+            })}
+          </View>
+        </View>
+
+        {status === 'submitted' ? (
+          <View style={{ gap: 10 }}>
+            <Divider />
+            <View style={{ gap: 6 }}>
+              <T variant="footnote" weight="700" color={C.ink}>
+                확인 메모 {flags.length ? '(필수 — 표시 있음)' : '(거절 시 필수)'}
+              </T>
+              <Input
+                multiline
+                value={note}
+                onChangeText={(v) => {
+                  setNote(v);
+                  setError(null);
+                }}
+                placeholder="예: 두 기기 스크린 타임·배터리 사용 기록 확인"
+                accessibilityLabel="리워드 확인 메모"
+              />
+              <T variant="caption">{REWARD_REJECT_NOTE_VISIBLE}</T>
+            </View>
+            <Row gap={8}>
+              <Button small label="승인 · 지급 예정" onPress={() => review('approved')} disabled={busy} style={{ flex: 1 }} />
+              <Button small variant="danger" label="거절" onPress={() => review('rejected')} disabled={busy} style={{ flex: 0.6 }} />
+            </Row>
+            <T variant="caption">반납 검수 단계부터 확인해요 (기기 사용 흔적과 함께 대조). 한 번 정하면 바꿀 수 없어요.</T>
+          </View>
+        ) : status === 'approved' || status === 'rejected' ? (
+          <View style={styles.reviewed}>
+            <T variant="footnote" weight="700" color={C.ink}>
+              {`${REWARD_STATUS_LABEL[status]} · ${formatShortDateTime(r.reward.reviewedAt)}`}
+            </T>
+            {r.reward.reviewNote ? <T variant="footnote">{r.reward.reviewNote}</T> : null}
+          </View>
+        ) : (
+          <T variant="footnote">고객이 핵심 미션과 바탕화면 코드를 채우고 신청하면 여기서 확인해요.</T>
+        )}
+        <ErrorText message={error} />
+        <View style={{ gap: 0 }}>
+          <Eyebrow>Answers · 참고</Eyebrow>
+          {MISSIONS.map((m, i) => {
+            const a = r.missions[m.id];
+            const extra = a ? answerExtras(a) : '';
+            return (
+              <View key={m.id} style={[styles.ansRow, i > 0 && styles.histLine]}>
+                <MissionIcon id={m.id} size={30} />
+                <View style={{ flex: 1, gap: 4 }}>
+                  <Row style={{ justifyContent: 'space-between' }} gap={6}>
+                    <T variant="footnote" weight="700" color={C.ink} style={{ flexShrink: 1 }}>
+                      {m.title}
+                    </T>
+                    {a ? <T variant="caption">{formatShortDateTime(a.answeredAt)}</T> : null}
+                  </Row>
+                  {a ? (
+                    <Row gap={6} style={{ flexWrap: 'wrap' }}>
+                      <PickChip pick={a.pick} />
+                      {a.followUp ? <T variant="caption">{a.followUp}</T> : null}
+                    </Row>
+                  ) : (
+                    <T variant="caption" color={C.muted}>
+                      답 없음
+                    </T>
+                  )}
+                  {extra ? (
+                    <T variant="caption" color={C.ink}>
+                      {extra}
+                    </T>
+                  ) : null}
+                </View>
+              </View>
+            );
+          })}
+        </View>
+      </Card>
+    </Section>
+  );
+}
+
 // ───────── 다음 단계 ─────────
 
 function NextStep({ r, demo }: { r: Reservation; demo: DemoState }) {
@@ -447,8 +688,8 @@ function NextStep({ r, demo }: { r: Reservation; demo: DemoState }) {
               accessibilityLabel={`추천 사유 넣기: ${SUGGESTED_REASON[forward]}`}
               onPress={() => setReason(SUGGESTED_REASON[forward] ?? '')}
               style={({ pressed }) => [styles.suggest, pressed && { opacity: 0.7 }]}>
-              <Icon ios="text.badge.plus" web="add_notes" size={14} color={C.primary} />
-              <T variant="footnote" color={C.primary}>
+              <Icon ios="text.badge.plus" web="add_notes" size={14} color={C.coralInk} />
+              <T variant="footnote" weight="600" color={C.coralInk}>
                 {SUGGESTED_REASON[forward]}
               </T>
             </Pressable>
@@ -512,11 +753,16 @@ function History({ r }: { r: Reservation }) {
               )}
               <Pill
                 label={h.actor === 'operator' ? '운영자' : '고객'}
-                bg={h.actor === 'operator' ? C.slateSoft : C.primarySoft}
-                fg={h.actor === 'operator' ? C.slate : C.primary}
+                bg={h.actor === 'operator' ? C.greySoft : C.coralSoft}
+                fg={h.actor === 'operator' ? C.sub : C.coralInk}
               />
             </Row>
             <T variant="callout">{h.reason}</T>
+            {h.internalNote ? (
+              <T variant="footnote" color={C.warnText}>
+                운영 메모: {h.internalNote}
+              </T>
+            ) : null}
             <T variant="caption">{formatShortDateTime(h.at)}</T>
           </View>
         ))}
@@ -530,7 +776,7 @@ function History({ r }: { r: Reservation }) {
 const STATE_TONE: Record<DeviceState, { bg: string; fg: string }> = {
   available: { bg: C.doneSoft, fg: C.doneText },
   held: { bg: C.warnBg, fg: C.warnText },
-  out: { bg: C.primarySoft, fg: C.primary },
+  out: { bg: C.coralSoft, fg: C.coralInk },
   inspection: { bg: C.proSoft, fg: C.pro },
   sale_pending: { bg: C.warnBg, fg: C.warnText },
   sold: { bg: C.greySoft, fg: C.grey },
@@ -607,7 +853,7 @@ function ResetBlock() {
           }}
         />
       ) : (
-        <Card accent="#FECDCA" style={{ borderWidth: 1.5 }}>
+        <Card accent={C.errorLine}>
           <T variant="callout" weight="700">
             정말 초기화할까요? 되돌릴 수 없습니다.
           </T>
@@ -658,5 +904,16 @@ const styles = StyleSheet.create({
   devRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10 },
   devBar: { width: 4, height: 32, borderRadius: 2 },
   stateChip: { paddingVertical: 3, paddingHorizontal: 10, borderRadius: 999, maxWidth: 220 },
+  codeBox: { flex: 1, borderRadius: 16, padding: 14, gap: 6 },
+  dot: { width: 8, height: 8, borderRadius: 4 },
+  codeText: { fontFamily: MONO_FAMILY, letterSpacing: 6, fontSize: 28, lineHeight: 36 },
+  ansRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, paddingVertical: 8 },
+  codeTable: { borderRadius: 14, borderWidth: 1, borderColor: C.line, overflow: 'hidden' },
+  codeRowHead: { paddingHorizontal: 12, paddingVertical: 8, backgroundColor: C.sunk },
+  codeRow: { paddingHorizontal: 12, paddingVertical: 10, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.line },
+  codeCell: { width: 82, textAlign: 'center' },
+  mono: { fontFamily: MONO_FAMILY, letterSpacing: 2 },
+  flag: { backgroundColor: C.warnBg, borderRadius: 10, paddingVertical: 8, paddingHorizontal: 10 },
+  reviewed: { backgroundColor: C.sunk, borderRadius: 12, padding: 12, gap: 4 },
 });
 

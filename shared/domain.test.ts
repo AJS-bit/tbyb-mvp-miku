@@ -335,3 +335,15 @@ test('반납 뒤 기억으로 쓴 답도 받고 리워드 신청 가능, 검토 
   assert.deepEqual(s.reservations[0].reward.flags, ['after_return']);
   assert.equal(answerMission(s, 'TB-0001', { id: 'carry', pick: 'pro' }, later(5)).ok, false); // 신청 뒤 잠김
 });
+
+test('바탕화면 코드는 예약 확정 때 생긴다 (출고 전에 운영자가 띄워 둘 수 있게)', () => {
+  let s = ok(createReservation(createInitialState(T0), req, T0));
+  s = ok(transition(s, 'TB-0001', 'operator_check', 'operator', '확인', T0));
+  s = ok(assignDevice(s, 'TB-0001', 'air', 'AIR-01', T0));
+  s = ok(assignDevice(s, 'TB-0001', 'pro', 'PRO-01', T0));
+  s = ok(transition(s, 'TB-0001', 'payment_pending', 'operator', '확보', T0));
+  assert.equal(s.reservations[0].ops.wallCodes, undefined);
+  s = ok(setPaymentCheck(s, 'TB-0001', 'TX', true, T0));
+  s = ok(transition(s, 'TB-0001', 'confirmed', 'operator', '대조', T0));
+  assert.match(s.reservations[0].ops.wallCodes!.air, /^[A-Z2-9]{4}$/);
+});

@@ -65,7 +65,7 @@ export function Timeline({ r }: { r: Reservation }) {
   return (
     <div>
       {cancelled ? (
-        <Notice tone="info" className="mb-5" title="취소된 요청입니다">
+        <Notice tone="info" className="mb-5" title="취소된 요청이에요">
           {fmtDateTime(cancelItem?.at)} · {cancelItem ? ACTOR_LABEL[cancelItem.actor] : ""} · 사유: {cancelItem?.reason}
         </Notice>
       ) : null}

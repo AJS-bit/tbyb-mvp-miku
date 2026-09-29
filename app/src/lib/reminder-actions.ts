@@ -21,7 +21,7 @@ export async function scheduleFor(r: Reservation, lastDay: string): Promise<{ ok
   const items = planReminders(trialStartDate(r), lastDay);
   const at = new Date().toISOString();
   if (!REMINDERS_SUPPORTED) {
-    const saved = await save(r.id, { lastDay, status: 'planned', items, notificationIds: [], note: '웹 미리보기 — 알림은 예약하지 않고 계획만 표시합니다.', updatedAt: at });
+    const saved = await save(r.id, { lastDay, status: 'planned', items, notificationIds: [], note: '웹 미리보기 — 알림은 예약하지 않고 계획만 보여 드려요.', updatedAt: at });
     return saved ? { ok: true } : { ok: false, error: STORAGE_WRITE_ERROR };
   }
   const res = await scheduleReminders(items);
@@ -35,7 +35,7 @@ export async function scheduleFor(r: Reservation, lastDay: string): Promise<{ ok
     items,
     notificationIds: res.ids,
     mode: res.mode,
-    note: res.skipped ? `이미 지난 시각 ${res.skipped}건은 예약하지 않았습니다.` : undefined,
+    note: res.skipped ? `이미 지난 시각 ${res.skipped}건은 예약하지 않았어요.` : undefined,
     updatedAt: at,
   });
   if (!saved) {

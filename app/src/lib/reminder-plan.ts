@@ -34,7 +34,7 @@ export function planReminders(start: Date, lastDay: string): ReminderItem[] {
         date: day1,
         at: at(day1),
         title: '체험 둘째 날 · 내일이 마지막 날이에요',
-        body: '같은 작업을 두 기기에서 해 보고 비교 기록에 남긴 뒤, 결정·반납 탭에서 반납 준비를 확인하세요.',
+        body: '남은 미션을 마치고 리워드를 신청해 두세요. 결정·반납 탭에서 반납 준비도 함께 확인해요.',
       },
     ];
   }
@@ -43,15 +43,15 @@ export function planReminders(start: Date, lastDay: string): ReminderItem[] {
       key: 'day1',
       date: day1,
       at: at(day1),
-      title: '체험 둘째 날이에요',
-      body: '오늘 같은 작업을 Air와 Pro에서 한 번씩 해 보고 비교 기록에 남겨 두세요.',
+      title: '체험 둘째 날이에요 · 미션 하나 해 볼까요?',
+      body: '두 맥에 같은 영상 틀어 보기처럼 쉬운 미션부터요. 비슷했거나 모르겠어도 그대로 골라 주세요.',
     },
     {
       key: 'dayBeforeLast',
       date: beforeLast,
       at: at(beforeLast),
       title: '내일이 체험 마지막 날이에요',
-      body: '기록을 훑어보고 결정·반납 탭에서 백업·로그아웃·나의 찾기 해제를 확인하세요.',
+      body: '남은 미션을 마치고 리워드를 신청해 두세요. 결정·반납 탭에서 백업·로그아웃·나의 찾기 해제도 확인해요.',
     },
   ];
 }

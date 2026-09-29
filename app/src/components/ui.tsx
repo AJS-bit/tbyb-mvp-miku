@@ -15,21 +15,24 @@ import {
   type TextStyle,
   type ViewStyle,
 } from 'react-native';
+import Animated, { FadeInDown, ReduceMotion } from 'react-native-reanimated';
 
 import { DEVICE_LABEL, STATUS_LABEL, type DeviceKey, type ReservationStatus } from '@/domain';
 import { haptic } from '@/lib/haptics';
-import { C, DEVICE_COLOR, FONT_FAMILY, RADIUS, SPACE, STATUS_TONE } from '@/lib/theme';
+import { C, DEVICE_COLOR, FONT_FAMILY, RADIUS, SOFT_SHADOW, SPACE, STATUS_TONE } from '@/lib/theme';
 
-// ───────── 텍스트 (한국어 줄바꿈: 단어 단위) ─────────
+// ───────── 텍스트 (한국어 줄바꿈: 단어 단위 · 본문 행간 넉넉히) ─────────
 
 const variants = StyleSheet.create({
-  title: { fontSize: 22, lineHeight: 30, fontWeight: '700', color: C.ink, letterSpacing: -0.3 },
-  title3: { fontSize: 18, lineHeight: 25, fontWeight: '700', color: C.ink, letterSpacing: -0.2 },
-  headline: { fontSize: 16, lineHeight: 23, fontWeight: '600', color: C.ink },
-  body: { fontSize: 16, lineHeight: 24, color: C.ink },
-  callout: { fontSize: 15, lineHeight: 22, color: C.ink },
-  footnote: { fontSize: 13, lineHeight: 19, color: C.sub },
+  display: { fontSize: 29, lineHeight: 38, fontWeight: '800', color: C.ink, letterSpacing: -0.6 },
+  title: { fontSize: 23, lineHeight: 31, fontWeight: '800', color: C.ink, letterSpacing: -0.45 },
+  title3: { fontSize: 19, lineHeight: 27, fontWeight: '700', color: C.ink, letterSpacing: -0.35 },
+  headline: { fontSize: 16, lineHeight: 24, fontWeight: '700', color: C.ink, letterSpacing: -0.2 },
+  body: { fontSize: 16, lineHeight: 27, color: C.ink },
+  callout: { fontSize: 15, lineHeight: 24, color: C.ink },
+  footnote: { fontSize: 13, lineHeight: 20, color: C.sub },
   caption: { fontSize: 12, lineHeight: 17, color: C.sub },
+  eyebrow: { fontSize: 11, lineHeight: 15, fontWeight: '700', color: C.sub, letterSpacing: 1.8 },
 });
 
 export type TextVariant = keyof typeof variants;
@@ -56,9 +59,19 @@ export function T({
   );
 }
 
+/** 작은 영문 대문자 머리글 (예: TRY BEFORE YOU BUY · 01) */
+export function Eyebrow({ children, color, style }: { children: string; color?: string; style?: StyleProp<TextStyle> }) {
+  return (
+    <T variant="eyebrow" color={color} style={style} accessibilityElementsHidden importantForAccessibility="no">
+      {children.toUpperCase()}
+    </T>
+  );
+}
+
 // ───────── 아이콘 (iOS: SF Symbols · 웹: Material Symbols) ─────────
 
 type NameObj = Exclude<SymbolViewProps['name'], string>;
+export type IconPair = [NonNullable<NameObj['ios']>, NonNullable<NameObj['web']>];
 export function Icon({
   ios,
   web,
@@ -72,38 +85,65 @@ export function Icon({
   color?: ColorValue;
   style?: StyleProp<ViewStyle>;
 }) {
-  return (
+  const symbol = (
     <SymbolView
       name={{ ios, web, android: web }}
       size={size}
       tintColor={color}
-      style={style}
+      style={Platform.OS === 'web' ? undefined : style}
       accessibilityElementsHidden
       importantForAccessibility="no"
     />
   );
+  // 웹에서는 아이콘 글리프가 버튼 이름에 섞여 읽히지 않게 감싸서 숨긴다
+  if (Platform.OS !== 'web') return symbol;
+  return (
+    <View aria-hidden style={style}>
+      {symbol}
+    </View>
+  );
 }
+
+// ───────── 은은한 페이드업 (시스템 '동작 줄이기'를 따른다) ─────────
+
+export function FadeUp({ children, delay = 0, style }: { children: ReactNode; delay?: number; style?: StyleProp<ViewStyle> }) {
+  return (
+    <Animated.View entering={FadeInDown.duration(420).delay(delay).reduceMotion(ReduceMotion.System)} style={style}>
+      {children}
+    </Animated.View>
+  );
+}
+
+// ───────── 틀 ─────────
 
 export function Card({
   children,
   style,
   accent,
+  tint,
 }: {
   children: ReactNode;
   style?: StyleProp<ViewStyle>;
   accent?: string;
+  tint?: string;
 }) {
-  return <View style={[s.card, accent ? { borderColor: accent } : null, style]}>{children}</View>;
+  return (
+    <View style={[s.card, accent ? { borderColor: accent, borderWidth: 1.5 } : null, tint ? { backgroundColor: tint } : null, style]}>
+      {children}
+    </View>
+  );
 }
 
 export function Section({
   title,
+  eyebrow,
   caption,
   right,
   children,
   style,
 }: {
   title: string;
+  eyebrow?: string;
   caption?: string;
   right?: ReactNode;
   children?: ReactNode;
@@ -112,7 +152,8 @@ export function Section({
   return (
     <View style={[s.section, style]}>
       <View style={s.sectionHead}>
-        <View style={{ flex: 1, gap: 2 }}>
+        <View style={{ flex: 1, gap: 3 }}>
+          {eyebrow ? <Eyebrow>{eyebrow}</Eyebrow> : null}
           <T variant="title3" accessibilityRole="header">
             {title}
           </T>
@@ -130,18 +171,18 @@ export function Row({ children, style, gap = SPACE.sm }: { children: ReactNode; 
 }
 
 export function Divider({ style }: { style?: StyleProp<ViewStyle> }) {
-  return <View style={[{ height: StyleSheet.hairlineWidth, backgroundColor: C.line }, style]} />;
+  return <View style={[{ height: StyleSheet.hairlineWidth, backgroundColor: C.lineStrong }, style]} />;
 }
 
 // ───────── 알림 상자 ─────────
 
-type Tone = 'warn' | 'info' | 'error' | 'done' | 'primary';
-const TONES: Record<Tone, { bg: string; fg: string; border: string; icon: [NonNullable<NameObj['ios']>, NonNullable<NameObj['web']>] }> = {
+type Tone = 'warn' | 'info' | 'error' | 'done' | 'coral';
+const TONES: Record<Tone, { bg: string; fg: string; border: string; icon: IconPair }> = {
   warn: { bg: C.warnBg, fg: C.warnText, border: C.warnLine, icon: ['exclamationmark.circle', 'error'] },
-  info: { bg: C.slateSoft, fg: C.slate, border: C.slateSoft, icon: ['info.circle', 'info'] },
-  error: { bg: C.errorSoft, fg: C.error, border: '#FECDCA', icon: ['exclamationmark.triangle', 'warning'] },
-  done: { bg: C.doneSoft, fg: C.doneText, border: '#ABEFC6', icon: ['checkmark.circle', 'check_circle'] },
-  primary: { bg: C.primarySoft, fg: C.primary, border: '#D5DEFF', icon: ['arrow.right.circle', 'arrow_circle_right'] },
+  info: { bg: C.greySoft, fg: C.sub, border: C.greySoft, icon: ['info.circle', 'info'] },
+  error: { bg: C.errorSoft, fg: C.error, border: C.errorLine, icon: ['exclamationmark.triangle', 'warning'] },
+  done: { bg: C.doneSoft, fg: C.doneText, border: C.doneLine, icon: ['checkmark.circle', 'check_circle'] },
+  coral: { bg: C.coralSoft, fg: C.coralInk, border: '#FFD5C8', icon: ['gift', 'redeem'] },
 };
 
 export function Notice({
@@ -158,7 +199,7 @@ export function Notice({
   const t = TONES[tone];
   return (
     <View style={[s.notice, { backgroundColor: t.bg, borderColor: t.border }, style]} accessibilityRole="summary">
-      <Icon ios={t.icon[0]} web={t.icon[1]} size={17} color={t.fg} style={{ marginTop: 2 }} />
+      <Icon ios={t.icon[0]} web={t.icon[1]} size={17} color={t.fg} style={{ marginTop: 3 }} />
       <View style={{ flex: 1, gap: 2 }}>
         {title ? (
           <T variant="callout" weight="700" color={t.fg}>
@@ -182,7 +223,7 @@ export function ErrorText({ message, style }: { message?: string | null; style?:
   if (!message) return null;
   return (
     <View style={[s.error, style]} accessibilityRole="alert" accessibilityLiveRegion="polite">
-      <Icon ios="exclamationmark.circle.fill" web="error" size={16} color={C.error} style={{ marginTop: 2 }} />
+      <Icon ios="exclamationmark.circle.fill" web="error" size={16} color={C.error} style={{ marginTop: 3 }} />
       <T variant="callout" color={C.error} style={{ flex: 1 }}>
         {message}
       </T>
@@ -190,9 +231,9 @@ export function ErrorText({ message, style }: { message?: string | null; style?:
   );
 }
 
-// ───────── 버튼 ─────────
+// ───────── 버튼 (주 버튼 = 잉크 위 아이보리 글자) ─────────
 
-type ButtonVariant = 'primary' | 'secondary' | 'danger' | 'ghost' | 'dark';
+type ButtonVariant = 'primary' | 'secondary' | 'danger' | 'ghost' | 'coral';
 export function Button({
   label,
   onPress,
@@ -207,7 +248,7 @@ export function Button({
   onPress?: () => void;
   variant?: ButtonVariant;
   disabled?: boolean;
-  icon?: [NonNullable<NameObj['ios']>, NonNullable<NameObj['web']>];
+  icon?: IconPair;
   small?: boolean;
   accessibilityHint?: string;
   style?: StyleProp<ViewStyle>;
@@ -216,7 +257,8 @@ export function Button({
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityState={{ disabled: !!disabled }}
+      accessibilityLabel={label}
+      aria-disabled={!!disabled}
       accessibilityHint={accessibilityHint}
       disabled={disabled}
       onPress={onPress}
@@ -224,12 +266,12 @@ export function Button({
         s.button,
         small && s.buttonSmall,
         { backgroundColor: v.bg, borderColor: v.border },
-        disabled && { opacity: 0.4 },
-        pressed && !disabled && { opacity: 0.75 },
+        disabled && { opacity: 0.38 },
+        pressed && !disabled && { opacity: 0.8, transform: [{ scale: 0.985 }] },
         style,
       ]}>
       {icon ? <Icon ios={icon[0]} web={icon[1]} size={small ? 15 : 17} color={v.fg} /> : null}
-      <T variant={small ? 'callout' : 'headline'} weight="600" color={v.fg} style={{ textAlign: 'center', flexShrink: 1 }}>
+      <T variant={small ? 'callout' : 'headline'} weight="700" color={v.fg} style={{ textAlign: 'center', flexShrink: 1 }}>
         {label}
       </T>
     </Pressable>
@@ -237,11 +279,11 @@ export function Button({
 }
 
 const BUTTONS: Record<ButtonVariant, { bg: string; fg: string; border: string }> = {
-  primary: { bg: C.primary, fg: '#FFFFFF', border: C.primary },
-  secondary: { bg: C.surface, fg: C.primary, border: C.line },
-  danger: { bg: C.errorSoft, fg: C.error, border: '#FECDCA' },
-  ghost: { bg: 'transparent', fg: C.primary, border: 'transparent' },
-  dark: { bg: C.ink, fg: '#FFFFFF', border: C.ink },
+  primary: { bg: C.ink, fg: C.ivory, border: C.ink },
+  secondary: { bg: C.surface, fg: C.ink, border: C.lineStrong },
+  danger: { bg: C.errorSoft, fg: C.error, border: C.errorLine },
+  ghost: { bg: 'transparent', fg: C.ink, border: 'transparent' },
+  coral: { bg: C.coral, fg: '#FFFFFF', border: C.coral },
 };
 
 // ───────── 칩 ─────────
@@ -250,7 +292,7 @@ export function StatusChip({ status, large }: { status: ReservationStatus; large
   const t = STATUS_TONE[status];
   return (
     <View
-      style={[s.chip, { backgroundColor: t.bg }, large && { paddingVertical: 5, paddingHorizontal: 12 }]}
+      style={[s.chip, { backgroundColor: t.bg }, large && { paddingVertical: 6, paddingHorizontal: 13 }]}
       accessibilityLabel={`상태: ${STATUS_LABEL[status]}`}>
       <View style={[s.chipDot, { backgroundColor: t.dot }]} />
       <T variant={large ? 'callout' : 'footnote'} weight="700" color={t.fg}>
@@ -272,13 +314,52 @@ export function DeviceTag({ kind, full, style }: { kind: DeviceKey; full?: boole
   );
 }
 
-export function Pill({ label, bg = C.greySoft, fg = C.grey }: { label: string; bg?: string; fg?: string }) {
+export function Pill({ label, bg = C.greySoft, fg = C.sub, style }: { label: string; bg?: string; fg?: string; style?: StyleProp<ViewStyle> }) {
   return (
-    <View style={[s.chip, { backgroundColor: bg }]}>
+    <View style={[s.chip, { backgroundColor: bg }, style]}>
       <T variant="caption" weight="700" color={fg}>
         {label}
       </T>
     </View>
+  );
+}
+
+/** 고르는 칩 (후속 선택지·용도·빠른 이유) — 고르면 잉크 */
+export function ChoiceChip({
+  label,
+  selected,
+  onPress,
+  role = 'radio',
+  disabled,
+  a11y,
+  small,
+}: {
+  label: string;
+  selected: boolean;
+  onPress: () => void;
+  role?: 'radio' | 'checkbox' | 'button';
+  disabled?: boolean;
+  a11y?: string;
+  small?: boolean;
+}) {
+  return (
+    <Pressable
+      accessibilityRole={role}
+      aria-checked={role === 'button' ? undefined : selected}
+      aria-selected={role === 'radio' ? selected : undefined}
+      aria-disabled={!!disabled}
+      accessibilityLabel={a11y ?? label}
+      disabled={disabled}
+      onPress={() => {
+        haptic.select();
+        onPress();
+      }}
+      style={({ pressed }) => [s.choice, small && s.choiceSmall, selected && s.choiceOn, disabled && { opacity: 0.45 }, pressed && { opacity: 0.75 }]}>
+      {selected && role !== 'button' ? <Icon ios="checkmark" web="check" size={12} color={C.ivory} /> : null}
+      <T variant={small ? 'footnote' : 'callout'} weight={selected ? '700' : '500'} color={selected ? C.ivory : C.ink}>
+        {label}
+      </T>
+    </Pressable>
   );
 }
 
@@ -308,7 +389,7 @@ export function Segmented<V extends string | number>({
   accessibilityLabel?: string;
 }) {
   return (
-    <View style={[s.segTrack, compact && { padding: 2 }]} accessibilityRole="radiogroup" accessibilityLabel={accessibilityLabel}>
+    <View style={[s.segTrack, compact && { padding: 3 }]} accessibilityRole="radiogroup" accessibilityLabel={accessibilityLabel}>
       {options.map((o) => {
         const selected = o.value === value;
         const fill = o.color ?? C.surface;
@@ -317,7 +398,9 @@ export function Segmented<V extends string | number>({
             key={String(o.value)}
             disabled={o.disabled}
             accessibilityRole="radio"
-            accessibilityState={{ selected, disabled: !!o.disabled }}
+            aria-checked={selected}
+            aria-selected={selected}
+            aria-disabled={!!o.disabled}
             accessibilityLabel={o.a11y ?? o.label}
             onPress={() => {
               haptic.select();
@@ -332,8 +415,8 @@ export function Segmented<V extends string | number>({
               pressed && { opacity: 0.7 },
             ]}>
             <T
-              variant={compact ? 'callout' : 'callout'}
-              weight={selected ? '700' : '500'}
+              variant="callout"
+              weight={selected ? '800' : '500'}
               color={selected ? (o.color ? '#FFFFFF' : C.ink) : C.sub}
               numberOfLines={1}
               style={{ textAlign: 'center' }}>
@@ -375,7 +458,7 @@ export function ScorePicker({
         options={([1, 2, 3, 4, 5] as const).map((n) => ({
           value: n,
           label: String(n),
-          color: color ?? C.primary,
+          color: color ?? C.ink,
           a11y: `${a11yPrefix ?? ''}${label ?? ''} ${n}점`,
         }))}
       />
@@ -387,7 +470,7 @@ export function CheckRow({
   checked,
   label,
   onToggle,
-  color = C.primary,
+  color = C.ink,
   sub,
   disabled,
 }: {
@@ -401,7 +484,8 @@ export function CheckRow({
   return (
     <Pressable
       accessibilityRole="checkbox"
-      accessibilityState={{ checked, disabled: !!disabled }}
+      aria-checked={checked}
+      aria-disabled={!!disabled}
       accessibilityLabel={label}
       disabled={disabled}
       onPress={() => {
@@ -428,7 +512,7 @@ export function RadioRow({
   sub,
   onPress,
   disabled,
-  color = C.primary,
+  color = C.ink,
   children,
 }: {
   selected: boolean;
@@ -442,7 +526,9 @@ export function RadioRow({
   return (
     <Pressable
       accessibilityRole="radio"
-      accessibilityState={{ selected, disabled: !!disabled }}
+      aria-checked={selected}
+      aria-selected={selected}
+      aria-disabled={!!disabled}
       accessibilityLabel={sub ? `${label}. ${sub}` : label}
       disabled={disabled}
       onPress={() => {
@@ -460,7 +546,7 @@ export function RadioRow({
         <T variant="callout" weight={selected ? '700' : '500'}>
           {label}
         </T>
-        {sub ? <T variant="caption">{sub}</T> : null}
+        {sub ? <T variant="footnote">{sub}</T> : null}
         {children}
       </View>
     </Pressable>
@@ -473,7 +559,7 @@ export function SwitchRow({
   value,
   onValueChange,
   disabled,
-  color = C.primary,
+  color = C.ink,
 }: {
   label: string;
   sub?: string;
@@ -496,7 +582,7 @@ export function SwitchRow({
           haptic.select();
           onValueChange(v);
         }}
-        trackColor={{ true: color, false: '#D0D5DD' }}
+        trackColor={{ true: color, false: '#D9D0C3' }}
         {...(Platform.OS === 'web' ? { activeThumbColor: '#FFFFFF' } : null)}
       />
     </View>
@@ -517,19 +603,17 @@ export function Field({
   required?: boolean;
 }) {
   return (
-    <View style={{ gap: 8 }}>
-      <Row gap={6}>
-        <T variant="callout" weight="700" accessibilityLabel={required ? `${label}, 필수` : label}>
-          {label}
-        </T>
-        {optional ? <T variant="caption">선택</T> : null}
-        {required ? (
-          <T variant="caption" weight="700" color={C.error}>
-            필수
+    <View style={{ gap: 10 }}>
+      <View style={{ gap: 2 }}>
+        <Row gap={6}>
+          <T variant="headline" accessibilityLabel={required ? `${label}, 필수` : optional ? `${label}, 선택` : label}>
+            {label}
           </T>
-        ) : null}
-      </Row>
-      {hint ? <T variant="footnote" style={{ marginTop: -4 }}>{hint}</T> : null}
+          {optional ? <Pill label="선택" /> : null}
+          {required ? <Pill label="필수" bg={C.coralSoft} fg={C.coralInk} /> : null}
+        </Row>
+        {hint ? <T variant="footnote">{hint}</T> : null}
+      </View>
       {children}
     </View>
   );
@@ -548,7 +632,7 @@ export function Input(props: TextInputProps) {
 export function KeyValue({ k, v, children }: { k: string; v?: string; children?: ReactNode }) {
   return (
     <View style={s.kv}>
-      <T variant="footnote" style={{ width: 96 }}>
+      <T variant="footnote" style={{ width: 92 }}>
         {k}
       </T>
       <View style={{ flex: 1 }}>{children ?? <T variant="callout">{v}</T>}</View>
@@ -564,16 +648,17 @@ const s = StyleSheet.create({
     borderRadius: RADIUS.card,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: C.line,
-    padding: SPACE.lg,
+    padding: 18,
     gap: SPACE.md,
+    ...SOFT_SHADOW,
   },
   section: { gap: SPACE.md },
-  sectionHead: { flexDirection: 'row', alignItems: 'flex-end', gap: SPACE.sm },
+  sectionHead: { flexDirection: 'row', alignItems: 'flex-end', gap: SPACE.sm, paddingHorizontal: 2 },
   notice: {
     flexDirection: 'row',
     gap: 10,
     padding: 14,
-    borderRadius: RADIUS.card,
+    borderRadius: 16,
     borderWidth: 1,
   },
   error: {
@@ -581,21 +666,21 @@ const s = StyleSheet.create({
     gap: 8,
     paddingVertical: 10,
     paddingHorizontal: 12,
-    borderRadius: RADIUS.control,
+    borderRadius: 12,
     backgroundColor: C.errorSoft,
   },
   button: {
-    minHeight: 50,
-    borderRadius: 12,
+    minHeight: 54,
+    borderRadius: 16,
     borderWidth: 1,
     paddingHorizontal: SPACE.lg,
-    paddingVertical: 12,
+    paddingVertical: 13,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
   },
-  buttonSmall: { minHeight: 38, paddingVertical: 7, paddingHorizontal: 12, borderRadius: 10 },
+  buttonSmall: { minHeight: 42, paddingVertical: 8, paddingHorizontal: 14, borderRadius: 13 },
   chip: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -606,26 +691,39 @@ const s = StyleSheet.create({
     borderRadius: RADIUS.chip,
   },
   chipDot: { width: 7, height: 7, borderRadius: 4 },
+  choice: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingVertical: 9,
+    paddingHorizontal: 14,
+    borderRadius: RADIUS.chip,
+    borderWidth: 1,
+    borderColor: C.lineStrong,
+    backgroundColor: C.surface,
+  },
+  choiceSmall: { paddingVertical: 7, paddingHorizontal: 12 },
+  choiceOn: { backgroundColor: C.ink, borderColor: C.ink },
   segTrack: {
     flexDirection: 'row',
-    backgroundColor: '#EDEFF3',
+    backgroundColor: C.sunk,
     borderRadius: RADIUS.control,
-    padding: 3,
-    gap: 3,
+    padding: 4,
+    gap: 4,
   },
   seg: {
     flex: 1,
-    minHeight: 38,
-    borderRadius: 8,
+    minHeight: 40,
+    borderRadius: 11,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 6,
   },
-  segCompact: { minHeight: 36, paddingHorizontal: 0 },
+  segCompact: { minHeight: 38, paddingHorizontal: 0 },
   segRaised: {
-    shadowColor: '#101828',
-    shadowOpacity: 0.08,
-    shadowRadius: 3,
+    shadowColor: '#5A4630',
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
     shadowOffset: { width: 0, height: 1 },
     elevation: 1,
   },
@@ -633,9 +731,9 @@ const s = StyleSheet.create({
   checkBox: {
     width: 22,
     height: 22,
-    borderRadius: 6,
+    borderRadius: 7,
     borderWidth: 1.5,
-    borderColor: '#C3C9D2',
+    borderColor: '#CFC4B4',
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 1,
@@ -645,8 +743,8 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: 12,
-    padding: 14,
-    borderRadius: RADIUS.card,
+    padding: 15,
+    borderRadius: 16,
     borderWidth: 1.5,
     borderColor: C.line,
     backgroundColor: C.surface,
@@ -656,23 +754,23 @@ const s = StyleSheet.create({
     height: 20,
     borderRadius: 10,
     borderWidth: 1.5,
-    borderColor: '#C3C9D2',
+    borderColor: '#CFC4B4',
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 1,
+    marginTop: 2,
   },
   radioInner: { width: 10, height: 10, borderRadius: 5 },
   switchRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 6 },
   input: {
     backgroundColor: C.surface,
     borderWidth: 1,
-    borderColor: C.line,
+    borderColor: C.lineStrong,
     borderRadius: RADIUS.control,
     paddingHorizontal: 14,
-    paddingVertical: 12,
+    paddingVertical: 13,
     fontSize: 16,
     color: C.ink,
   },
-  inputMulti: { minHeight: 84, textAlignVertical: 'top', paddingTop: 12 },
+  inputMulti: { minHeight: 88, textAlignVertical: 'top', paddingTop: 13 },
   kv: { flexDirection: 'row', gap: 8, alignItems: 'flex-start' },
 });

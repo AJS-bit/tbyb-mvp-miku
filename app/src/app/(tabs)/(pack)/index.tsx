@@ -2,12 +2,16 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
-import { Legend } from '@/components/shared';
+import { HeroIllustration } from '@/components/illustrations';
+import { Screen } from '@/components/screen';
 import {
   Button,
   Card,
+  ChoiceChip,
   DeviceTag,
   ErrorText,
+  Eyebrow,
+  FadeUp,
   Field,
   Icon,
   Input,
@@ -19,29 +23,28 @@ import {
   Segmented,
   T,
 } from '@/components/ui';
-import { Screen } from '@/components/screen';
 import {
   CALENDAR_DAYS,
   COMPARE_POINTS,
   DAY_STATUS_LABEL,
   DEMO_NOTICE,
-  PACK_NAME,
   PICKUP_STORES,
   PRICE_TBD,
   RESPONSE_TARGET,
-  WORK_TYPES,
+  REWARD_AMOUNT_LABEL,
+  USAGE_LABEL,
   calendarDays,
   createReservation,
   parseDate,
   type DayStatus,
   type Leaning,
   type Score,
-  type WorkType,
+  type Usage,
 } from '@/domain';
 import { formatDateKey, formatDateTime, weekday } from '@/lib/format';
 import { haptic } from '@/lib/haptics';
 import { apply, selectReservation, useApp } from '@/lib/store';
-import { C, DEVICE_COLOR, RADIUS } from '@/lib/theme';
+import { C, DEVICE_COLOR } from '@/lib/theme';
 
 export default function PackScreen() {
   const scrollRef = useRef<ScrollView>(null);
@@ -54,9 +57,14 @@ export default function PackScreen() {
 
   return (
     <Screen scrollRef={scrollRef}>
-      <Hero onRequest={() => scrollRef.current?.scrollTo({ y: formY, animated: true })} />
+      <FadeUp>
+        <Hero onRequest={() => scrollRef.current?.scrollTo({ y: formY, animated: true })} />
+      </FadeUp>
+      <FadeUp delay={120}>
+        <Story />
+      </FadeUp>
       <ComparePoints />
-      <Notice tone="warn" title="요금·기간·보증은 아직 정해지지 않았습니다">
+      <Notice tone="warn" title="요금·기간·보증은 아직 정해지지 않았어요">
         {PRICE_TBD}
       </Notice>
       <View onLayout={(e) => setFormY(e.nativeEvent.layout.y)}>
@@ -68,44 +76,55 @@ export default function PackScreen() {
 
 // ───────── 소개 ─────────
 
-const STEPS = [
-  ['데모 일정 요청', '작업 유형·희망일·비교하고 싶은 점만 남깁니다'],
-  ['두 대 함께 픽업', '운영자가 Air·Pro 두 대를 확보하고 결제를 확인한 뒤 확정'],
-  ['같은 작업, 같은 기준', '평소 작업을 두 기기에서 똑같이 해 보고 앱에 기록'],
-  ['마지막 날 결정', '기록을 보고 결정 — 한 대를 사기로 하면 나머지 한 대만 반납'],
-] as const;
-
 function Hero({ onRequest }: { onRequest: () => void }) {
   return (
-    <Card style={{ gap: 14, paddingVertical: 20 }}>
+    <View style={styles.hero}>
+      <HeroIllustration style={{ marginHorizontal: -6 }} />
+      <View style={{ gap: 10 }}>
+        <Eyebrow color={C.coralInk}>Try before you buy · 01</Eyebrow>
+        <T variant="display" accessibilityRole="header">
+          {'맥은 처음이어도\n괜찮아요'}
+        </T>
+        <T variant="body" color={C.sub}>
+          가볍게 들고 다니는 Air, 끝까지 힘 있는 Pro. 두 대를 함께 빌려 평소처럼 써 보고 내 생활에 맞는 쪽을 고르세요. 어려운 기록 대신 쉬운
+          미션 몇 개면 충분해요.
+        </T>
+      </View>
       <Row gap={6}>
         <DeviceTag kind="air" full />
         <DeviceTag kind="pro" full />
       </Row>
-      <T variant="title">{'사기 전에,\n내 작업으로 두 대를 비교해 보세요'}</T>
-      <T variant="callout" color={C.sub}>
-        스펙표로는 알기 어려운 차이 — 발열, 무게, 화면, 내 작업의 속도 — 를 며칠 동안 직접 써 보며 확인합니다. {PACK_NAME}은
-        두 기기를 함께 빌려 같은 기준으로 비교하는 체험입니다.
-      </T>
-      <View style={{ gap: 10, marginTop: 2 }}>
-        {STEPS.map(([title, body], i) => (
-          <Row key={title} gap={12} style={{ alignItems: 'flex-start' }}>
-            <View style={styles.stepNum}>
-              <T variant="caption" weight="700" color={C.primary}>
-                {i + 1}
+      <Button label="데모 일정 요청하기" icon={['calendar', 'event']} onPress={onRequest} />
+    </View>
+  );
+}
+
+const STEPS: { title: string; body: string }[] = [
+  { title: '일정만 골라요', body: '이름·전화번호 없이 희망 날짜와 픽업 매장만 남겨요.' },
+  { title: '두 대를 함께 받아요', body: '운영자가 Air·Pro 두 대를 확보하고 결제를 확인하면 예약이 확정돼요.' },
+  { title: '쉬운 미션을 해 봐요', body: `가방에 넣고 나가 보기, 같은 영상 틀어 보기처럼 평소 하던 일이에요. 다 하면 리워드 ${REWARD_AMOUNT_LABEL}.` },
+  { title: '마지막 날 골라요', body: '한 대를 사기로 하면 나머지 한 대만 반납해요. 둘 다 반납해도 괜찮아요.' },
+];
+
+function Story() {
+  return (
+    <Section eyebrow="How it works · 02" title="이렇게 진행돼요">
+      <Card style={{ gap: 0, paddingVertical: 8 }}>
+        {STEPS.map((st, i) => (
+          <Row key={st.title} gap={14} style={[styles.step, i > 0 && styles.stepLine]}>
+            <View style={[styles.stepNum, i === 2 && { backgroundColor: C.coralSoft }]}>
+              <T variant="footnote" weight="800" color={i === 2 ? C.coralInk : C.ink}>
+                {`0${i + 1}`}
               </T>
             </View>
-            <View style={{ flex: 1 }}>
-              <T variant="callout" weight="700">
-                {title}
-              </T>
-              <T variant="footnote">{body}</T>
+            <View style={{ flex: 1, gap: 2 }}>
+              <T variant="headline">{st.title}</T>
+              <T variant="footnote">{st.body}</T>
             </View>
           </Row>
         ))}
-      </View>
-      <Button label="데모 일정 요청하기" icon={['calendar', 'event']} onPress={onRequest} style={{ marginTop: 4 }} />
-    </Card>
+      </Card>
+    </Section>
   );
 }
 
@@ -113,26 +132,24 @@ function Hero({ onRequest }: { onRequest: () => void }) {
 
 function ComparePoints() {
   return (
-    <Section title="두 기기, 같은 기준으로" caption="수치 대신 체험 때 직접 확인할 점입니다">
-      <Card style={{ paddingHorizontal: 0, paddingVertical: 4, gap: 0 }}>
-        <View style={[styles.cmpHead]}>
-          <Legend />
-        </View>
+    <Section eyebrow="Compare · 03" title="두 맥, 이렇게 비교해요" caption="숫자 대신 직접 느껴 볼 점이에요">
+      <Card style={{ paddingHorizontal: 0, paddingVertical: 6, gap: 0 }}>
         {COMPARE_POINTS.map((p, i) => (
-          <View key={p.title} style={[styles.cmpRow, i > 0 && styles.cmpDivider]}>
-            <T variant="callout" weight="700">
-              {p.title}
-            </T>
+          <View key={p.title} style={[styles.cmpRow, i > 0 && styles.stepLine]}>
+            <T variant="headline">{p.title}</T>
             <View style={{ flexDirection: 'row', gap: 8 }}>
               {(['air', 'pro'] as const).map((k) => (
                 <View
                   key={k}
-                  style={[styles.cmpCell, { backgroundColor: DEVICE_COLOR[k].soft, borderLeftColor: DEVICE_COLOR[k].main }]}
+                  style={[styles.cmpCell, { backgroundColor: DEVICE_COLOR[k].soft }]}
                   accessible
                   accessibilityLabel={`${p.title}, ${DEVICE_COLOR[k].short}: ${p[k]}`}>
-                  <T variant="caption" weight="700" color={C.ink}>
-                    {DEVICE_COLOR[k].short}
-                  </T>
+                  <Row gap={5}>
+                    <View style={[styles.cmpDot, { backgroundColor: DEVICE_COLOR[k].main }]} />
+                    <T variant="caption" weight="800" color={DEVICE_COLOR[k].ink}>
+                      {DEVICE_COLOR[k].short}
+                    </T>
+                  </Row>
                   <T variant="footnote" color={C.ink}>
                     {p[k]}
                   </T>
@@ -149,17 +166,19 @@ function ComparePoints() {
 // ───────── 데모 일정 요청 ─────────
 
 const DAY_TONE: Record<DayStatus, { fg: string; bg: string; border: string }> = {
-  open: { fg: C.doneText, bg: C.surface, border: C.line },
+  open: { fg: C.doneText, bg: C.surface, border: C.lineStrong },
   check: { fg: C.warnText, bg: C.warnBg, border: C.warnLine },
-  closed: { fg: C.muted, bg: '#F2F4F7', border: '#F2F4F7' },
+  closed: { fg: C.muted, bg: C.sunk, border: C.sunk },
 };
+
+const USAGES = Object.keys(USAGE_LABEL) as Usage[];
 
 function RequestForm() {
   const { demo } = useApp();
   const [startDate, setStartDate] = useState('');
   const [pickupStore, setPickupStore] = useState('');
-  const [workType, setWorkType] = useState<WorkType | null>(null);
-  const [wantToCompare, setWantToCompare] = useState('');
+  const [usage, setUsage] = useState<Usage>('unsure');
+  const [question, setQuestion] = useState('');
   const [leaning, setLeaning] = useState<Leaning | null>(null);
   const [confidence, setConfidence] = useState<Score | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -168,7 +187,7 @@ function RequestForm() {
   // 입력을 고치면 이전 오류는 지운다
   useEffect(() => {
     setError(null);
-  }, [startDate, pickupStore, workType, wantToCompare, leaning, confidence]);
+  }, [startDate, pickupStore, usage, question, leaning, confidence]);
 
   const days = calendarDays(demo, new Date(), CALENDAR_DAYS);
   const selectedDay = days.find((d) => d.date === startDate);
@@ -177,13 +196,13 @@ function RequestForm() {
     if (saving) return;
     setError(null);
     setSaving(true);
-    // 선택하지 않은 값은 그대로 넘겨 domain.createReservation 이 오류를 알려 준다
+    // 고르지 않은 값은 그대로 넘겨 domain.createReservation 이 오류를 알려 준다
     const r = await apply((s) =>
       createReservation(s, {
         startDate,
         pickupStore,
-        workType: workType as WorkType,
-        wantToCompare,
+        usage,
+        question,
         leaningBefore: leaning as Leaning,
         confidenceBefore: confidence as Score,
       }),
@@ -200,23 +219,22 @@ function RequestForm() {
     if (created) void selectReservation(created.id);
     setStartDate('');
     setPickupStore('');
-    setWorkType(null);
-    setWantToCompare('');
+    setUsage('unsure');
+    setQuestion('');
     setLeaning(null);
     setConfidence(null);
     router.navigate('/my');
   };
 
-
   return (
-    <Section title="데모 일정 요청" caption="요청은 예약 확정이 아닙니다. 운영자가 두 기기를 확인한 뒤에만 확정됩니다.">
-      <Card style={{ gap: 22 }}>
-        <Field label="희망 시작일" hint="표시는 운영자가 수동으로 갱신하는 안내값이며 확정 재고가 아닙니다.">
+    <Section eyebrow="Request · 04" title="데모 일정 요청" caption="요청은 예약 확정이 아니에요. 운영자가 두 기기를 확인한 뒤에만 확정돼요.">
+      <Card style={{ gap: 26, paddingVertical: 22 }}>
+        <Field label="희망 시작일" required hint="운영자가 손으로 갱신하는 안내값이라 확정 재고는 아니에요.">
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
-            style={{ marginHorizontal: -16 }}
-            contentContainerStyle={{ gap: 8, paddingVertical: 2, paddingHorizontal: 16 }}>
+            style={{ marginHorizontal: -18 }}
+            contentContainerStyle={{ gap: 8, paddingVertical: 2, paddingHorizontal: 18 }}>
             {days.map((d) => {
               const date = parseDate(d.date);
               const selected = d.date === startDate;
@@ -227,7 +245,9 @@ function RequestForm() {
                   key={d.date}
                   disabled={closed}
                   accessibilityRole="radio"
-                  accessibilityState={{ selected, disabled: closed }}
+                  aria-checked={selected}
+                  aria-selected={selected}
+                  aria-disabled={closed}
                   accessibilityLabel={`${formatDateKey(d.date)}, ${DAY_STATUS_LABEL[d.status]}`}
                   onPress={() => {
                     haptic.select();
@@ -236,20 +256,20 @@ function RequestForm() {
                   style={({ pressed }) => [
                     styles.day,
                     { backgroundColor: tone.bg, borderColor: tone.border },
-                    selected && { backgroundColor: C.primary, borderColor: C.primary },
+                    selected && { backgroundColor: C.ink, borderColor: C.ink },
                     pressed && { opacity: 0.7 },
                   ]}>
-                  <T variant="caption" color={selected ? '#DCE4FF' : closed ? C.muted : C.sub}>
+                  <T variant="caption" color={selected ? '#D9CFC2' : closed ? C.muted : C.sub}>
                     {weekday(date)}
                   </T>
                   <T
                     variant="headline"
-                    weight="700"
-                    color={selected ? '#FFFFFF' : closed ? C.muted : C.ink}
+                    weight="800"
+                    color={selected ? C.ivory : closed ? C.muted : C.ink}
                     style={closed ? { textDecorationLine: 'line-through' } : null}>
                     {date.getMonth() + 1}/{date.getDate()}
                   </T>
-                  <T variant="caption" weight="600" color={selected ? '#FFFFFF' : tone.fg} numberOfLines={1}>
+                  <T variant="caption" weight="700" color={selected ? C.ivory : tone.fg} numberOfLines={1}>
                     {DAY_STATUS_LABEL[d.status]}
                   </T>
                 </Pressable>
@@ -264,11 +284,11 @@ function RequestForm() {
             <T variant="caption">일요일 픽업 없음 (데모 가정)</T>
           </Row>
           {selectedDay?.status === 'check' ? (
-            <Notice tone="warn">확인이 필요한 날짜입니다. 운영자가 매장·기기를 확인한 뒤 가능 여부를 알려 드립니다.</Notice>
+            <Notice tone="warn">확인이 필요한 날짜예요. 운영자가 매장·기기를 확인한 뒤 가능 여부를 알려 드려요.</Notice>
           ) : null}
         </Field>
 
-        <Field label="픽업 매장">
+        <Field label="픽업 매장" required>
           <View style={{ gap: 8 }}>
             {PICKUP_STORES.map((store) => (
               <RadioRow key={store} selected={pickupStore === store} label={store} onPress={() => setPickupStore(store)} />
@@ -276,54 +296,27 @@ function RequestForm() {
           </View>
         </Field>
 
-        <Field label="작업 유형" hint="체험 때 볼 체크리스트가 작업 유형에 맞춰집니다.">
-          <View style={styles.chips}>
-            {(Object.keys(WORK_TYPES) as WorkType[]).map((w) => {
-              const selected = workType === w;
-              return (
-                <Pressable
-                  key={w}
-                  accessibilityRole="radio"
-                  accessibilityState={{ selected }}
-                  onPress={() => {
-                    haptic.select();
-                    setWorkType(w);
-                  }}
-                  style={({ pressed }) => [styles.choice, selected && styles.choiceOn, pressed && { opacity: 0.7 }]}>
-                  <T variant="callout" weight={selected ? '700' : '500'} color={selected ? '#FFFFFF' : C.ink}>
-                    {WORK_TYPES[w].label}
-                  </T>
-                </Pressable>
-              );
-            })}
+        <Field label="주로 뭘 할 것 같아요?" optional hint="몰라도 괜찮아요. 체험하면서 알게 되는 게 더 많아요.">
+          <View style={styles.chips} accessibilityRole="radiogroup" accessibilityLabel="주로 할 것 같은 일">
+            {USAGES.map((u) => (
+              <ChoiceChip key={u} label={USAGE_LABEL[u]} selected={usage === u} onPress={() => setUsage(u)} />
+            ))}
           </View>
-          {workType ? (
-            <View style={styles.preview}>
-              <T variant="caption" weight="700" color={C.sub}>
-                체험 때 확인할 점 (미리보기)
-              </T>
-              {WORK_TYPES[workType].checklist.map((c) => (
-                <T key={c} variant="footnote" color={C.ink}>
-                  · {c}
-                </T>
-              ))}
-            </View>
-          ) : null}
         </Field>
 
-        <Field label="비교하고 싶은 점" optional>
+        <Field label="궁금한 점" optional>
           <Input
             multiline
-            value={wantToCompare}
-            onChangeText={setWantToCompare}
-            placeholder="예: 4K 영상 내보내기 시간, 하루 들고 다닐 때 무게"
-            accessibilityLabel="비교하고 싶은 점"
+            value={question}
+            onChangeText={setQuestion}
+            placeholder="예: 유튜브만 보는데 Pro가 필요할까요?"
+            accessibilityLabel="궁금한 점, 선택"
           />
         </Field>
 
-        <Field label="체험 전 기울기" hint="지금 어느 쪽으로 마음이 기울어 있나요? 체험 뒤 결정과 비교합니다.">
+        <Field label="지금 마음" required hint="지금은 어느 쪽에 마음이 가나요? 체험이 끝나면 그때 마음과 나란히 볼게요.">
           <Segmented<Leaning>
-            accessibilityLabel="체험 전 기울기"
+            accessibilityLabel="지금 마음"
             value={leaning}
             onChange={(v) => v && setLeaning(v)}
             options={[
@@ -332,21 +325,21 @@ function RequestForm() {
               { value: 'unsure', label: '모르겠음' },
             ]}
           />
-          <ScorePicker
-            label="확신 정도 (1 전혀 모르겠음 · 5 확실함)"
-            value={confidence}
-            onChange={(v) => setConfidence(v)}
-            a11yPrefix="체험 전 "
-          />
+          <ScorePicker label="얼마나 확신해요? (1 전혀 모르겠음 · 5 확실함)" value={confidence} onChange={(v) => setConfidence(v)} a11yPrefix="체험 전 " />
         </Field>
 
-        <Notice tone="info" title="이름·전화번호를 받지 않습니다">
+        <Notice tone="info" title="이름·전화번호를 받지 않아요">
           {DEMO_NOTICE}
         </Notice>
 
         <View style={{ gap: 10 }}>
           <ErrorText message={error} />
-          <Button label={saving ? '저장 중…' : '데모 일정 요청'} onPress={submit} disabled={saving} accessibilityHint="요청을 이 기기에 저장하고 내 체험 탭으로 이동합니다" />
+          <Button
+            label={saving ? '저장 중…' : '데모 일정 요청'}
+            onPress={submit}
+            disabled={saving}
+            accessibilityHint="요청을 이 기기에 저장하고 내 체험 탭으로 이동합니다"
+          />
           <Row gap={6} style={{ justifyContent: 'center' }}>
             <Icon ios="clock" web="schedule" size={13} color={C.sub} />
             <T variant="caption">{RESPONSE_TARGET}</T>
@@ -358,43 +351,27 @@ function RequestForm() {
 }
 
 const styles = StyleSheet.create({
+  hero: { gap: 18, paddingTop: 4 },
+  step: { alignItems: 'flex-start', paddingVertical: 12 },
+  stepLine: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.line },
   stepNum: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    backgroundColor: C.primarySoft,
+    width: 34,
+    height: 34,
+    borderRadius: 12,
+    backgroundColor: C.sunk,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 1,
   },
-  cmpHead: { paddingHorizontal: 16, paddingVertical: 12 },
-  cmpRow: { paddingHorizontal: 16, paddingVertical: 12, gap: 8 },
-  cmpDivider: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.line },
-  cmpCell: {
-    flex: 1,
-    borderRadius: 8,
-    borderLeftWidth: 3,
-    paddingVertical: 8,
-    paddingHorizontal: 10,
-    gap: 2,
-  },
+  cmpRow: { paddingHorizontal: 18, paddingVertical: 14, gap: 10 },
+  cmpCell: { flex: 1, borderRadius: 14, paddingVertical: 10, paddingHorizontal: 11, gap: 4 },
+  cmpDot: { width: 7, height: 7, borderRadius: 4 },
   day: {
-    width: 68,
-    paddingVertical: 10,
-    borderRadius: RADIUS.card,
+    width: 70,
+    paddingVertical: 11,
+    borderRadius: 16,
     borderWidth: 1,
     alignItems: 'center',
     gap: 2,
   },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  choice: {
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-    borderRadius: RADIUS.chip,
-    borderWidth: 1,
-    borderColor: C.line,
-    backgroundColor: C.surface,
-  },
-  choiceOn: { backgroundColor: C.ink, borderColor: C.ink },
-  preview: { backgroundColor: C.bg, borderRadius: 10, padding: 12, gap: 3 },
 });

@@ -49,7 +49,3 @@ export function addDays(d: Date, n: number): Date {
 export function startOfDay(d: Date): Date {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate());
 }
-
-export function formatScore(v: number | null): string {
-  return v === null ? '—' : Number.isInteger(v) ? `${v}` : v.toFixed(1);
-}

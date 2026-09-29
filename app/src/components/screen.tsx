@@ -35,6 +35,6 @@ export function Screen({ children, scrollRef }: { children: ReactNode; scrollRef
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: C.bg },
-  screenContent: { paddingHorizontal: SPACE.lg, paddingTop: SPACE.sm, paddingBottom: 48 },
+  screenContent: { paddingHorizontal: SPACE.lg, paddingTop: SPACE.sm, paddingBottom: 110 }, // 떠 있는 탭 바 아래로 마지막 줄이 숨지 않게
   inner: { width: '100%', maxWidth: MAX_WIDTH, alignSelf: 'center', gap: SPACE.xl },
 });
