@@ -69,6 +69,16 @@ const failWrites = (page) =>
       throw new DOMException('verify quota', 'QuotaExceededError');
     };
   });
+// 특정 키 쓰기만 실패시킨다 (두 키 중 하나만 실패하는 부분 실패 재현)
+const failWritesFor = (page, key) =>
+  page.evaluate((key) => {
+    window.__setItem = Storage.prototype.setItem;
+    Storage.prototype.setItem = function (k, v) {
+      if (k === key) throw new DOMException('verify quota', 'QuotaExceededError');
+      return window.__setItem.call(this, k, v);
+    };
+  }, key);
+const UI_KEY = `${D.STORAGE_KEY}:app-ui`;
 const restoreWrites = (page) => page.evaluate(() => (Storage.prototype.setItem = window.__setItem));
 const stored = (page) => page.evaluate((k) => JSON.parse(localStorage.getItem(k) ?? 'null'), D.STORAGE_KEY);
 
@@ -153,6 +163,55 @@ await check('운영 시뮬레이터 상태 변경 저장 실패 → 단계 그�
   await expect(page.getByText(D.STORAGE_WRITE_ERROR).first()).toBeVisible();
   await expect(page.getByRole('switch', { name: /딜러 판매 조건 확정/ })).not.toBeChecked();
   if ((await stored(page)).dealerTermsConfirmed) throw new Error('실패했는데 설정이 저장됨');
+  await page.context().close();
+});
+
+async function fillDecision(page) {
+  await page.getByRole('radio', { name: /^두 대 모두 반납\./ }).click();
+  await page.getByRole('radio', { name: /체험 후.* 4점$/ }).click();
+  await page.getByLabel('결정 이유, 필수').fill('부분 실패 검증');
+}
+
+await check('UI 키만 실패 → 결정은 도메인 키 하나만 쓰므로 화면·저장본 모두 저장됨 (TETO 부분 실패 사례)', async () => {
+  const page = await newPage(browser, trialState());
+  await page.goto(`${base}decide/`, { waitUntil: 'domcontentloaded', timeout: 60_000 });
+  await fillDecision(page);
+  await failWritesFor(page, UI_KEY);
+  await page.getByRole('button', { name: '결정 저장', exact: true }).click();
+  await expect(page.getByRole('button', { name: '저장됨', exact: true })).toBeVisible();
+  if (!(await stored(page)).reservations[0].decision) throw new Error('화면은 저장됨인데 저장본에 결정 없음');
+  await restoreWrites(page);
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await expect(page.getByRole('button', { name: '저장됨', exact: true })).toBeVisible();
+  await page.context().close();
+});
+
+await check('도메인 키만 실패 → 결정 저장 실패, 저장본에도 없고 새로고침 후에도 없음', async () => {
+  const page = await newPage(browser, trialState());
+  await page.goto(`${base}decide/`, { waitUntil: 'domcontentloaded', timeout: 60_000 });
+  await fillDecision(page);
+  await failWritesFor(page, D.STORAGE_KEY);
+  await page.getByRole('button', { name: '결정 저장', exact: true }).click();
+  await expect(page.getByText(D.STORAGE_WRITE_ERROR).first()).toBeVisible();
+  await expect(page.getByRole('button', { name: '결정 저장', exact: true })).toBeEnabled();
+  if ((await stored(page)).reservations[0].decision) throw new Error('실패했는데 결정이 저장됨');
+  await restoreWrites(page);
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await expect(page.getByRole('button', { name: '결정 저장', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: '저장됨', exact: true })).toHaveCount(0);
+  await page.context().close();
+});
+
+await check('초기화 중 UI 키만 실패 → 저장된 도메인 초기화는 화면에도 반영, 오류 표시', async () => {
+  const page = await newPage(browser, trialState());
+  await page.goto(`${base}simulator`, { waitUntil: 'domcontentloaded', timeout: 60_000 });
+  await page.getByRole('button', { name: '데모 초기화' }).waitFor();
+  await failWritesFor(page, UI_KEY);
+  await page.getByRole('button', { name: '데모 초기화' }).click();
+  await page.getByRole('button', { name: '초기화', exact: true }).click();
+  await expect(page.getByText(D.STORAGE_WRITE_ERROR).first()).toBeVisible();
+  if ((await stored(page)).reservations.length !== 0) throw new Error('도메인 키 초기화가 저장되지 않음');
+  await expect(page.getByText('진행할 요청이 없습니다')).toBeVisible();
   await page.context().close();
 });
 

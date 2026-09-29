@@ -132,15 +132,20 @@ export function setClockOffsetHours(hours: number): Result<true> {
   return { ok: true, value: true };
 }
 
-/** 명시적 초기화 — 손상된 원본도 이때만 덮어쓴다. */
+/**
+ * 명시적 초기화 — 손상된 원본도 이때만 덮어쓴다.
+ * 두 키를 따로 쓰고 실제로 저장된 키만 화면에 반영한다(한쪽만 실패해도 화면과 저장본이 같다).
+ */
 export function resetDemo(): Result<true> {
+  const cur = read();
   const state = createInitialState(new Date());
-  if (!tryWrite([[STORAGE_KEY, JSON.stringify(state)], [CLOCK_KEY, "0"]])) {
-    snap = { ...read(), writeError: STORAGE_WRITE_ERROR };
-    emit();
-    return { ok: false, error: STORAGE_WRITE_ERROR };
-  }
-  snap = { state, clockOffsetHours: 0, loadError: null, rawSaved: null, writeError: null };
+  const stateOk = tryWrite([[STORAGE_KEY, JSON.stringify(state)]]);
+  const clockOk = tryWrite([[CLOCK_KEY, "0"]]);
+  const clockOffsetHours = clockOk ? 0 : cur.clockOffsetHours;
+  const writeError = stateOk && clockOk ? null : STORAGE_WRITE_ERROR;
+  snap = stateOk
+    ? { state, clockOffsetHours, loadError: null, rawSaved: null, writeError }
+    : { ...cur, clockOffsetHours, writeError };
   emit();
-  return { ok: true, value: true };
+  return writeError ? { ok: false, error: writeError } : { ok: true, value: true };
 }

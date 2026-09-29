@@ -94,11 +94,10 @@ function setWriteError(e: string | null) {
   emit();
 }
 
-function write(demo: DemoState, ui: UiState): Promise<boolean> {
-  return AsyncStorage.multiSet([
-    [STORAGE_KEY, JSON.stringify(demo)],
-    [UI_STORAGE_KEY, JSON.stringify(ui)],
-  ]).then(
+// 키 하나만 쓴다 — 한 번의 쓰기는 전부 되거나 전부 안 된다. (여러 키를 한꺼번에 쓰면 웹에서는 일부만
+// 저장될 수 있어 화면과 저장본이 어긋난다: TETO 교차검토 2026-09-29)
+function writeKey(key: string, value: unknown): Promise<boolean> {
+  return AsyncStorage.setItem(key, JSON.stringify(value)).then(
     () => true,
     (e) => {
       console.warn('[store] 저장 실패', e);
@@ -173,7 +172,7 @@ export function apply(fn: (s: DemoState) => Result<DemoState>): Promise<Result<D
     if (snapshot.loadError) return { ok: false, error: STORAGE_READ_ERROR };
     const r = fn(snapshot.demo);
     if (!r.ok) return r;
-    if (!(await write(r.value, snapshot.ui))) {
+    if (!(await writeKey(STORAGE_KEY, r.value))) {
       setWriteError(STORAGE_WRITE_ERROR);
       return { ok: false, error: STORAGE_WRITE_ERROR };
     }
@@ -188,7 +187,7 @@ export function updateUi(fn: (u: UiState) => UiState): Promise<boolean> {
   return enqueue(async () => {
     if (snapshot.loadError) return false;
     const ui = fn(snapshot.ui);
-    if (!(await write(snapshot.demo, ui))) {
+    if (!(await writeKey(UI_STORAGE_KEY, ui))) {
       setWriteError(STORAGE_WRITE_ERROR);
       return false;
     }
@@ -207,18 +206,28 @@ export function setDealerTermsConfirmed(value: boolean): Promise<Result<DemoStat
   return apply((s) => ({ ok: true, value: { ...s, dealerTermsConfirmed: value } }));
 }
 
-/** 데모 초기화 — 도메인 초기 상태 + 앱 UI 상태 비움. 손상된 저장본을 덮어쓰는 유일한 경로. 저장이 끝나야 반영된다. */
+/**
+ * 데모 초기화 — 도메인 초기 상태 + 앱 UI 상태 비움. 손상된 저장본을 덮어쓰는 유일한 경로.
+ * 두 키를 따로 쓰고, 실제로 저장된 키만 화면에 반영한다(한쪽만 실패해도 화면과 저장본이 같다).
+ */
 export function resetAll(): Promise<boolean> {
   return enqueue(async () => {
     const demo = createInitialState();
     const ui = emptyUi();
-    if (!(await write(demo, ui))) {
-      setWriteError(STORAGE_WRITE_ERROR);
-      return false;
-    }
-    snapshot = { ready: true, demo, ui, loadError: null, writeError: null };
+    const demoOk = await writeKey(STORAGE_KEY, demo);
+    const uiOk = await writeKey(UI_STORAGE_KEY, ui);
+    const stillBad = (snapshot.loadError ?? []).filter(
+      (b) => (b.key === STORAGE_KEY && !demoOk) || (b.key === UI_STORAGE_KEY && !uiOk),
+    );
+    snapshot = {
+      ready: true,
+      demo: demoOk ? demo : snapshot.demo,
+      ui: uiOk ? ui : snapshot.ui,
+      loadError: stillBad.length ? stillBad : null,
+      writeError: demoOk && uiOk ? null : STORAGE_WRITE_ERROR,
+    };
     emit();
-    return true;
+    return demoOk && uiOk;
   });
 }
 

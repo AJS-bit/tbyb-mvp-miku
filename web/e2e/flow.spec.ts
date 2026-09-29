@@ -329,6 +329,30 @@ test("손상된 저장본은 덮어쓰지 않고 오류를 보여 주며, 명시
   await expect(page).toHaveURL(/\/my\/\?id=TB-0001$/);
 });
 
+test("초기화 중 한 키만 실패해도 화면과 저장본이 같다 (부분 실패)", async ({ page }) => {
+  await page.setViewportSize(MOBILE);
+  await page.goto("");
+  await page.evaluate((k) => localStorage.setItem(k, "{broken"), STORAGE_KEY);
+  await page.reload();
+  const banner = page.getByTestId("storage-load-error");
+  await expect(banner).toContainText(STORAGE_READ_ERROR);
+  // 데모 시계 키만 쓰기 실패
+  await page.evaluate((clockKey) => {
+    const orig = Storage.prototype.setItem;
+    Storage.prototype.setItem = function (k: string, v: string) {
+      if (k === clockKey) throw new DOMException("quota", "QuotaExceededError");
+      return orig.call(this, k, v);
+    };
+  }, `${STORAGE_KEY}:clock-offset-hours`);
+  await banner.getByRole("button", { name: "초기화", exact: true }).click();
+  await banner.getByRole("button", { name: "원본을 지우고 초기화" }).click();
+  // 상태 키는 저장됐으니 손상 배너는 사라지고, 시계 키 실패는 쓰기 오류로 알린다
+  await expect(page.getByTestId("storage-load-error")).toHaveCount(0);
+  await expect(page.getByText(STORAGE_WRITE_ERROR).first()).toBeVisible();
+  const saved = await page.evaluate((k) => JSON.parse(localStorage.getItem(k) ?? "null"), STORAGE_KEY);
+  expect(saved.reservations).toHaveLength(0);
+});
+
 test("저장에 실패하면 성공으로 표시하지 않고 상태도 바꾸지 않는다", async ({ page }) => {
   await requestDemo(page, "TB-0001");
   await openOps(page, "TB-0001");

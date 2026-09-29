@@ -96,7 +96,7 @@ function WriteErrorCard() {
         </T>
       </Row>
       <T variant="footnote">
-        방금 변경은 반영하지 않았습니다. 입력한 내용은 화면에 그대로 있으니 저장 공간을 확인한 뒤 같은 버튼을 다시 눌러 주세요.
+        저장하지 못한 변경은 화면에도 반영하지 않았습니다. 입력한 내용은 그대로 있으니 저장 공간을 확인한 뒤 다시 시도해 주세요.
       </T>
       <Button small variant="secondary" label="확인" onPress={dismissWriteError} />
     </View>
