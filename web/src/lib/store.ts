@@ -58,7 +58,8 @@ function read(): DemoSnapshot {
   const saved = readable ? readSaved(raw) : ({ ok: false, error: STORAGE_READ_ERROR } as const);
   if (!saved.ok) {
     // 원본 보존: 메모리에만 초기 상태를 두고 localStorage 에는 쓰지 않는다.
-    snap = { state: createInitialState(), clockOffsetHours: 0, loadError: saved.error, rawSaved: raw, writeError: null };
+    // 데모 시계는 별도 키라 정상적으로 읽혔으면 그 값을 그대로 둔다 — 화면이 저장본과 어긋나지 않게
+    snap = { state: createInitialState(), clockOffsetHours: offset, loadError: saved.error, rawSaved: raw, writeError: null };
     return snap;
   }
   snap = { state: saved.value, clockOffsetHours: offset, loadError: null, rawSaved: null, writeError: null };

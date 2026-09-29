@@ -329,21 +329,31 @@ test("손상된 저장본은 덮어쓰지 않고 오류를 보여 주며, 명시
   await expect(page).toHaveURL(/\/my\/\?id=TB-0001$/);
 });
 
-test("초기화 중 한 키만 실패해도 화면과 저장본이 같다 (부분 실패)", async ({ page }) => {
-  await page.setViewportSize(MOBILE);
-  await page.goto("");
-  await page.evaluate((k) => localStorage.setItem(k, "{broken"), STORAGE_KEY);
+test("초기화 중 한 키만 실패해도 화면과 저장본이 같다 (부분 실패, 데모 시계 보존)", async ({ page }) => {
+  const clockKey = `${STORAGE_KEY}:clock-offset-hours`;
+  await page.setViewportSize(DESKTOP);
+  await page.goto("ops/");
+  // 도메인 키는 손상, 데모 시계 키는 정상(+25시간)
+  await page.evaluate(
+    ([k, ck]) => {
+      localStorage.setItem(k, "{broken");
+      localStorage.setItem(ck, "25");
+    },
+    [STORAGE_KEY, clockKey],
+  );
   await page.reload();
   const banner = page.getByTestId("storage-load-error");
   await expect(banner).toContainText(STORAGE_READ_ERROR);
+  const clock = page.getByRole("checkbox", { name: /데모 시계/ });
+  await expect(clock).toBeChecked(); // 손상 중에도 정상 시계 값은 화면에 그대로
   // 데모 시계 키만 쓰기 실패
-  await page.evaluate((clockKey) => {
+  await page.evaluate((ck) => {
     const orig = Storage.prototype.setItem;
     Storage.prototype.setItem = function (k: string, v: string) {
-      if (k === clockKey) throw new DOMException("quota", "QuotaExceededError");
+      if (k === ck) throw new DOMException("quota", "QuotaExceededError");
       return orig.call(this, k, v);
     };
-  }, `${STORAGE_KEY}:clock-offset-hours`);
+  }, clockKey);
   await banner.getByRole("button", { name: "초기화", exact: true }).click();
   await banner.getByRole("button", { name: "원본을 지우고 초기화" }).click();
   // 상태 키는 저장됐으니 손상 배너는 사라지고, 시계 키 실패는 쓰기 오류로 알린다
@@ -351,6 +361,13 @@ test("초기화 중 한 키만 실패해도 화면과 저장본이 같다 (부�
   await expect(page.getByText(STORAGE_WRITE_ERROR).first()).toBeVisible();
   const saved = await page.evaluate((k) => JSON.parse(localStorage.getItem(k) ?? "null"), STORAGE_KEY);
   expect(saved.reservations).toHaveLength(0);
+  // 시계는 저장되지 않았으므로 화면도 저장본(25)과 같아야 한다
+  expect(await page.evaluate((ck) => localStorage.getItem(ck), clockKey)).toBe("25");
+  await expect(clock).toBeChecked();
+  // 재시도 없이 새로고침해도 화면이 바뀌지 않는다
+  await page.reload();
+  await expect(page.getByTestId("storage-load-error")).toHaveCount(0);
+  await expect(page.getByRole("checkbox", { name: /데모 시계/ })).toBeChecked();
 });
 
 test("저장에 실패하면 성공으로 표시하지 않고 상태도 바꾸지 않는다", async ({ page }) => {
