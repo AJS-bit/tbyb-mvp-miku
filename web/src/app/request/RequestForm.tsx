@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import {
@@ -49,7 +50,7 @@ export function RequestForm() {
   const [leaning, setLeaning] = useState<Leaning>("unsure");
   const [confidence, setConfidence] = useState<Score | null>(null);
   const [error, setError] = useState("");
-  const [busy, setBusy] = useState(false);
+  const [savedId, setSavedId] = useState("");
 
   if (!snap) return <Skeleton />;
 
@@ -78,8 +79,9 @@ export function RequestForm() {
       ),
     );
     if (!r.ok) return setError(r.error);
-    setBusy(true);
-    router.push(`/my/?id=${encodeURIComponent(r.value.reservations[0].id)}`);
+    const id = r.value.reservations[0].id;
+    setSavedId(id);
+    router.push(`/my/?id=${encodeURIComponent(id)}`);
   }
 
   return (
@@ -298,9 +300,18 @@ export function RequestForm() {
         <p className="text-sm text-sub">{RESPONSE_TARGET}</p>
         <p className="mt-1 text-sm text-sub">요청을 보내도 아직 확정이 아닙니다. 운영자가 두 기기를 확보하면 결제 기한을 안내합니다.</p>
         <ErrorText>{error}</ErrorText>
-        <button type="submit" disabled={busy} className={cx(btn.primary, "mt-4 w-full sm:w-auto sm:px-8")}>
+        <button type="submit" disabled={!!savedId} className={cx(btn.primary, "mt-4 w-full sm:w-auto sm:px-8")}>
           데모 일정 요청 보내기
         </button>
+        {savedId && (
+          // 요청은 이미 저장됨 — 화면 이동이 늦어지면 직접 열 수 있게 한다
+          <p role="status" className="mt-3 text-sm text-sub">
+            {savedId} 요청을 이 기기에 저장했습니다. 내 체험으로 이동 중…{" "}
+            <Link href={`/my/?id=${encodeURIComponent(savedId)}`} className="font-medium text-primary underline">
+              바로 열기
+            </Link>
+          </p>
+        )}
       </div>
     </form>
   );
