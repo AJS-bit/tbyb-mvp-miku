@@ -1,0 +1,128 @@
+// 반납·구매 결과 (내 체험 · 결정·반납 공용) — 구매 의향을 완료된 구매처럼 보이지 않게 한다
+import { View } from 'react-native';
+
+import {
+  DECISION_LABEL,
+  DEVICE_LABEL,
+  SALE_LABEL,
+  devicesToReturn,
+  isInspectionDone,
+  requiredInspections,
+  saleDevice,
+  type Decision,
+  type DeviceKey,
+  type Reservation,
+} from '@/domain';
+import { C } from '@/lib/theme';
+
+import { DeviceTag, Notice, Pill, Row, T } from './ui';
+
+export const SALE_PENDING_COPY =
+  '선택한 기기는 딜러 판매가 확인돼야 구매로 확정됩니다. 확인되지 않으면 그 기기도 반납·검수합니다.';
+
+/** 결정 초안/저장본으로 계산한 반납 계획 (체험 중 미리보기) */
+export function ReturnPlan({ decision }: { decision: Pick<Decision, 'choice' | 'model'> | undefined }) {
+  const d = decision as Decision | undefined;
+  const back = devicesToReturn(d);
+  const buy = saleDevice(d);
+  return (
+    <View style={{ gap: 10 }}>
+      <Row gap={8} style={{ flexWrap: 'wrap' }}>
+        <T variant="callout" weight="700">
+          반납할 기기
+        </T>
+        {back.map((k) => (
+          <DeviceTag key={k} kind={k} full />
+        ))}
+      </Row>
+      {buy ? (
+        <>
+          <Row gap={8} style={{ flexWrap: 'wrap' }}>
+            <T variant="callout" weight="700">
+              구매 선택
+            </T>
+            <DeviceTag kind={buy} full />
+            <Pill label="딜러 판매 확인 전" bg={C.warnBg} fg={C.warnText} />
+          </Row>
+          <T variant="callout" color={C.sub}>
+            나머지 한 대와 부속품은 반납·검수합니다.
+          </T>
+          <Notice tone="warn">{SALE_PENDING_COPY}</Notice>
+        </>
+      ) : decision?.choice === 'buy_new' ? (
+        <T variant="callout" color={C.sub}>
+          새 제품 구매는 딜러 판매 조건에 따릅니다. 체험한 두 대는 모두 반납·검수합니다.
+        </T>
+      ) : decision?.choice === 'undecided' ? (
+        <T variant="callout" color={C.sub}>
+          결정을 못 해도 두 대 모두 반납합니다. 부속품까지 함께 반납·검수합니다.
+        </T>
+      ) : (
+        <T variant="callout" color={C.sub}>
+          두 대와 부속품을 모두 반납·검수합니다.
+        </T>
+      )}
+    </View>
+  );
+}
+
+function deviceLine(r: Reservation, k: DeviceKey): { text: string; tone: 'done' | 'warn' | 'pro' | 'grey' } {
+  const buy = saleDevice(r.decision);
+  const inspect = requiredInspections(r);
+  if (k === buy && r.ops.sale === 'none') return { text: '구매 선택 · 딜러 판매 확인 대기', tone: 'warn' };
+  if (k === buy && r.ops.sale === 'confirmed') return { text: SALE_LABEL.confirmed, tone: 'done' };
+  if (inspect.includes(k)) {
+    const prefix = k === buy ? '판매 불성립 · ' : '';
+    if (r.status === 'completed' || isInspectionDone(r.ops.inspection[k])) return { text: `${prefix}반납 · 검수 완료`, tone: 'done' };
+    if (r.status === 'inspecting') return { text: `${prefix}반납 · 검수 중`, tone: 'pro' };
+    return { text: `${prefix}반납 접수`, tone: 'pro' };
+  }
+  return { text: '—', tone: 'grey' };
+}
+
+const LINE_TONE = {
+  done: { bg: C.doneSoft, fg: C.doneText },
+  warn: { bg: C.warnBg, fg: C.warnText },
+  pro: { bg: C.proSoft, fg: C.pro },
+  grey: { bg: C.greySoft, fg: C.grey },
+};
+
+/** 반납 이후: 기기별로 반납 / 구매(판매 확인 여부) 표시 */
+export function ReturnOutcome({ r }: { r: Reservation }) {
+  const buy = saleDevice(r.decision);
+  return (
+    <View style={{ gap: 12 }}>
+      {r.decision ? (
+        <Row gap={8} style={{ flexWrap: 'wrap' }}>
+          <T variant="footnote">고객 결정</T>
+          <T variant="callout" weight="700">
+            {DECISION_LABEL[r.decision.choice]}
+            {r.decision.model ? ` · ${DEVICE_LABEL[r.decision.model]}` : ''}
+          </T>
+        </Row>
+      ) : null}
+      {(['air', 'pro'] as DeviceKey[]).map((k) => {
+        const line = deviceLine(r, k);
+        const t = LINE_TONE[line.tone];
+        return (
+          <View key={k} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+            <DeviceTag kind={k} full />
+            <Pill label={line.text} bg={t.bg} fg={t.fg} />
+          </View>
+        );
+      })}
+      {buy && r.ops.sale === 'none' ? <Notice tone="warn">{SALE_PENDING_COPY}</Notice> : null}
+      {buy && r.ops.sale === 'failed' ? (
+        <Notice tone="info">딜러 판매가 성립하지 않아 선택한 기기도 반납·검수합니다. 구매로 처리되지 않았습니다.</Notice>
+      ) : null}
+    </View>
+  );
+}
+
+export function FollowUpNotice() {
+  return (
+    <Notice tone="info" title="7일·30일 후속 설문">
+      체험이 끝나고 7일 뒤와 30일 뒤에 짧은 후속 설문을 드립니다. 데모에서는 발송되지 않습니다.
+    </Notice>
+  );
+}

@@ -1,0 +1,64 @@
+@import "tailwindcss";
+
+/* SPEC.md 디자인 토큰 (웹·앱 공통). 작은 글자에 쓰는 *-ink 는 흰 배경 대비 4.5:1 이상으로 어둡게 맞춘 값. */
+@theme {
+  --font-sans: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Pretendard", system-ui, "Segoe UI",
+    "Noto Sans KR", "Malgun Gothic", sans-serif;
+
+  --color-ink: #111418;
+  --color-sub: #5b6470;
+  --color-line: #e4e7ec;
+  --color-bg: #f7f8fa;
+  --color-surface: #ffffff;
+
+  --color-primary: #2b59ff;
+  --color-primary-ink: #1e44d8;
+  --color-primary-soft: #ebf0ff;
+
+  --color-air: #0f9d8a;
+  --color-air-ink: #0b7a6b;
+  --color-air-soft: #e7f5f3;
+  --color-pro: #6d4aff;
+  --color-pro-ink: #5a38e8;
+  --color-pro-soft: #f0edff;
+
+  --color-warn-bg: #fff7e6;
+  --color-warn: #8a5a00;
+  --color-warn-line: #f3dcae;
+  --color-danger: #d92d20;
+  --color-danger-soft: #fef3f2;
+  --color-success: #12b76a;
+  --color-success-ink: #067647;
+  --color-success-soft: #ecfdf3;
+  --color-slate-ink: #44546f;
+  --color-slate-soft: #eef2f6;
+  --color-muted-soft: #f2f4f7;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  /* 한국어는 어절 단위로 줄바꿈 */
+  word-break: keep-all;
+  overflow-wrap: break-word;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* 키보드 초점은 항상 보이게 */
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+input[type="number"]::-webkit-inner-spin-button {
+  opacity: 1;
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
