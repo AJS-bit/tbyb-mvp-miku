@@ -1,12 +1,14 @@
 import { router, Stack } from 'expo-router';
 import { Platform, Pressable, StyleSheet } from 'react-native';
 
-import { C, FONT_FAMILY } from '@/lib/theme';
+import { FONT_FAMILY } from '@/lib/theme';
+import { useTheme } from '@/lib/theme-context';
 
 import { Icon, T } from './ui';
 
 /** 모든 탭 헤더 오른쪽: 데모 진행용 운영 시뮬레이터 */
 export function SimulatorButton() {
+  const { c } = useTheme();
   return (
     <Pressable
       accessibilityRole="button"
@@ -15,8 +17,8 @@ export function SimulatorButton() {
       hitSlop={8}
       onPress={() => router.push('/simulator')}
       style={({ pressed }) => [styles.btn, pressed && { opacity: 0.6 }]}>
-      <Icon ios="slider.horizontal.3" web="tune" size={15} color={C.ink} />
-      <T variant="callout" weight="700" color={C.ink}>
+      <Icon ios="slider.horizontal.3" web="tune" size={15} color={c.ink} />
+      <T variant="callout" weight="700" color={c.ink}>
         운영 시뮬레이터
       </T>
     </Pressable>
@@ -24,6 +26,7 @@ export function SimulatorButton() {
 }
 
 export function CloseButton() {
+  const { c } = useTheme();
   return (
     <Pressable
       accessibilityRole="button"
@@ -31,7 +34,7 @@ export function CloseButton() {
       hitSlop={8}
       onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
       style={({ pressed }) => [styles.btn, pressed && { opacity: 0.6 }]}>
-      <T variant="headline" weight="700" color={C.ink}>
+      <T variant="headline" weight="700" color={c.ink}>
         닫기
       </T>
     </Pressable>
@@ -43,14 +46,17 @@ const FONT = FONT_FAMILY ? { fontFamily: FONT_FAMILY } : {};
 
 /** 탭마다 하나씩: 큰 제목 헤더 + 시뮬레이터 버튼 */
 export function TabStack({ title }: { title: string }) {
+  const { c } = useTheme();
   return (
     <Stack
       screenOptions={{
         headerLargeTitleEnabled: true,
         headerShadowVisible: false,
         headerLargeTitleShadowVisible: false,
-        headerLargeTitleStyle: { ...FONT, fontWeight: '800', color: C.ink },
-        contentStyle: { backgroundColor: C.bg },
+        headerLargeTitleStyle: { ...FONT, fontWeight: '800', color: c.ink },
+        headerTitleStyle: { ...FONT, color: c.ink },
+        headerTintColor: c.ink,
+        contentStyle: { backgroundColor: c.bg },
         headerRight: () => <SimulatorButton />,
       }}>
       <Stack.Screen name="index" options={{ title }} />

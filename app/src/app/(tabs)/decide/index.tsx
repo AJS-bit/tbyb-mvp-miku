@@ -41,7 +41,7 @@ import {
 import { formatDateTime } from '@/lib/format';
 import { haptic } from '@/lib/haptics';
 import { apply, updateUi, useApp, useCurrent } from '@/lib/store';
-import { C, DEVICE_COLOR } from '@/lib/theme';
+import { useTheme } from '@/lib/theme-context';
 
 const CHOICES: DecisionChoice[] = ['return_both', 'buy_used', 'buy_new', 'undecided'];
 const CHOICE_SUB: Record<DecisionChoice, string> = {
@@ -64,6 +64,7 @@ const SEP = ' · ';
 
 export default function DecideScreen() {
   const { app, current } = useCurrent();
+  const { c } = useTheme();
 
   if (!current) {
     return (
@@ -89,8 +90,8 @@ export default function DecideScreen() {
       ) : before ? (
         <Card style={{ gap: 12, paddingVertical: 22 }}>
           <Row gap={10}>
-            <View style={{ width: 36, height: 36, borderRadius: 12, backgroundColor: C.sunk, alignItems: 'center', justifyContent: 'center' }}>
-              <Icon ios="lock.fill" web="lock" size={16} color={C.sub} />
+            <View style={{ width: 36, height: 36, borderRadius: 12, backgroundColor: c.sunk, alignItems: 'center', justifyContent: 'center' }}>
+              <Icon ios="lock.fill" web="lock" size={16} color={c.sub} />
             </View>
             <View style={{ flex: 1, gap: 2 }}>
               <Eyebrow>Opens during trial</Eyebrow>
@@ -101,7 +102,7 @@ export default function DecideScreen() {
             <T variant="footnote">지금 상태</T>
             <StatusChip status={current.status} />
           </Row>
-          <T variant="body" color={C.sub}>
+          <T variant="body" color={c.sub}>
             체험 마지막 날, 미션 답을 모아 보고 반납·구매를 골라요. 구매 선택지는 딜러 판매 조건이 확정된 경우에만 열려요.
           </T>
         </Card>
@@ -119,6 +120,7 @@ export default function DecideScreen() {
 // ───────── 체험 중: 결정 ─────────
 
 function DecisionForm({ r, dealerTermsConfirmed }: { r: Reservation; dealerTermsConfirmed: boolean }) {
+  const { c } = useTheme();
   const saved = r.decision;
   const [choice, setChoice] = useState<DecisionChoice | null>(saved?.choice ?? null);
   const [model, setModel] = useState<DeviceKey | null>(saved?.model ?? null);
@@ -206,8 +208,8 @@ function DecisionForm({ r, dealerTermsConfirmed }: { r: Reservation; dealerTerms
                 value={model}
                 onChange={(v) => v && setModel(v)}
                 options={[
-                  { value: 'air', label: DEVICE_LABEL.air, color: C.air },
-                  { value: 'pro', label: DEVICE_LABEL.pro, color: C.pro },
+                  { value: 'air', label: DEVICE_LABEL.air, color: c.air, fg: c.onAir },
+                  { value: 'pro', label: DEVICE_LABEL.pro, color: c.pro, fg: c.onPro },
                 ]}
               />
             </Field>
@@ -225,18 +227,18 @@ function DecisionForm({ r, dealerTermsConfirmed }: { r: Reservation; dealerTerms
                 <T variant="title3">{r.request.confidenceBefore}</T>
               </Row>
             </View>
-            <Icon ios="arrow.right" web="arrow_forward" size={18} color={C.sub} style={{ marginTop: 29 }} />
+            <Icon ios="arrow.right" web="arrow_forward" size={18} color={c.sub} style={{ marginTop: 29 }} />
             <View style={{ gap: 4 }}>
               <T variant="caption">체험 후</T>
               <Row gap={6}>
                 {choice && (choice === 'buy_new' || choice === 'buy_used') && model ? <DeviceTag kind={model} /> : null}
-                <T variant="title3" color={confidence ? C.ink : C.muted}>
+                <T variant="title3" color={confidence ? c.ink : c.sub}>
                   {confidence ?? '—'}
                 </T>
               </Row>
             </View>
             {confidence ? (
-              <T variant="footnote" weight="700" color={C.coralInk} style={{ marginTop: 28 }}>
+              <T variant="footnote" weight="700" color={c.coralInk} style={{ marginTop: 28 }}>
                 {confidence - r.request.confidenceBefore === 0
                   ? '변화 없음'
                   : `${confidence - r.request.confidenceBefore > 0 ? '+' : ''}${confidence - r.request.confidenceBefore}`}
@@ -269,7 +271,7 @@ function DecisionForm({ r, dealerTermsConfirmed }: { r: Reservation; dealerTerms
           {choice ? (
             <ReturnPlan decision={{ choice, model: isBuy ? (model ?? undefined) : undefined }} />
           ) : (
-            <T variant="callout" color={C.sub}>
+            <T variant="callout" color={c.sub}>
               결정을 고르면 반납할 기기가 여기에 표시돼요.
             </T>
           )}
@@ -305,6 +307,7 @@ const RETURN_ITEMS = [
 
 function ReturnChecklist({ r, devices }: { r: Reservation; devices: DeviceKey[] }) {
   const { ui } = useApp();
+  const t = useTheme();
   const checked = ui.returnChecklist[r.id] ?? [];
   const toggle = (key: string) =>
     updateUi((u) => {
@@ -315,11 +318,11 @@ function ReturnChecklist({ r, devices }: { r: Reservation; devices: DeviceKey[] 
   return (
     <Section eyebrow="Before return" title="반납 준비" caption={r.decision ? '반납할 기기마다 확인해 주세요' : '결정을 저장하면 반납할 기기에 맞춰져요'}>
       {devices.map((k) => (
-        <Card key={k} style={{ gap: 2, paddingVertical: 12, borderLeftWidth: 5, borderLeftColor: DEVICE_COLOR[k].main }}>
+        <Card key={k} style={{ gap: 2, paddingVertical: 12, borderLeftWidth: 5, borderLeftColor: t.device[k].main }}>
           <DeviceTag kind={k} full style={{ marginBottom: 4 }} />
           {RETURN_ITEMS.map((it) => {
             const key = `${k}:${it.key}`;
-            return <CheckRow key={key} checked={checked.includes(key)} label={it.label} color={DEVICE_COLOR[k].main} onToggle={() => toggle(key)} />;
+            return <CheckRow key={key} checked={checked.includes(key)} label={it.label} color={t.device[k].main} onToggle={() => toggle(key)} />;
           })}
         </Card>
       ))}

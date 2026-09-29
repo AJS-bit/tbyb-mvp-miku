@@ -87,8 +87,8 @@ export function Timeline({ r }: { r: Reservation }) {
                 aria-hidden
                 className={cx(
                   "relative z-10 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold",
-                  done && (cancelled ? "bg-sub text-white" : "bg-ink text-ivory"),
-                  current && "bg-coral text-white ring-[6px] ring-coral/20",
+                  done && (cancelled ? "bg-sub text-ivory" : "bg-ink text-ivory"),
+                  current && "bg-coral text-on-coral ring-[6px] ring-coral/20",
                   !done && !current && "bg-surface text-sub ring-1 ring-line-strong",
                 )}
               >

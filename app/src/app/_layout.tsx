@@ -1,46 +1,54 @@
-import { DefaultTheme, Stack, ThemeProvider, type Theme } from 'expo-router';
+import { DarkTheme, DefaultTheme, Stack, ThemeProvider as NavigationThemeProvider, type Theme as NavigationTheme } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 
 import { CloseButton } from '@/components/header';
 import { hydrate } from '@/lib/store';
-import { C } from '@/lib/theme';
+import { AppThemeProvider, useTheme } from '@/lib/theme-context';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
 // 미션 시트·시뮬레이터로 바로 들어와도(딥 링크·웹 새로고침) 아래에 탭이 깔리게
 export const unstable_settings = { anchor: '(tabs)' };
 
-const theme: Theme = {
-  ...DefaultTheme,
-  colors: {
-    ...DefaultTheme.colors,
-    primary: C.ink,
-    background: C.bg,
-    card: C.bg,
-    text: C.ink,
-    border: C.line,
-  },
-};
-
 export default function RootLayout() {
   useEffect(() => {
-    // 저장본 복원이 끝날 때까지 스플래시를 유지한다
+    // 저장본 복원(화면 모드 포함)이 끝날 때까지 스플래시를 유지한다
     hydrate().finally(() => {
       SplashScreen.hideAsync().catch(() => {});
     });
   }, []);
 
   return (
-    <ThemeProvider value={theme}>
-      <StatusBar style="dark" />
-      <Stack screenOptions={{ contentStyle: { backgroundColor: C.bg } }}>
+    <AppThemeProvider>
+      <RootStack />
+    </AppThemeProvider>
+  );
+}
+
+function RootStack() {
+  const t = useTheme();
+  const c = t.c;
+  // 내비게이션 헤더·모달 바탕이 지금 테마를 따르게
+  const navigation = useMemo<NavigationTheme>(() => {
+    const base = t.scheme === 'dark' ? DarkTheme : DefaultTheme;
+    return {
+      ...base,
+      dark: t.scheme === 'dark',
+      colors: { ...base.colors, primary: c.ink, background: c.bg, card: c.bg, text: c.ink, border: c.line, notification: c.coral },
+    };
+  }, [t, c]);
+
+  return (
+    <NavigationThemeProvider value={navigation}>
+      <StatusBar style={t.scheme === 'dark' ? 'light' : 'dark'} />
+      <Stack screenOptions={{ contentStyle: { backgroundColor: c.bg } }}>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen
           name="mission/[id]"
           // iOS 페이지 시트 — 아래로 밀어 닫는다. (formSheet 는 Expo Go 에서 내용이 그려지지 않아 쓰지 않는다)
-          options={{ presentation: 'modal', headerShown: false, contentStyle: { backgroundColor: C.bg } }}
+          options={{ presentation: 'modal', headerShown: false, contentStyle: { backgroundColor: c.bg } }}
         />
         <Stack.Screen
           name="simulator"
@@ -49,11 +57,14 @@ export default function RootLayout() {
             title: '운영 시뮬레이터',
             headerShown: true,
             headerShadowVisible: false,
-            headerStyle: { backgroundColor: C.bg },
+            headerStyle: { backgroundColor: c.bg },
+            headerTintColor: c.ink,
+            headerTitleStyle: { color: c.ink },
+            contentStyle: { backgroundColor: c.bg },
             headerRight: () => <CloseButton />,
           }}
         />
       </Stack>
-    </ThemeProvider>
+    </NavigationThemeProvider>
   );
 }

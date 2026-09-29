@@ -11,7 +11,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   orientation: 'portrait',
   icon: './assets/images/icon.png',
   scheme: 'tbyb',
-  userInterfaceStyle: 'light',
+  // 기기 라이트/다크를 따라간다 (앱 안 '화면 모드'에서 라이트·다크로 고정할 수 있다 — src/lib/theme-context.tsx)
+  userInterfaceStyle: 'automatic',
   ios: {
     icon: './assets/expo.icon',
     supportsTablet: false,
@@ -37,9 +38,11 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     [
       'expo-splash-screen',
       {
+        // 스플래시 바탕 = palette.ts 의 bg (라이트 아이보리 / 다크 따뜻한 밤색). 설정 파일이라 값을 그대로 적는다.
         backgroundColor: '#FAF6EF',
         image: './assets/images/splash-icon.png',
         imageWidth: 76,
+        dark: { backgroundColor: '#16130F', image: './assets/images/splash-icon.png' },
       },
     ],
     'expo-notifications',

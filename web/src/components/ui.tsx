@@ -33,8 +33,9 @@ export const btn = {
     btnBase,
     "border border-danger/30 bg-surface text-danger-ink hover:bg-danger-soft disabled:border-line disabled:text-sub/80",
   ),
-  light: cx(btnBase, "bg-ivory text-ink hover:bg-cream"),
-  ghostLight: cx(btnBase, "border border-ivory/30 text-ivory hover:bg-ivory/10"),
+  // feature 판(마무리 CTA) 위 버튼 — 라이트는 잉크 판 위 아이보리 버튼, 다크는 따뜻한 판 위 크림 버튼
+  light: cx(btnBase, "bg-on-feature text-feature hover:bg-on-feature/85"),
+  ghostLight: cx(btnBase, "border border-on-feature/30 text-on-feature hover:bg-on-feature/10"),
   small: "min-h-10 px-4 py-1.5 text-sm",
 };
 
@@ -49,14 +50,14 @@ export function ButtonLink({
 // ───────── 글자 ─────────
 
 /** 작은 영문 대문자 아이브로우 — 앞에 코랄 점 */
-export function Eyebrow({ children, className, tone = "sub" }: { children: ReactNode; className?: string; tone?: "sub" | "coral" | "ivory" }) {
+export function Eyebrow({ children, className, tone = "sub" }: { children: ReactNode; className?: string; tone?: "sub" | "coral" | "feature" }) {
   return (
     <p
       className={cx(
         "eyebrow flex items-center gap-2",
         tone === "sub" && "text-sub",
         tone === "coral" && "text-coral-ink",
-        tone === "ivory" && "text-ivory/70",
+        tone === "feature" && "text-on-feature/70",
         className,
       )}
     >
@@ -95,7 +96,7 @@ export function Card({ children, className, ...rest }: ComponentProps<"section">
   return (
     <section
       {...rest}
-      className={cx("rounded-3xl border border-line bg-surface p-5 shadow-[0_1px_2px_rgba(31,27,22,0.04)] sm:p-7", className)}
+      className={cx("rounded-3xl border border-line bg-surface p-5 shadow-(--shadow-card) sm:p-7", className)}
     >
       {children}
     </section>
@@ -313,7 +314,7 @@ export function DefList({ items }: { items: { label: ReactNode; value: ReactNode
 }
 
 export const inputClass =
-  "block w-full rounded-2xl border border-line-strong bg-surface px-4 py-3 text-[16px] text-ink placeholder:text-sub/70 focus:border-ink focus:outline-none focus-visible:outline-2 focus-visible:outline-ink disabled:bg-cream disabled:text-sub";
+  "block w-full rounded-2xl border border-field bg-surface px-4 py-3 text-[16px] text-ink placeholder:text-sub focus:border-ink focus:outline-none focus-visible:outline-2 focus-visible:outline-ink disabled:border-line-strong disabled:bg-cream disabled:text-sub";
 
 /** sr-only 라디오를 감싸는 칩 모양 label */
 export const chipLabel =

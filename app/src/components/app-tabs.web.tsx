@@ -1,19 +1,22 @@
 // 웹 미리보기: 하단 탭 (JS 탭)
 import { Tabs } from 'expo-router/js-tabs';
 
-import { C, FONT_FAMILY } from '@/lib/theme';
+import { FONT_FAMILY } from '@/lib/theme';
+import { useTheme } from '@/lib/theme-context';
 
 import { Icon } from './ui';
 
 export default function AppTabs() {
+  const { c } = useTheme();
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: C.ink,
-        tabBarInactiveTintColor: C.muted,
+        tabBarActiveTintColor: c.ink,
+        tabBarInactiveTintColor: c.sub,
         tabBarLabelStyle: { fontFamily: FONT_FAMILY, fontSize: 12, lineHeight: 18, fontWeight: '700' },
-        tabBarStyle: { backgroundColor: C.surface, borderTopColor: C.line, height: 62 },
+        tabBarStyle: { backgroundColor: c.surface, borderTopColor: c.line, height: 62 },
+        sceneStyle: { backgroundColor: c.bg },
       }}>
       <Tabs.Screen
         name="(pack)"

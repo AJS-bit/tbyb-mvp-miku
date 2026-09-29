@@ -263,7 +263,7 @@ function DecisionForm({ r, dealerTermsConfirmed }: { r: Reservation; dealerTerms
                 <label
                   key={k}
                   className={cx(
-                    "flex min-h-12 cursor-pointer items-center justify-center whitespace-nowrap rounded-2xl border border-line-strong bg-surface px-2 py-2 text-center text-sm font-bold text-ink sm:text-[15px] has-[:checked]:text-white has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-ink",
+                    "flex min-h-12 cursor-pointer items-center justify-center whitespace-nowrap rounded-2xl border border-line-strong bg-surface px-2 py-2 text-center text-sm font-bold text-ink sm:text-[15px] has-[:checked]:text-ivory has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-ink",
                     k === "air" ? "has-[:checked]:border-air-ink has-[:checked]:bg-air-ink" : "has-[:checked]:border-pro has-[:checked]:bg-pro",
                   )}
                 >

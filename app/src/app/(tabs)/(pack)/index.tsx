@@ -44,7 +44,7 @@ import {
 import { formatDateKey, formatDateTime, weekday } from '@/lib/format';
 import { haptic } from '@/lib/haptics';
 import { apply, selectReservation, useApp } from '@/lib/store';
-import { C, DEVICE_COLOR } from '@/lib/theme';
+import { themed, useTheme } from '@/lib/theme-context';
 
 export default function PackScreen() {
   const scrollRef = useRef<ScrollView>(null);
@@ -77,15 +77,17 @@ export default function PackScreen() {
 // ───────── 소개 ─────────
 
 function Hero({ onRequest }: { onRequest: () => void }) {
+  const { c } = useTheme();
+  const styles = useStyles();
   return (
     <View style={styles.hero}>
       <HeroIllustration style={{ marginHorizontal: -6 }} />
       <View style={{ gap: 10 }}>
-        <Eyebrow color={C.coralInk}>Try before you buy · 01</Eyebrow>
+        <Eyebrow color={c.coralInk}>Try before you buy · 01</Eyebrow>
         <T variant="display" accessibilityRole="header">
           {'맥은 처음이어도\n괜찮아요'}
         </T>
-        <T variant="body" color={C.sub}>
+        <T variant="body" color={c.sub}>
           가볍게 들고 다니는 Air, 끝까지 힘 있는 Pro. 두 대를 함께 빌려 평소처럼 써 보고 내 생활에 맞는 쪽을 고르세요. 어려운 기록 대신 쉬운
           미션 몇 개면 충분해요.
         </T>
@@ -107,13 +109,15 @@ const STEPS: { title: string; body: string }[] = [
 ];
 
 function Story() {
+  const { c } = useTheme();
+  const styles = useStyles();
   return (
     <Section eyebrow="How it works · 02" title="이렇게 진행돼요">
       <Card style={{ gap: 0, paddingVertical: 8 }}>
         {STEPS.map((st, i) => (
           <Row key={st.title} gap={14} style={[styles.step, i > 0 && styles.stepLine]}>
-            <View style={[styles.stepNum, i === 2 && { backgroundColor: C.coralSoft }]}>
-              <T variant="footnote" weight="800" color={i === 2 ? C.coralInk : C.ink}>
+            <View style={[styles.stepNum, i === 2 && { backgroundColor: c.coralSoft }]}>
+              <T variant="footnote" weight="800" color={i === 2 ? c.coralInk : c.ink}>
                 {`0${i + 1}`}
               </T>
             </View>
@@ -131,6 +135,8 @@ function Story() {
 // ───────── 비교 포인트 ─────────
 
 function ComparePoints() {
+  const t = useTheme();
+  const styles = useStyles();
   return (
     <Section eyebrow="Compare · 03" title="두 맥, 이렇게 비교해요" caption="숫자 대신 직접 느껴 볼 점이에요">
       <Card style={{ paddingHorizontal: 0, paddingVertical: 6, gap: 0 }}>
@@ -141,16 +147,16 @@ function ComparePoints() {
               {(['air', 'pro'] as const).map((k) => (
                 <View
                   key={k}
-                  style={[styles.cmpCell, { backgroundColor: DEVICE_COLOR[k].soft }]}
+                  style={[styles.cmpCell, { backgroundColor: t.device[k].soft }]}
                   accessible
-                  accessibilityLabel={`${p.title}, ${DEVICE_COLOR[k].short}: ${p[k]}`}>
+                  accessibilityLabel={`${p.title}, ${t.device[k].short}: ${p[k]}`}>
                   <Row gap={5}>
-                    <View style={[styles.cmpDot, { backgroundColor: DEVICE_COLOR[k].main }]} />
-                    <T variant="caption" weight="800" color={DEVICE_COLOR[k].ink}>
-                      {DEVICE_COLOR[k].short}
+                    <View style={[styles.cmpDot, { backgroundColor: t.device[k].main }]} />
+                    <T variant="caption" weight="800" color={t.device[k].ink}>
+                      {t.device[k].short}
                     </T>
                   </Row>
-                  <T variant="footnote" color={C.ink}>
+                  <T variant="footnote" color={t.c.ink}>
                     {p[k]}
                   </T>
                 </View>
@@ -165,16 +171,20 @@ function ComparePoints() {
 
 // ───────── 데모 일정 요청 ─────────
 
-const DAY_TONE: Record<DayStatus, { fg: string; bg: string; border: string }> = {
-  open: { fg: C.doneText, bg: C.surface, border: C.lineStrong },
-  check: { fg: C.warnText, bg: C.warnBg, border: C.warnLine },
-  closed: { fg: C.muted, bg: C.sunk, border: C.sunk },
-};
+const useDayTone = themed(({ c }): Record<DayStatus, { fg: string; bg: string; border: string }> => ({
+  open: { fg: c.doneText, bg: c.surface, border: c.lineStrong },
+  check: { fg: c.warnText, bg: c.warnBg, border: c.warnLine },
+  closed: { fg: c.muted, bg: c.sunk, border: c.sunk }, // 고를 수 없는 날(비활성)
+}));
 
 const USAGES = Object.keys(USAGE_LABEL) as Usage[];
 
 function RequestForm() {
   const { demo } = useApp();
+  const t = useTheme();
+  const { c } = t;
+  const styles = useStyles();
+  const DAY_TONE = useDayTone();
   const [startDate, setStartDate] = useState('');
   const [pickupStore, setPickupStore] = useState('');
   const [usage, setUsage] = useState<Usage>('unsure');
@@ -256,20 +266,20 @@ function RequestForm() {
                   style={({ pressed }) => [
                     styles.day,
                     { backgroundColor: tone.bg, borderColor: tone.border },
-                    selected && { backgroundColor: C.ink, borderColor: C.ink },
+                    selected && { backgroundColor: c.ink, borderColor: c.ink },
                     pressed && { opacity: 0.7 },
                   ]}>
-                  <T variant="caption" color={selected ? '#D9CFC2' : closed ? C.muted : C.sub}>
+                  <T variant="caption" color={selected ? c.onInkSub : closed ? c.muted : c.sub}>
                     {weekday(date)}
                   </T>
                   <T
                     variant="headline"
                     weight="800"
-                    color={selected ? C.ivory : closed ? C.muted : C.ink}
+                    color={selected ? c.ivory : closed ? c.muted : c.ink}
                     style={closed ? { textDecorationLine: 'line-through' } : null}>
                     {date.getMonth() + 1}/{date.getDate()}
                   </T>
-                  <T variant="caption" weight="700" color={selected ? C.ivory : tone.fg} numberOfLines={1}>
+                  <T variant="caption" weight="700" color={selected ? c.ivory : tone.fg} numberOfLines={1}>
                     {DAY_STATUS_LABEL[d.status]}
                   </T>
                 </Pressable>
@@ -278,7 +288,7 @@ function RequestForm() {
           </ScrollView>
           <Row style={{ justifyContent: 'space-between', flexWrap: 'wrap' }}>
             <Row gap={6}>
-              <Icon ios="clock" web="schedule" size={13} color={C.sub} />
+              <Icon ios="clock" web="schedule" size={13} color={c.sub} />
               <T variant="caption">마지막 갱신 {formatDateTime(demo.calendarUpdatedAt)}</T>
             </Row>
             <T variant="caption">일요일 픽업 없음 (데모 가정)</T>
@@ -320,8 +330,8 @@ function RequestForm() {
             value={leaning}
             onChange={(v) => v && setLeaning(v)}
             options={[
-              { value: 'air', label: 'Air 쪽', color: C.air },
-              { value: 'pro', label: 'Pro 쪽', color: C.pro },
+              { value: 'air', label: 'Air 쪽', color: c.air, fg: c.onAir },
+              { value: 'pro', label: 'Pro 쪽', color: c.pro, fg: c.onPro },
               { value: 'unsure', label: '모르겠음' },
             ]}
           />
@@ -341,7 +351,7 @@ function RequestForm() {
             accessibilityHint="요청을 이 기기에 저장하고 내 체험 탭으로 이동합니다"
           />
           <Row gap={6} style={{ justifyContent: 'center' }}>
-            <Icon ios="clock" web="schedule" size={13} color={C.sub} />
+            <Icon ios="clock" web="schedule" size={13} color={c.sub} />
             <T variant="caption">{RESPONSE_TARGET}</T>
           </Row>
         </View>
@@ -350,28 +360,30 @@ function RequestForm() {
   );
 }
 
-const styles = StyleSheet.create({
-  hero: { gap: 18, paddingTop: 4 },
-  step: { alignItems: 'flex-start', paddingVertical: 12 },
-  stepLine: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.line },
-  stepNum: {
-    width: 34,
-    height: 34,
-    borderRadius: 12,
-    backgroundColor: C.sunk,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  cmpRow: { paddingHorizontal: 18, paddingVertical: 14, gap: 10 },
-  cmpCell: { flex: 1, borderRadius: 14, paddingVertical: 10, paddingHorizontal: 11, gap: 4 },
-  cmpDot: { width: 7, height: 7, borderRadius: 4 },
-  day: {
-    width: 70,
-    paddingVertical: 11,
-    borderRadius: 16,
-    borderWidth: 1,
-    alignItems: 'center',
-    gap: 2,
-  },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-});
+const useStyles = themed(({ c }) =>
+  StyleSheet.create({
+    hero: { gap: 18, paddingTop: 4 },
+    step: { alignItems: 'flex-start', paddingVertical: 12 },
+    stepLine: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: c.line },
+    stepNum: {
+      width: 34,
+      height: 34,
+      borderRadius: 12,
+      backgroundColor: c.sunk,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    cmpRow: { paddingHorizontal: 18, paddingVertical: 14, gap: 10 },
+    cmpCell: { flex: 1, borderRadius: 14, paddingVertical: 10, paddingHorizontal: 11, gap: 4 },
+    cmpDot: { width: 7, height: 7, borderRadius: 4 },
+    day: {
+      width: 70,
+      paddingVertical: 11,
+      borderRadius: 16,
+      borderWidth: 1,
+      alignItems: 'center',
+      gap: 2,
+    },
+    chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  }),
+);

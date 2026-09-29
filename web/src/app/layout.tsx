@@ -3,6 +3,7 @@ import { DEMO_NOTICE, PACK_NAME, PRICE_TBD, SERVICE_NAME } from "@/lib/domain";
 import { BrandMark, SiteHeader } from "@/components/SiteHeader";
 import { StorageBanner } from "@/components/StorageBanner";
 import { UNDECIDED } from "@/lib/copy";
+import { THEME_COLOR, THEME_INIT_SCRIPT } from "@/lib/theme-core";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -14,12 +15,22 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#faf6ef",
+  // 시스템 설정별 주소창 색. 사용자가 직접 고르면 인라인 스크립트·theme.ts 가 두 값을 고른 색으로 맞춘다.
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: THEME_COLOR.light },
+    { media: "(prefers-color-scheme: dark)", color: THEME_COLOR.dark },
+  ],
+  colorScheme: "light dark",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="ko" className="h-full">
+    // data-theme · data-theme-pref · style(color-scheme) 는 아래 인라인 스크립트가 하이드레이션 전에 붙인다
+    <html lang="ko" className="h-full" suppressHydrationWarning>
+      <head>
+        {/* 번쩍임 방지: 저장된 테마 + prefers-color-scheme 를 읽어 첫 그림 전에 <html data-theme> 를 정한다 */}
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+      </head>
       <body className="flex min-h-full flex-col">
         <a
           href="#main"

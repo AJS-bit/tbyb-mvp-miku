@@ -7,13 +7,15 @@ import { LEANING_LABEL, STATUS_FLOW, STATUS_LABEL, USAGE_LABEL, type Reservation
 import { formatDateKey, formatDateTime, formatShortDateTime } from '@/lib/format';
 import { haptic } from '@/lib/haptics';
 import { selectReservation } from '@/lib/store';
-import { C, DEVICE_COLOR, STATUS_TONE } from '@/lib/theme';
+import { themed, useTheme } from '@/lib/theme-context';
 
 import { Button, Card, Eyebrow, Icon, KeyValue, Row, StatusChip, T } from './ui';
 
 // ───────── 예약 전환 (여러 건일 때) ─────────
 
 export function ReservationSwitcher({ list, currentId }: { list: Reservation[]; currentId?: string }) {
+  const t = useTheme();
+  const sw = useSwitcherStyles();
   if (list.length < 2) return null;
   return (
     <View style={{ gap: 8 }}>
@@ -27,7 +29,7 @@ export function ReservationSwitcher({ list, currentId }: { list: Reservation[]; 
         contentContainerStyle={{ gap: 8, paddingHorizontal: 16 }}>
         {list.map((r) => {
           const selected = r.id === currentId;
-          const tone = STATUS_TONE[r.status];
+          const tone = t.status[r.status];
           return (
             <Pressable
               key={r.id}
@@ -39,12 +41,12 @@ export function ReservationSwitcher({ list, currentId }: { list: Reservation[]; 
                 selectReservation(r.id);
               }}
               style={({ pressed }) => [sw.item, selected && sw.itemSelected, pressed && { opacity: 0.7 }]}>
-              <T variant="callout" weight="700" color={selected ? C.ivory : C.ink}>
+              <T variant="callout" weight="700" color={selected ? t.c.ivory : t.c.ink}>
                 {r.id}
               </T>
               <Row gap={5}>
-                <View style={[sw.dot, { backgroundColor: selected ? C.coral : tone.dot }]} />
-                <T variant="caption" color={selected ? '#D9CFC2' : C.sub}>
+                <View style={[sw.dot, { backgroundColor: selected ? t.c.coral : tone.dot }]} />
+                <T variant="caption" color={selected ? t.c.onInkSub : t.c.sub}>
                   {STATUS_LABEL[r.status]}
                 </T>
               </Row>
@@ -56,19 +58,21 @@ export function ReservationSwitcher({ list, currentId }: { list: Reservation[]; 
   );
 }
 
-const sw = StyleSheet.create({
-  item: {
-    paddingVertical: 9,
-    paddingHorizontal: 14,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: C.line,
-    backgroundColor: C.surface,
-    gap: 2,
-  },
-  itemSelected: { backgroundColor: C.ink, borderColor: C.ink },
-  dot: { width: 6, height: 6, borderRadius: 3 },
-});
+const useSwitcherStyles = themed(({ c }) =>
+  StyleSheet.create({
+    item: {
+      paddingVertical: 9,
+      paddingHorizontal: 14,
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor: c.line,
+      backgroundColor: c.surface,
+      gap: 2,
+    },
+    itemSelected: { backgroundColor: c.ink, borderColor: c.ink },
+    dot: { width: 6, height: 6, borderRadius: 3 },
+  }),
+);
 
 // ───────── 요청 요약 ─────────
 
@@ -91,12 +95,13 @@ export function RequestSummary({ r, compact }: { r: Reservation; compact?: boole
 }
 
 export function LeaningTag({ leaning }: { leaning: Reservation['request']['leaningBefore'] }) {
-  const color = leaning === 'unsure' ? C.muted : DEVICE_COLOR[leaning].main;
-  const soft = leaning === 'unsure' ? C.greySoft : DEVICE_COLOR[leaning].soft;
+  const t = useTheme();
+  const color = leaning === 'unsure' ? t.c.muted : t.device[leaning].main;
+  const soft = leaning === 'unsure' ? t.c.greySoft : t.device[leaning].soft;
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: soft, paddingHorizontal: 9, paddingVertical: 2, borderRadius: 999 }}>
       <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: color }} />
-      <T variant="footnote" weight="700" color={C.ink}>
+      <T variant="footnote" weight="700" color={t.c.ink}>
         {LEANING_LABEL[leaning]}
       </T>
     </View>
@@ -106,6 +111,8 @@ export function LeaningTag({ leaning }: { leaning: Reservation['request']['leani
 // ───────── 타임라인 ─────────
 
 export function Timeline({ r }: { r: Reservation }) {
+  const { c } = useTheme();
+  const tl = useTimelineStyles();
   const cancelled = r.status === 'cancelled';
   // 상태가 바뀐 이력만 (from === to 인 운영 기록은 제외)
   const reachedAt = (st: string) => [...r.history].reverse().find((h) => h.to === st && h.from !== h.to)?.at;
@@ -120,7 +127,7 @@ export function Timeline({ r }: { r: Reservation }) {
         const stoppedHere = cancelled && i === currentIdx;
         const at = reachedAt(st);
         const last = i === STATUS_FLOW.length - 1;
-        const dotColor = done ? C.ink : current ? C.coral : stoppedHere ? C.grey : '#D9D0C3';
+        const dotColor = done ? c.ink : current ? c.coral : stoppedHere ? c.grey : c.railIdle;
         return (
           <View
             key={st}
@@ -128,17 +135,17 @@ export function Timeline({ r }: { r: Reservation }) {
             accessibilityLabel={`${STATUS_LABEL[st]}${done ? ', 완료' : current ? ', 현재 단계' : ''}${at ? `, ${formatDateTime(at)}` : ''}`}>
             <View style={tl.rail}>
               <View style={[tl.dot, { borderColor: dotColor }, (done || current || stoppedHere) && { backgroundColor: dotColor }]}>
-                {done ? <Icon ios="checkmark" web="check" size={10} color={C.ivory} /> : null}
+                {done ? <Icon ios="checkmark" web="check" size={10} color={c.ivory} /> : null}
               </View>
-              {!last ? <View style={[tl.line, { backgroundColor: i < currentIdx ? C.ink : C.line }]} /> : null}
+              {!last ? <View style={[tl.line, { backgroundColor: i < currentIdx ? c.ink : c.line }]} /> : null}
             </View>
             <View style={[tl.body, last && { paddingBottom: 0 }]}>
               <Row gap={8}>
-                <T variant="callout" weight={current ? '800' : '500'} color={done || current ? C.ink : C.muted}>
+                <T variant="callout" weight={current ? '800' : '500'} color={done || current ? c.ink : c.sub}>
                   {STATUS_LABEL[st]}
                 </T>
                 {current ? (
-                  <T variant="caption" weight="800" color={C.coralInk}>
+                  <T variant="caption" weight="800" color={c.coralInk}>
                     지금
                   </T>
                 ) : null}
@@ -158,21 +165,23 @@ export function Timeline({ r }: { r: Reservation }) {
   );
 }
 
-const tl = StyleSheet.create({
-  row: { flexDirection: 'row', gap: 12 },
-  rail: { alignItems: 'center', width: 18 },
-  dot: {
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    borderWidth: 2,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: C.surface,
-  },
-  line: { width: 2, flex: 1, minHeight: 14, marginVertical: 2, borderRadius: 1 },
-  body: { flex: 1, paddingBottom: 12, marginTop: -2 },
-});
+const useTimelineStyles = themed(({ c }) =>
+  StyleSheet.create({
+    row: { flexDirection: 'row', gap: 12 },
+    rail: { alignItems: 'center', width: 18 },
+    dot: {
+      width: 18,
+      height: 18,
+      borderRadius: 9,
+      borderWidth: 2,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: c.surface,
+    },
+    line: { width: 2, flex: 1, minHeight: 14, marginVertical: 2, borderRadius: 1 },
+    body: { flex: 1, paddingBottom: 12, marginTop: -2 },
+  }),
+);
 
 // ───────── 잠금 안내 / 빈 상태 ─────────
 
@@ -191,6 +200,7 @@ export function EmptyState({
   cta?: { label: string; href: Href };
   children?: ReactNode;
 }) {
+  const { c } = useTheme();
   return (
     <Card style={{ alignItems: 'flex-start', gap: 12, paddingVertical: 24 }}>
       {art}
@@ -198,7 +208,7 @@ export function EmptyState({
         {eyebrow ? <Eyebrow>{eyebrow}</Eyebrow> : null}
         <T variant="title">{title}</T>
       </View>
-      <T variant="body" color={C.sub}>
+      <T variant="body" color={c.sub}>
         {body}
       </T>
       {children}

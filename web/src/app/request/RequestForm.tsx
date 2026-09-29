@@ -26,7 +26,7 @@ import { Card, ErrorText, Notice, Skeleton, Tag, btn, chipLabel, cx, inputClass 
 const dayTone: Record<DayStatus, string> = {
   open: "bg-surface text-ink ring-1 ring-line-strong hover:bg-cream",
   check: "bg-warn-bg text-warn ring-1 ring-warn-line hover:ring-warn",
-  closed: "cursor-not-allowed bg-mute-soft/70 text-sub/70",
+  closed: "cursor-not-allowed bg-mute-soft/70 text-sub/80",
 };
 const dayLabelTone: Record<DayStatus, string> = {
   open: "text-success-ink",
@@ -261,7 +261,7 @@ export function RequestForm() {
               <label
                 key={l}
                 className={cx(
-                  "flex min-h-12 cursor-pointer items-center justify-center rounded-2xl border border-line-strong bg-surface px-2 text-center text-[15px] font-bold text-ink transition-colors hover:bg-cream has-[:checked]:text-white has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-ink",
+                  "flex min-h-12 cursor-pointer items-center justify-center rounded-2xl border border-line-strong bg-surface px-2 text-center text-[15px] font-bold text-ink transition-colors hover:bg-cream has-[:checked]:text-ivory has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-ink",
                   l === "air" && "has-[:checked]:border-air-ink has-[:checked]:bg-air-ink",
                   l === "pro" && "has-[:checked]:border-pro has-[:checked]:bg-pro",
                   l === "unsure" && "has-[:checked]:border-ink has-[:checked]:bg-ink",

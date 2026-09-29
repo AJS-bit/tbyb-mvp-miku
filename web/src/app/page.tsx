@@ -218,19 +218,20 @@ export default function Home() {
       </section>
 
       {/* 마무리 CTA */}
-      <section className="relative overflow-hidden rounded-[40px] bg-ink px-6 py-14 text-center sm:px-12 sm:py-20">
-        <span aria-hidden className="absolute -top-24 -right-16 h-64 w-64 rounded-full bg-coral/25 blur-2xl" />
-        <span aria-hidden className="absolute -bottom-28 -left-10 h-64 w-64 rounded-full bg-air/25 blur-2xl" />
+      {/* 초점 링은 기본이 잉크색이라 라이트의 잉크 판 위에서 안 보인다 — 판 위 글자색으로 바꾼다 */}
+      <section className="relative overflow-hidden rounded-[40px] bg-feature px-6 py-14 text-center dark:ring-1 dark:ring-line dark:ring-inset sm:px-12 sm:py-20 [&_:focus-visible]:outline-on-feature">
+        <span aria-hidden className="absolute -top-24 -right-16 h-64 w-64 rounded-full bg-coral/25 blur-2xl dark:bg-coral/20" />
+        <span aria-hidden className="absolute -bottom-28 -left-10 h-64 w-64 rounded-full bg-air/25 blur-2xl dark:bg-air/15" />
         <div className="relative">
-          <Eyebrow tone="ivory" className="justify-center">
+          <Eyebrow tone="feature" className="justify-center">
             Let&rsquo;s try
           </Eyebrow>
-          <h2 className="mt-4 text-[28px] font-extrabold leading-[1.35] text-ivory sm:text-[40px]">
+          <h2 className="mt-4 text-[28px] font-extrabold leading-[1.35] text-on-feature sm:text-[40px]">
             먼저 같이 지내 보고
             <br />
             골라도 늦지 않아요
           </h2>
-          <p className="mx-auto mt-4 max-w-md text-[15px] leading-relaxed text-ivory/70">
+          <p className="mx-auto mt-4 max-w-md text-[15px] leading-relaxed text-on-feature/70">
             요청은 확정이 아니에요. 운영자가 두 기기를 확인한 뒤 안내해 드려요.
           </p>
           <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">

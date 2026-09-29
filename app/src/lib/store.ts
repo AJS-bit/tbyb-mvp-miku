@@ -1,6 +1,6 @@
 // 앱 전체 상태 저장소 (하나) — useSyncExternalStore.
 // demo: shared/domain.ts 의 DemoState 그대로 (STORAGE_KEY 에 저장, readSaved 로 읽음 — 손상되면 원본을 덮어쓰지 않는다)
-// ui:   앱에서만 쓰는 로컬 UI 상태 (선택한 예약, 반납 준비 체크, 리마인드) — 별도 키에 저장
+// ui:   앱에서만 쓰는 로컬 UI 상태 (선택한 예약, 반납 준비 체크, 리마인드, 화면 모드) — 별도 키에 저장
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSyncExternalStore } from 'react';
 
@@ -14,6 +14,8 @@ import {
   type Reservation,
   type Result,
 } from '@/domain';
+
+import { THEME_PREFS, type ThemePref } from './theme';
 
 export const UI_STORAGE_KEY = `${STORAGE_KEY}:app-ui`;
 
@@ -40,6 +42,8 @@ export interface UiState {
   selectedId: string | null;
   returnChecklist: Record<string, string[]>; // 예약ID → 'air:backup' 형식
   reminders: Record<string, ReminderRecord>;
+  /** 화면 모드 (없으면 system). 데모 데이터와 별개 — 데모 초기화 때도 그대로 둔다 */
+  theme?: ThemePref;
 }
 
 export interface AppSnapshot {
@@ -181,6 +185,11 @@ export function apply(fn: (s: DemoState) => Result<DemoState>): Promise<Result<D
   });
 }
 
+/** 저장된 화면 모드 (알 수 없는 값이면 system) */
+export function savedThemePref(u: UiState): ThemePref {
+  return u.theme && THEME_PREFS.includes(u.theme) ? u.theme : 'system';
+}
+
 /** 앱 UI 상태 변경 — apply 와 같이 저장이 끝난 뒤에만 반영. 실패하거나 저장본을 읽지 못한 상태면 false. */
 export function updateUi(fn: (u: UiState) => UiState): Promise<boolean> {
   return enqueue(async () => {
@@ -194,6 +203,11 @@ export function updateUi(fn: (u: UiState) => UiState): Promise<boolean> {
     emit();
     return true;
   });
+}
+
+/** 화면 모드 저장 — updateUi 규칙 그대로(저장이 끝난 뒤에만 ui 에 반영). 실패하면 false (화면 적용은 theme-context 가 이번 실행에만 한다) */
+export function setThemePreference(pref: ThemePref): Promise<boolean> {
+  return updateUi((u) => ({ ...u, theme: pref }));
 }
 
 export function selectReservation(id: string): Promise<boolean> {
@@ -212,7 +226,9 @@ export function setDealerTermsConfirmed(value: boolean): Promise<Result<DemoStat
 export function resetAll(): Promise<boolean> {
   return enqueue(async () => {
     const demo = createInitialState();
-    const ui = emptyUi();
+    // 화면 모드는 데모 데이터가 아니라 기기 설정이라 초기화해도 남긴다
+    const theme = snapshot.ui.theme;
+    const ui: UiState = theme ? { ...emptyUi(), theme } : emptyUi();
     const demoOk = await writeKey(STORAGE_KEY, demo);
     const uiOk = await writeKey(UI_STORAGE_KEY, ui);
     const stillBad = (snapshot.loadError ?? []).filter(

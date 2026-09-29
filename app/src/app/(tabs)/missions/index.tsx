@@ -8,7 +8,7 @@ import { EmptyState, ReservationSwitcher } from '@/components/shared';
 import { Card, Eyebrow, FadeUp, Notice, Row, Section, StatusChip, T } from '@/components/ui';
 import { CORE_MISSIONS, MISSIONS, MISSION_OPEN, REWARD_AMOUNT_LABEL, type Reservation } from '@/domain';
 import { useCurrent } from '@/lib/store';
-import { C } from '@/lib/theme';
+import { useTheme } from '@/lib/theme-context';
 
 export default function MissionsScreen() {
   const { app, current } = useCurrent();
@@ -61,13 +61,14 @@ export default function MissionsScreen() {
 }
 
 function OpenMissions({ r }: { r: Reservation }) {
+  const { c } = useTheme();
   const afterReturn = r.status !== 'in_trial';
   return (
     <>
       <FadeUp>
         <View style={{ gap: 6, paddingHorizontal: 2 }}>
-          <Eyebrow color={C.coralInk}>{`Easy missions · ${MISSIONS.length}`}</Eyebrow>
-          <T variant="body" color={C.sub}>
+          <Eyebrow color={c.coralInk}>{`Easy missions · ${MISSIONS.length}`}</Eyebrow>
+          <T variant="body" color={c.sub}>
             맥이 처음이어도 할 수 있는 일상 미션이에요. 두 맥으로 같은 걸 해 보고 느낌만 골라 주세요. 비슷했거나 모르겠어도 그대로 골라 주세요.
           </T>
         </View>
@@ -90,6 +91,7 @@ function OpenMissions({ r }: { r: Reservation }) {
 }
 
 function Locked({ r }: { r: Reservation }) {
+  const { c } = useTheme();
   return (
     <Card style={{ gap: 16, paddingVertical: 22 }}>
       <Row gap={14} style={{ alignItems: 'flex-start' }}>
@@ -104,15 +106,15 @@ function Locked({ r }: { r: Reservation }) {
         <StatusChip status={r.status} />
       </Row>
       <View style={{ gap: 4 }}>
-        <T variant="body" color={C.sub}>
+        <T variant="body" color={c.sub}>
           {`두 맥을 받으면 일상 미션 ${MISSIONS.length}개가 열려요. 핵심 ${CORE_MISSIONS.length}개를 하고 픽업 때 바탕화면에 적힌 코드를 적으면 리워드를 신청할 수 있어요.`}
         </T>
-        <T variant="headline" color={C.coralInk}>
+        <T variant="headline" color={c.coralInk}>
           {`리워드 ${REWARD_AMOUNT_LABEL}`}
         </T>
       </View>
       <View style={{ gap: 8 }}>
-        <T variant="footnote" weight="700" color={C.sub}>
+        <T variant="footnote" weight="700" color={c.sub}>
           미리 보기
         </T>
         <MissionPreview />
@@ -122,12 +124,13 @@ function Locked({ r }: { r: Reservation }) {
 }
 
 function MissionPreview() {
+  const { c } = useTheme();
   return (
     <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, alignSelf: 'stretch' }}>
       {MISSIONS.map((m) => (
         <View key={m.id} style={{ width: '30%', flexGrow: 1, alignItems: 'center', gap: 6 }}>
           <MissionIcon id={m.id} size={52} />
-          <T variant="caption" color={C.ink} numberOfLines={2} style={{ textAlign: 'center' }}>
+          <T variant="caption" color={c.ink} numberOfLines={2} style={{ textAlign: 'center' }}>
             {m.title}
           </T>
         </View>

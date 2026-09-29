@@ -18,7 +18,16 @@ export default defineConfig({
     timezoneId: "Asia/Seoul",
     trace: "retain-on-failure",
   },
-  projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
+  projects: [
+    { name: "chromium", use: { ...devices["Desktop Chrome"] } },
+    // 주 흐름을 다크(시스템 설정 다크)로 한 번 더 — 단계마다 읽기 대비 감사(e2e/readability.ts)로 안 보이는 글자를 잡는다
+    {
+      name: "chromium-dark",
+      use: { ...devices["Desktop Chrome"], colorScheme: "dark" },
+      testMatch: /flow\.spec\.ts/,
+      grep: /요청 → 운영 확인/,
+    },
+  ],
   webServer: {
     command: "node e2e/serve.mjs",
     url: BASE_URL,

@@ -21,8 +21,13 @@ import {
   type Result,
 } from "../src/lib/domain";
 
-// docs/screenshots/web-*.png 를 만든다. 상태는 domain 함수로 직접 만들어 localStorage 에 넣는다.
+// docs/screenshots/web-*.png (라이트) · web-dark-*.png (다크) 를 만든다. 상태는 domain 함수로 직접 만들어 localStorage 에 넣는다.
+// 테마는 저장값 없이 '시스템'으로 두고 prefers-color-scheme 를 흉내 내 고른다.
 const OUT = join(process.cwd(), "..", "docs", "screenshots");
+const THEMES = [
+  { scheme: "light", prefix: "web-" },
+  { scheme: "dark", prefix: "web-dark-" },
+] as const;
 const MOBILE = { width: 390, height: 844 };
 const DESKTOP = { width: 1280, height: 900 };
 
@@ -92,109 +97,116 @@ async function seed(page: Page, s: DemoState) {
   );
 }
 
-async function shot(page: Page, name: string) {
+async function shot(page: Page, file: string, scheme: "light" | "dark") {
+  await expect(page.locator("html")).toHaveAttribute("data-theme", scheme);
   await page.evaluate(() => document.fonts.ready);
   // 포커스 링·호버·전환 중 색이 찍히지 않게 정리하고, 고정 헤더가 중간에 찍히지 않게 맨 위에서 캡처
   await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
   await page.mouse.move(0, 0);
   await page.evaluate(() => window.scrollTo(0, 0));
-  await page.screenshot({ path: join(OUT, `web-${name}.png`), fullPage: true, animations: "disabled" });
+  await page.screenshot({ path: join(OUT, `${file}.png`), fullPage: true, animations: "disabled" });
 }
 
-test.describe("모바일", () => {
-  test.use({ viewport: MOBILE, deviceScaleFactor: 2 });
+for (const { scheme, prefix } of THEMES) {
+  test.describe(scheme, () => {
+    test.use({ colorScheme: scheme });
 
-  test("소개·비교팩·일정 요청", async ({ page }) => {
-    await page.goto("");
-    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
-    await shot(page, "intro-mobile");
+    test.describe("모바일", () => {
+      test.use({ viewport: MOBILE, deviceScaleFactor: 2 });
 
-    await page.goto("pack/");
-    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
-    await shot(page, "pack");
+      test("소개·비교팩·일정 요청", async ({ page }) => {
+        await page.goto("");
+        await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+        await shot(page, `${prefix}intro-mobile`, scheme);
 
-    await page.goto("request/");
-    await page.locator('[data-testid="calendar-day"][data-status="open"]').nth(1).click();
-    await page.getByRole("radio", { name: PICKUP_STORES[0] }).check();
-    await page.locator("label", { has: page.getByRole("radio", { name: "Air 쪽" }) }).click();
-    await page.locator("label", { has: page.getByRole("radio", { name: "그 마음, 얼마나 확실해요? 2점" }) }).click();
-    await page.locator("#question").fill("유튜브랑 과제 정도인데 Pro까지 필요할까요?");
-    await shot(page, "request");
+        await page.goto("pack/");
+        await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+        await shot(page, `${prefix}pack`, scheme);
+
+        await page.goto("request/");
+        await page.locator('[data-testid="calendar-day"][data-status="open"]').nth(1).click();
+        await page.getByRole("radio", { name: PICKUP_STORES[0] }).check();
+        await page.locator("label", { has: page.getByRole("radio", { name: "Air 쪽" }) }).click();
+        await page.locator("label", { has: page.getByRole("radio", { name: "그 마음, 얼마나 확실해요? 2점" }) }).click();
+        await page.locator("#question").fill("유튜브랑 과제 정도인데 Pro까지 필요할까요?");
+        await shot(page, `${prefix}request`, scheme);
+      });
+
+      test("내 체험 — 미션 진행", async ({ page }) => {
+        let s = ok(createReservation(createInitialState(T0), req(0), T0));
+        s = toTrial(s, "TB-0001", "AIR-01", "PRO-01");
+        s = answer(s, "TB-0001", 3);
+        await seed(page, s);
+        await page.goto("my/?id=TB-0001");
+        await expect(page.getByTestId("mission-progress")).toContainText("3/5");
+        await shot(page, `${prefix}my`, scheme);
+
+        await page.goto("my/missions/?id=TB-0001");
+        await expect(page.getByTestId("mission-answer")).toHaveCount(3);
+        const typing = page.getByTestId("mission-typing");
+        await typing.getByRole("button", { name: /답하기/ }).click();
+        await typing.locator("label", { has: page.getByRole("radio", { name: "Pro가 나았어요" }) }).click();
+        await typing.getByRole("button", { name: "트랙패드가 편했어요" }).click();
+        await shot(page, `${prefix}missions`, scheme);
+      });
+
+      test("마지막 날 결정", async ({ page }) => {
+        let s = ok(createReservation(createInitialState(T0), req(0), T0));
+        s = toTrial(s, "TB-0001", "AIR-01", "PRO-01");
+        s = answer(s, "TB-0001", 5);
+        const codes = s.reservations[0].ops.wallCodes!;
+        s = ok(setCodeCheck(s, "TB-0001", codes.air, codes.pro, at(52)));
+        s = ok(submitReward(s, "TB-0001", at(52)));
+        s = { ...s, dealerTermsConfirmed: true };
+        await seed(page, s);
+        await page.goto("my/decide/?id=TB-0001");
+        await expect(page.getByTestId("mission-summary")).toBeVisible();
+        await page.locator("label", { has: page.getByRole("radio", { name: /체험한 기기 그대로 구매/ }) }).click();
+        await page.locator("label", { has: page.getByRole("radio", { name: "MacBook Air", exact: true }) }).click();
+        await page.locator("label", { has: page.getByRole("radio", { name: "체험 후, 이 결정에 얼마나 확신하나요? 4점" }) }).click();
+        await page.getByRole("button", { name: "+ 가벼워서 들고 다니기 편했어요" }).click();
+        await page.getByRole("button", { name: "+ 영상·과제엔 Air로 충분했어요" }).click();
+        await expect(page.getByTestId("return-plan")).toContainText("반납할 기기: MacBook Pro 14형");
+        await shot(page, `${prefix}decide`, scheme);
+      });
+    });
+
+    test.describe("데스크톱", () => {
+      test.use({ viewport: DESKTOP });
+
+      test("소개", async ({ page }) => {
+        await page.goto("");
+        await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+        await shot(page, `${prefix}intro-desktop`, scheme);
+      });
+
+      test("운영 시뮬레이터 — 리워드 확인", async ({ page }) => {
+        let s = createInitialState(T0);
+        s = ok(createReservation(s, req(0), T0));
+        s = toTrial(s, "TB-0001", "AIR-01", "PRO-01");
+        s = answer(s, "TB-0001", 5);
+        const codes = s.reservations[0].ops.wallCodes!;
+        // Air 코드는 한 글자 오타 — 참고용 불일치 표시
+        const typo = `${codes.air.slice(0, 3)}${codes.air[3] === "Z" ? "Y" : "Z"}`;
+        s = ok(setCodeCheck(s, "TB-0001", typo, codes.pro, at(52)));
+        s = ok(submitReward(s, "TB-0001", at(52)));
+        s = { ...s, dealerTermsConfirmed: true };
+        s = ok(setDecision(s, "TB-0001", { choice: "buy_used", model: "air", confidenceAfter: 4, reason: "가벼워서 들고 다니기 편했어요" }, at(60)));
+        s = ok(transition(s, "TB-0001", "return_received", "operator", "Pro 반납 · Air 구매 선택", at(66)));
+        s = ok(transition(s, "TB-0001", "inspecting", "operator", "반납 기기 검수 시작", at(67)));
+        s = ok(setInspection(s, "TB-0001", "pro", "condition", true));
+        s = ok(setInspection(s, "TB-0001", "pro", "accessories", true));
+        s = ok(createReservation(s, req(1, { usage: "school", leaningBefore: "pro", confidenceBefore: 3 }), T0));
+        s = toTrial(s, "TB-0002", "AIR-02", "PRO-02");
+        s = answer(s, "TB-0002", 2);
+        s = ok(createReservation(s, req(2, { usage: "watch", leaningBefore: "unsure" }), T0));
+        await seed(page, s);
+        await page.goto("ops/");
+        await page.getByRole("button", { name: "TB-0001 열기" }).click();
+        await expect(page.getByTestId("reward-review")).toBeVisible();
+        await page.locator("#reward-note").fill("Air 코드 한 글자 오타. 두 기기 사용 흔적 확인");
+        await shot(page, `${prefix}ops-reward`, scheme);
+      });
+    });
   });
-
-  test("내 체험 — 미션 진행", async ({ page }) => {
-    let s = ok(createReservation(createInitialState(T0), req(0), T0));
-    s = toTrial(s, "TB-0001", "AIR-01", "PRO-01");
-    s = answer(s, "TB-0001", 3);
-    await seed(page, s);
-    await page.goto("my/?id=TB-0001");
-    await expect(page.getByTestId("mission-progress")).toContainText("3/5");
-    await shot(page, "my");
-
-    await page.goto("my/missions/?id=TB-0001");
-    await expect(page.getByTestId("mission-answer")).toHaveCount(3);
-    const typing = page.getByTestId("mission-typing");
-    await typing.getByRole("button", { name: /답하기/ }).click();
-    await typing.locator("label", { has: page.getByRole("radio", { name: "Pro가 나았어요" }) }).click();
-    await typing.getByRole("button", { name: "트랙패드가 편했어요" }).click();
-    await shot(page, "missions");
-  });
-
-  test("마지막 날 결정", async ({ page }) => {
-    let s = ok(createReservation(createInitialState(T0), req(0), T0));
-    s = toTrial(s, "TB-0001", "AIR-01", "PRO-01");
-    s = answer(s, "TB-0001", 5);
-    const codes = s.reservations[0].ops.wallCodes!;
-    s = ok(setCodeCheck(s, "TB-0001", codes.air, codes.pro, at(52)));
-    s = ok(submitReward(s, "TB-0001", at(52)));
-    s = { ...s, dealerTermsConfirmed: true };
-    await seed(page, s);
-    await page.goto("my/decide/?id=TB-0001");
-    await expect(page.getByTestId("mission-summary")).toBeVisible();
-    await page.locator("label", { has: page.getByRole("radio", { name: /체험한 기기 그대로 구매/ }) }).click();
-    await page.locator("label", { has: page.getByRole("radio", { name: "MacBook Air", exact: true }) }).click();
-    await page.locator("label", { has: page.getByRole("radio", { name: "체험 후, 이 결정에 얼마나 확신하나요? 4점" }) }).click();
-    await page.getByRole("button", { name: "+ 가벼워서 들고 다니기 편했어요" }).click();
-    await page.getByRole("button", { name: "+ 영상·과제엔 Air로 충분했어요" }).click();
-    await expect(page.getByTestId("return-plan")).toContainText("반납할 기기: MacBook Pro 14형");
-    await shot(page, "decide");
-  });
-});
-
-test.describe("데스크톱", () => {
-  test.use({ viewport: DESKTOP });
-
-  test("소개", async ({ page }) => {
-    await page.goto("");
-    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
-    await shot(page, "intro-desktop");
-  });
-
-  test("운영 시뮬레이터 — 리워드 확인", async ({ page }) => {
-    let s = createInitialState(T0);
-    s = ok(createReservation(s, req(0), T0));
-    s = toTrial(s, "TB-0001", "AIR-01", "PRO-01");
-    s = answer(s, "TB-0001", 5);
-    const codes = s.reservations[0].ops.wallCodes!;
-    // Air 코드는 한 글자 오타 — 참고용 불일치 표시
-    const typo = `${codes.air.slice(0, 3)}${codes.air[3] === "Z" ? "Y" : "Z"}`;
-    s = ok(setCodeCheck(s, "TB-0001", typo, codes.pro, at(52)));
-    s = ok(submitReward(s, "TB-0001", at(52)));
-    s = { ...s, dealerTermsConfirmed: true };
-    s = ok(setDecision(s, "TB-0001", { choice: "buy_used", model: "air", confidenceAfter: 4, reason: "가벼워서 들고 다니기 편했어요" }, at(60)));
-    s = ok(transition(s, "TB-0001", "return_received", "operator", "Pro 반납 · Air 구매 선택", at(66)));
-    s = ok(transition(s, "TB-0001", "inspecting", "operator", "반납 기기 검수 시작", at(67)));
-    s = ok(setInspection(s, "TB-0001", "pro", "condition", true));
-    s = ok(setInspection(s, "TB-0001", "pro", "accessories", true));
-    s = ok(createReservation(s, req(1, { usage: "school", leaningBefore: "pro", confidenceBefore: 3 }), T0));
-    s = toTrial(s, "TB-0002", "AIR-02", "PRO-02");
-    s = answer(s, "TB-0002", 2);
-    s = ok(createReservation(s, req(2, { usage: "watch", leaningBefore: "unsure" }), T0));
-    await seed(page, s);
-    await page.goto("ops/");
-    await page.getByRole("button", { name: "TB-0001 열기" }).click();
-    await expect(page.getByTestId("reward-review")).toBeVisible();
-    await page.locator("#reward-note").fill("Air 코드 한 글자 오타. 두 기기 사용 흔적 확인");
-    await shot(page, "ops-reward");
-  });
-});
+}

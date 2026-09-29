@@ -23,6 +23,7 @@ import {
   type MissionAnswer,
   type Result,
 } from "../src/lib/domain";
+import { expectReadable } from "./readability";
 
 // 고객 화면은 모바일, 운영 시뮬레이터는 데스크톱 폭으로 같은 페이지(같은 localStorage)에서 오간다.
 const MOBILE = { width: 390, height: 844 };
@@ -161,6 +162,10 @@ test("요청 → 운영 확인 → 결제 대조 → 체험 → 미션·코드·
   // ── 1. 고객: 데모 일정 요청 (모바일, 용도 기본값)
   await requestDemo(page, "TB-0001");
   await expect(page.getByTestId("status-chip").first()).toHaveText("요청 접수");
+  // 이 흐름은 라이트(chromium)와 다크(chromium-dark) 프로젝트에서 모두 돈다 — 테마는 시스템 설정을 따른다
+  const scheme = test.info().project.use.colorScheme === "dark" ? "dark" : "light";
+  await expect(page.locator("html")).toHaveAttribute("data-theme", scheme);
+  await expectReadable(page, "1. 고객 — 요청 접수");
   await expect(page.locator("main")).toContainText("주로 할 것 같은 일");
   await expect(page.locator("main")).toContainText("잘 모르겠어요");
   // 고객 화면에는 단계를 넘기는 버튼이 없고, 출고 전 취소만 있다
@@ -176,12 +181,14 @@ test("요청 → 운영 확인 → 결제 대조 → 체험 → 미션·코드·
   }
   await panel.getByRole("button", { name: "다음 단계: 운영 확인 중" }).click();
   await expect(panel.getByRole("alert")).toHaveText("운영자 상태 변경에는 사유가 필요합니다.");
+  await expectReadable(page, "2. 운영 — 사유 필수 오류");
   await expect(panelStatus(page)).toHaveText("요청 접수");
   await move(page, "운영 확인 중", "딜러에게 Air·Pro 두 대 재고 확인");
 
   // ── 3. 기기 확보 전에는 결제 대기로 못 간다
   await expect(panel.getByRole("button", { name: "다음 단계: 결제 대기" })).toBeDisabled();
   await expect(panel.getByTestId("blocked-payment_pending")).toContainText("Air와 Pro 두 대를 모두 확보해야");
+  await expectReadable(page, "3. 운영 — 기기 확보 전 막힘");
   await page.getByLabel("MacBook Air 기기 배정").selectOption("AIR-01");
   await page.getByLabel("MacBook Pro 14형 기기 배정").selectOption("PRO-01");
   await expect(device(page, "AIR-01")).toContainText("예약 보류");
@@ -201,6 +208,7 @@ test("요청 → 운영 확인 → 결제 대조 → 체험 → 미션·코드·
   await expect(page.getByTestId("payment-deadline")).toBeVisible();
   await expect(page.getByRole("button", { name: "결제 링크 (데모 — 실제 결제 없음)" })).toBeDisabled();
   await expect(page.getByText(/결제 화면 캡처로는 확정되지 않아요/)).toBeVisible();
+  await expectReadable(page, "5. 고객 — 결제 대기");
 
   // ── 6. 운영: 거래 대조 없이는 확정 불가 → 확정 → 출고 기록 → 체험 중
   await openOps(page, "TB-0001");
@@ -217,6 +225,7 @@ test("요청 → 운영 확인 → 결제 대조 → 체험 → 미션·코드·
   await move(page, "체험 중", "픽업 완료 — 두 기기 출고");
   await expect(device(page, "AIR-01")).toContainText("고객 사용 중");
   await expect(panel.getByTestId("blocked-return_received")).toContainText("마지막 날 결정");
+  await expectReadable(page, "6. 운영 — 체험 중·바탕화면 코드");
 
   // ── 7. 운영: 체험 중에도 같은 코드가 보인다
   const airCode = (await page.getByTestId("wall-code-air").innerText()).trim();
@@ -232,6 +241,7 @@ test("요청 → 운영 확인 → 결제 대조 → 체험 → 미션·코드·
   await expect(page.getByTestId("status-chip").first()).toHaveText("체험 중");
   await expect(page.getByTestId("mission-progress")).toContainText("0/5");
   await expect(page.getByTestId("reward-mini")).toContainText("아직 신청 전");
+  await expectReadable(page, "8. 고객 — 체험 중");
   await expectNoFlagsOnCustomerPage(page, [airCode, proCode]);
   await page.getByRole("link", { name: "미션 하러 가기" }).click();
   await expect(page.getByRole("heading", { name: "오늘은 어떤 걸 해 볼까요?", level: 1 })).toBeVisible();
@@ -240,12 +250,14 @@ test("요청 → 운영 확인 → 결제 대조 → 체험 → 미션·코드·
   const submitReward = page.getByRole("button", { name: "리워드 신청하기" });
   await expect(submitReward).toBeDisabled();
   await expectNoFlagsOnCustomerPage(page, [airCode, proCode]);
+  await expectReadable(page, "8. 고객 — 미션 화면");
 
   // ── 9. 미션: 들고 나가 보기 — 고르지 않으면 domain 문구
   await openMission(page, "carry");
   await saveMission(page, "carry");
   await expect(mission(page, "carry").getByRole("alert")).toContainText("어느 쪽이었는지 골라 주세요");
   await pickRadio(mission(page, "carry"), "Air가 나았어요");
+  await expectReadable(page, "9. 미션 폼 — 고른 답·오류");
   await mission(page, "carry").getByRole("button", { name: "가방이 가벼웠어요" }).click();
   await saveMission(page, "carry");
   await expect(page.getByText("‘들고 나가 보기’ 답을 저장했어요.")).toBeVisible();
@@ -263,6 +275,7 @@ test("요청 → 운영 확인 → 결제 대조 → 체험 → 미션·코드·
   await page.getByLabel("MacBook Pro 14형 끝 배터리 %").fill("95");
   await saveMission(page, "video");
   await expect(mission(page, "video").getByRole("alert")).toContainText("끝 배터리가 시작보다 높아요");
+  await expectReadable(page, "10. 미션 폼 — 배터리 입력");
   await page.getByLabel("MacBook Pro 14형 끝 배터리 %").fill("84");
   await saveMission(page, "video");
   await expect(mission(page, "video").getByTestId("mission-answer")).toContainText("배터리 Air 90→82% · Pro 90→84%");
@@ -299,6 +312,7 @@ test("요청 → 운영 확인 → 결제 대조 → 체험 → 미션·코드·
   await expect(page.getByTestId("reward-progress")).toHaveText("5/5");
   await expect(submitReward).toBeDisabled();
   await expect(page.getByTestId("reward-card")).toContainText("남은 것: 바탕화면 코드");
+  await expectReadable(page, "14. 미션 5/5 — 코드 전");
 
   // ── 15. 바탕화면 코드 — Air 는 일부러 틀리게(검토 표시용), Pro 는 소문자로 (정규화)
   const codeCard = page.getByTestId("code-card");
@@ -326,6 +340,7 @@ test("요청 → 운영 확인 → 결제 대조 → 체험 → 미션·코드·
   await expect(page.getByRole("button", { name: "리워드 신청하기" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: /답 바꾸기|답하기/ })).toHaveCount(0);
   await expect(page.getByLabel("MacBook Air 바탕화면 코드")).toBeDisabled();
+  await expectReadable(page, "16. 리워드 신청 후 잠김");
 
   await expect(tab2.getByTestId("reward-card").getByTestId("reward-status")).toHaveText("운영자 확인 대기");
   await expect(tab2.getByRole("button", { name: "리워드 신청하기" })).toHaveCount(0);
@@ -349,6 +364,7 @@ test("요청 → 운영 확인 → 결제 대조 → 체험 → 미션·코드·
   await expect(review).toContainText("배터리 Air 90→82% · Pro 90→84%");
   await expect(review.getByRole("button", { name: "리워드 승인" })).toBeDisabled();
   await expect(review.getByTestId("reward-review-blocked")).toContainText("반납 검수 단계부터");
+  await expectReadable(page, "17. 운영 — 리워드 검토 표시");
 
   // ── 18. 고객: 결정 — 딜러 조건 확정 전에는 구매 선택 불가
   await page.setViewportSize(MOBILE);
@@ -362,6 +378,7 @@ test("요청 → 운영 확인 → 결제 대조 → 체험 → 미션·코드·
   await expect(page.getByTestId("mission-pick-list")).toContainText("해 본 일: 쇼핑·검색");
   await expect(page.getByRole("radio", { name: /체험한 기기 그대로 구매/ })).toBeDisabled();
   await expect(page.getByText(DEALER_TERMS_TBD).first()).toBeVisible();
+  await expectReadable(page, "18. 결정 — 구매 선택 막힘");
   await expectNoFlagsOnCustomerPage(page, [airCode]);
 
   await openOps(page);
@@ -383,6 +400,7 @@ test("요청 → 운영 확인 → 결제 대조 → 체험 → 미션·코드·
   await expect(plan).toContainText("딜러 판매가 확인돼야 구매로 확정돼요");
   await expect(page.getByTestId("before-after")).toContainText("Air 쪽");
   await expect(page.getByTestId("before-after")).toContainText("(+2)");
+  await expectReadable(page, "18. 결정 — 이유·반납 계획");
   await page.getByRole("button", { name: "결정 저장" }).click();
   await expect(page.locator("main").getByRole("status")).toContainText("결정을 저장했어요");
 
@@ -414,6 +432,7 @@ test("요청 → 운영 확인 → 결제 대조 → 체험 → 미션·코드·
   await expect(review.getByTestId("reward-status")).toHaveText("확인 완료 · 지급 예정");
   await expect(review).toContainText("메모: Air 코드 오타. 두 기기 사용 흔적 확인");
   await expect(review.getByRole("button", { name: "리워드 승인" })).toHaveCount(0);
+  await expectReadable(page, "21. 운영 — 리워드 승인");
 
   // ── 22. 검수·판매 확인 전에는 완료 불가 → 완료
   const complete = panel.getByRole("button", { name: "다음 단계: 완료" });
@@ -433,6 +452,7 @@ test("요청 → 운영 확인 → 결제 대조 → 체험 → 미션·코드·
   await expect(history).toContainText("리워드 확인 완료 · 지급 예정");
   await expect(history).toContainText("운영 메모: Air 코드 오타. 두 기기 사용 흔적 확인");
   await expect(history).toContainText("Air 검수 완료 · Pro 딜러 판매 확인");
+  await expectReadable(page, "22. 운영 — 완료·이력");
 
   // ── 23. 새로고침 후에도 완료 상태 복원, 고객 화면 반영 (표시·메모 없이 상태만)
   await page.reload();
@@ -452,6 +472,7 @@ test("요청 → 운영 확인 → 결제 대조 → 체험 → 미션·코드·
   await expect(page.locator("main")).not.toContainText("Air 코드 오타");
   await expect(page.locator("main")).not.toContainText("운영 메모");
   await expect(page.locator("main").getByText("코드 오타")).toHaveCount(0);
+  await expectReadable(page, "23. 고객 — 완료");
   await page.goto("my/missions/?id=TB-0001");
   await expect(page.getByTestId("reward-card").getByTestId("reward-status")).toHaveText("확인 완료 · 지급 예정");
   await expectNoFlagsOnCustomerPage(page, [airCode]);

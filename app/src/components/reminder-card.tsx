@@ -10,12 +10,15 @@ import { clearFor, scheduleFor } from '@/lib/reminder-actions';
 import { lastDayOptions, planReminders, trialStartDate } from '@/lib/reminder-plan';
 import { REMINDERS_SUPPORTED, listScheduledReminders } from '@/lib/reminders';
 import { useApp } from '@/lib/store';
-import { C, RADIUS } from '@/lib/theme';
+import { RADIUS } from '@/lib/theme';
+import { themed, useTheme } from '@/lib/theme-context';
 
 import { Button, Card, ErrorText, Field, Icon, Notice, Row, Section, T } from './ui';
 
 export function ReminderCard({ r }: { r: Reservation }) {
   const { ui } = useApp();
+  const { c } = useTheme();
+  const styles = useStyles();
   const rec = ui.reminders[r.id];
   const start = trialStartDate(r);
   const options = lastDayOptions(start);
@@ -89,7 +92,7 @@ export function ReminderCard({ r }: { r: Reservation }) {
                     setError(null);
                   }}
                   style={({ pressed }) => [styles.dayChip, selected && styles.dayChipOn, pressed && { opacity: 0.7 }]}>
-                  <T variant="footnote" weight="700" color={selected ? C.ivory : C.ink}>
+                  <T variant="footnote" weight="700" color={selected ? c.ivory : c.ink}>
                     {formatDateKey(d)}
                   </T>
                 </Pressable>
@@ -99,13 +102,13 @@ export function ReminderCard({ r }: { r: Reservation }) {
         </Field>
         {plan.length ? (
           <View style={styles.plan}>
-            <T variant="footnote" weight="700" color={C.sub}>
+            <T variant="footnote" weight="700" color={c.sub}>
               {plan.length === 1 ? '알림 1번 (두 날이 겹쳐 하나로 합쳤어요)' : '알림 2번'}
             </T>
             {plan.map((p) => (
               <Row key={p.key} gap={10} style={{ alignItems: 'flex-start' }}>
                 <View style={styles.bell}>
-                  <Icon ios="bell.fill" web="notifications" size={13} color={C.coralInk} />
+                  <Icon ios="bell.fill" web="notifications" size={13} color={c.coralInk} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <T variant="callout" weight="700">
@@ -120,7 +123,7 @@ export function ReminderCard({ r }: { r: Reservation }) {
 
         {scheduled ? (
           <Notice tone="done" title={`이 기기에 알림 ${rec.notificationIds.length}건 예약됨`}>
-            <T variant="footnote" color={C.doneText}>
+            <T variant="footnote" color={c.doneText}>
               {rec.mode === 'provisional'
                 ? '조용한 알림으로 예약했어요 — 알림 센터로 전달돼요. 배너로 받으려면 설정 앱에서 알림을 켜 주세요.'
                 : '배너 알림으로 예약했어요.'}
@@ -128,7 +131,7 @@ export function ReminderCard({ r }: { r: Reservation }) {
               {rec.lastDay !== draftLast ? ' 날짜를 바꿨다면 다시 예약해 주세요.' : ''}
             </T>
             {osList !== undefined ? (
-              <T variant="caption" color={C.doneText}>
+              <T variant="caption" color={c.doneText}>
                 {osList === null ? '기기 알림 목록은 이 환경에서 확인하지 못했어요.' : `기기 확인: iOS에 예약된 이 앱의 알림 ${osList.length}건`}
               </T>
             ) : null}
@@ -159,16 +162,18 @@ export function ReminderCard({ r }: { r: Reservation }) {
   );
 }
 
-const styles = StyleSheet.create({
-  dayChip: {
-    paddingVertical: 9,
-    paddingHorizontal: 13,
-    borderRadius: RADIUS.chip,
-    borderWidth: 1,
-    borderColor: C.lineStrong,
-    backgroundColor: C.surface,
-  },
-  dayChipOn: { backgroundColor: C.ink, borderColor: C.ink },
-  plan: { backgroundColor: C.sunk, borderRadius: 14, padding: 12, gap: 10 },
-  bell: { width: 24, height: 24, borderRadius: 12, backgroundColor: C.coralSoft, alignItems: 'center', justifyContent: 'center', marginTop: 1 },
-});
+const useStyles = themed(({ c }) =>
+  StyleSheet.create({
+    dayChip: {
+      paddingVertical: 9,
+      paddingHorizontal: 13,
+      borderRadius: RADIUS.chip,
+      borderWidth: 1,
+      borderColor: c.lineStrong,
+      backgroundColor: c.surface,
+    },
+    dayChipOn: { backgroundColor: c.ink, borderColor: c.ink },
+    plan: { backgroundColor: c.sunk, borderRadius: 14, padding: 12, gap: 10 },
+    bell: { width: 24, height: 24, borderRadius: 12, backgroundColor: c.coralSoft, alignItems: 'center', justifyContent: 'center', marginTop: 1 },
+  }),
+);

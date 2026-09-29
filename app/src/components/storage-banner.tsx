@@ -1,12 +1,13 @@
 // 저장소 오류를 숨기지 않는다: 읽기 실패(원본 보존 + 원본 보기/복사 + 명시적 초기화), 쓰기 실패(반영 안 됨 안내)
 import * as Clipboard from 'expo-clipboard';
 import { useState } from 'react';
-import { Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { STORAGE_READ_ERROR, STORAGE_WRITE_ERROR } from '@/domain';
 import { cancelAllReminders } from '@/lib/reminders';
 import { dismissWriteError, resetAll, useApp } from '@/lib/store';
-import { C, RADIUS } from '@/lib/theme';
+import { MONO_FAMILY, RADIUS } from '@/lib/theme';
+import { themed, useTheme } from '@/lib/theme-context';
 
 import { Button, Icon, Row, T } from './ui';
 
@@ -22,13 +23,15 @@ function ReadErrorCard({ items }: { items: { key: string; raw: string }[] }) {
   const [copied, setCopied] = useState<string | null>(null);
   const [confirming, setConfirming] = useState(false);
   const [resetError, setResetError] = useState<string | null>(null);
+  const { c } = useTheme();
+  const styles = useStyles();
   const rawText = items.map((i) => `[${i.key}]\n${i.raw}`).join('\n\n');
 
   return (
     <View style={styles.card} accessibilityRole="alert">
       <Row gap={8} style={{ alignItems: 'flex-start' }}>
-        <Icon ios="exclamationmark.octagon.fill" web="report" size={18} color={C.error} style={{ marginTop: 2 }} />
-        <T variant="callout" weight="700" color={C.error} style={{ flex: 1 }}>
+        <Icon ios="exclamationmark.octagon.fill" web="report" size={18} color={c.error} style={{ marginTop: 2 }} />
+        <T variant="callout" weight="700" color={c.error} style={{ flex: 1 }}>
           {STORAGE_READ_ERROR}
         </T>
       </Row>
@@ -81,17 +84,19 @@ function ReadErrorCard({ items }: { items: { key: string; raw: string }[] }) {
           </Row>
         </View>
       ) : null}
-      {resetError ? <T variant="footnote" color={C.error}>{resetError}</T> : null}
+      {resetError ? <T variant="footnote" color={c.error}>{resetError}</T> : null}
     </View>
   );
 }
 
 function WriteErrorCard() {
+  const { c } = useTheme();
+  const styles = useStyles();
   return (
     <View style={styles.card} accessibilityRole="alert" accessibilityLiveRegion="polite">
       <Row gap={8} style={{ alignItems: 'flex-start' }}>
-        <Icon ios="exclamationmark.triangle.fill" web="warning" size={18} color={C.error} style={{ marginTop: 2 }} />
-        <T variant="callout" weight="700" color={C.error} style={{ flex: 1 }}>
+        <Icon ios="exclamationmark.triangle.fill" web="warning" size={18} color={c.error} style={{ marginTop: 2 }} />
+        <T variant="callout" weight="700" color={c.error} style={{ flex: 1 }}>
           {STORAGE_WRITE_ERROR}
         </T>
       </Row>
@@ -103,19 +108,21 @@ function WriteErrorCard() {
   );
 }
 
-const styles = StyleSheet.create({
-  card: {
-    backgroundColor: C.errorSoft,
-    borderColor: '#FECDCA',
-    borderWidth: 1.5,
-    borderRadius: RADIUS.card,
-    padding: 14,
-    gap: 10,
-  },
-  raw: { maxHeight: 200, backgroundColor: C.surface, borderRadius: 8, padding: 10 },
-  rawText: {
-    fontFamily: Platform.select({ ios: 'Menlo', default: 'monospace' }),
-    fontSize: 12,
-    color: C.ink,
-  },
-});
+const useStyles = themed(({ c }) =>
+  StyleSheet.create({
+    card: {
+      backgroundColor: c.errorSoft,
+      borderColor: c.errorLine,
+      borderWidth: 1.5,
+      borderRadius: RADIUS.card,
+      padding: 14,
+      gap: 10,
+    },
+    raw: { maxHeight: 200, backgroundColor: c.surface, borderRadius: 8, padding: 10 },
+    rawText: {
+      fontFamily: MONO_FAMILY,
+      fontSize: 12,
+      color: c.ink,
+    },
+  }),
+);

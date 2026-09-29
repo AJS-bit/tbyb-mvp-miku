@@ -7,6 +7,7 @@ import { MissionProgressCard } from '@/components/mission';
 import { FollowUpNotice, ReturnOutcome } from '@/components/outcome';
 import { Screen } from '@/components/screen';
 import { EmptyState, RequestSummary, ReservationSwitcher, Timeline } from '@/components/shared';
+import { ThemePicker } from '@/components/theme-picker';
 import { Button, Card, ErrorText, Eyebrow, FadeUp, Icon, KeyValue, Notice, Row, Section, StatusChip, T } from '@/components/ui';
 import {
   CANCELLABLE,
@@ -25,7 +26,7 @@ import {
 import { formatDateKey, formatDateTime, formatRemaining } from '@/lib/format';
 import { haptic } from '@/lib/haptics';
 import { apply, useCurrent } from '@/lib/store';
-import { C } from '@/lib/theme';
+import { useTheme } from '@/lib/theme-context';
 
 // 상태 칩(공식 이름) 옆에 크게 보여 줄 따뜻한 한 줄
 const HEADLINE: Record<ReservationStatus, string> = {
@@ -58,6 +59,7 @@ export default function MyTrialScreen() {
             />
           </FadeUp>
           <Notice tone="info">{DEMO_NOTICE}</Notice>
+          <ThemePicker />
         </>
       ) : (
         <>
@@ -86,6 +88,7 @@ export default function MyTrialScreen() {
             </Card>
           </Section>
           {CANCELLABLE.includes(current.status) ? <CancelBlock r={current} /> : null}
+          <ThemePicker />
         </>
       )}
     </Screen>
@@ -93,6 +96,7 @@ export default function MyTrialScreen() {
 }
 
 function StatusCard({ r }: { r: Reservation }) {
+  const { c } = useTheme();
   return (
     <Card style={{ gap: 12, paddingVertical: 20 }}>
       <Row style={{ justifyContent: 'space-between' }}>
@@ -102,7 +106,7 @@ function StatusCard({ r }: { r: Reservation }) {
       <T variant="display" accessibilityRole="header">
         {HEADLINE[r.status]}
       </T>
-      <T variant="body" color={C.sub}>
+      <T variant="body" color={c.sub}>
         {STATUS_HELP[r.status]}
       </T>
       <T variant="caption">요청 {formatDateTime(r.createdAt)}</T>
@@ -112,6 +116,7 @@ function StatusCard({ r }: { r: Reservation }) {
 
 function NextAction({ r }: { r: Reservation }) {
   const [payNote, setPayNote] = useState(false);
+  const { c } = useTheme();
   const title = '다음 할 일';
 
   switch (r.status) {
@@ -136,7 +141,7 @@ function NextAction({ r }: { r: Reservation }) {
             <T variant="callout" weight="700">
               {formatDateTime(r.ops.paymentDeadline)}
             </T>
-            <T variant="footnote" color={expired ? C.error : C.warnText}>
+            <T variant="footnote" color={expired ? c.error : c.warnText}>
               {formatRemaining(r.ops.paymentDeadline)}
             </T>
           </KeyValue>
@@ -210,12 +215,13 @@ function ActionCard({
   tone?: 'info' | 'warn' | 'error' | 'ink' | 'done';
   children: ReactNode;
 }) {
-  const accent = { info: C.line, warn: C.warnLine, error: C.errorLine, ink: C.lineStrong, done: C.doneLine }[tone];
-  const fg = { info: C.ink, warn: C.warnText, error: C.error, ink: C.ink, done: C.doneText }[tone];
+  const { c } = useTheme();
+  const accent = { info: c.line, warn: c.warnLine, error: c.errorLine, ink: c.lineStrong, done: c.doneLine }[tone];
+  const fg = { info: c.ink, warn: c.warnText, error: c.error, ink: c.ink, done: c.doneText }[tone];
   return (
     <Card accent={accent}>
       <Row gap={7}>
-        <Icon ios="arrow.right.circle.fill" web="arrow_circle_right" size={18} color={tone === 'ink' ? C.coral : fg} />
+        <Icon ios="arrow.right.circle.fill" web="arrow_circle_right" size={18} color={tone === 'ink' ? c.coral : fg} />
         <T variant="headline" color={fg}>
           {title}
         </T>
@@ -228,6 +234,7 @@ function ActionCard({
 function CancelBlock({ r }: { r: Reservation }) {
   const [confirming, setConfirming] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { c } = useTheme();
 
   const cancel = async () => {
     const res = await apply((s) => transition(s, r.id, 'cancelled', 'customer', '고객이 요청 취소'));
@@ -246,7 +253,7 @@ function CancelBlock({ r }: { r: Reservation }) {
       {!confirming ? (
         <Button variant="danger" label="이 요청 취소하기" onPress={() => setConfirming(true)} />
       ) : (
-        <Card accent={C.errorLine}>
+        <Card accent={c.errorLine}>
           <T variant="callout" weight="700">
             {r.id} 요청을 취소할까요?
           </T>

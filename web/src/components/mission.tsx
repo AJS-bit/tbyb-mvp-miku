@@ -72,7 +72,7 @@ export function AnswerDetails({ a, className }: { a: MissionAnswer; className?: 
 
 const rewardTone: Record<RewardStatus, string> = {
   none: "bg-surface text-mute-ink ring-1 ring-inset ring-coral/30",
-  submitted: "bg-coral text-white",
+  submitted: "bg-coral text-on-coral",
   approved: "bg-success-soft text-success-ink",
   rejected: "bg-mute-soft text-mute-ink",
 };
@@ -118,7 +118,13 @@ export function MissionDots({ r }: { r: Reservation }) {
 export function MissionSummary({ r }: { r: Reservation }) {
   const sum = missionSummary(r);
   const total = PICKS.reduce((n, p) => n + sum[p], 0);
-  const bar: Record<Pick, string> = { air: "bg-air", same: "bg-line-strong", pro: "bg-pro", unsure: "bg-mute-soft" };
+  // 모르겠음은 칸(테두리만 있는 칩)과 같게 테두리 조각으로 — 채운 색으로는 막대 바탕과 구분되지 않았다
+  const bar: Record<Pick, string> = {
+    air: "bg-air",
+    same: "bg-line-strong",
+    pro: "bg-pro",
+    unsure: "rounded-r-full bg-surface ring-1 ring-sub/60 ring-inset",
+  };
   return (
     <div data-testid="mission-summary">
       <div className="grid grid-cols-4 gap-2">

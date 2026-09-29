@@ -36,6 +36,32 @@ MacBook Air · 14형 Pro 비교팩 시연용 웹. Next.js(App Router) 정적 빌
   직접 그린 인라인 SVG이며 Apple 로고·제품 사진은 쓰지 않습니다.
 - 움직임: `.fade-up` 페이드업 — `prefers-reduced-motion: reduce` 이면 움직이지 않습니다.
 
+## 다크 모드 (SPEC.md '다크 모드')
+
+- **모드 3개**: 상단 막대의 `화면 테마` 스위처 — 시스템(기본) · 라이트 · 다크. `role="radiogroup"` 안의 기본 라디오 3개라
+  Tab 으로 들어가 ←/→ 로 바꾸고, 스크린리더는 "화면 테마, 시스템/라이트/다크"로 읽습니다. 1280px 이상에서는 아이콘+이름,
+  좁은 화면(390px 포함)에서는 아이콘만 보이고 이름은 읽어 줍니다(`title` 툴팁). 모바일은 로고와 같은 줄, lg 부터 메뉴 오른쪽.
+- **저장**: `localStorage['tbyb-miku-theme']` = `system|light|dark` — 데모 상태(`tbyb-miku-demo-v2`)와 별개이며 `store.ts` 를 거치지 않습니다
+  (`src/lib/theme.ts`). '시스템'이면 `prefers-color-scheme` 변화를 바로 따라가고, 다른 탭에서 바꾼 값(`storage` 이벤트)도 따라갑니다.
+  저장이 실패하면(용량·사생활 보호 모드 등) 이번 화면에만 적용하고 "이 기기에 저장하지 못해 이번 화면에만 적용돼요" 알림을
+  스위처 아래에 잠깐 띄웁니다(8초 뒤 사라짐·닫기 가능·아래 메뉴 누르기를 막지 않음). 데모 저장소 오류 막대와는 무관합니다.
+- **번쩍임 없음**: `layout.tsx` 의 `<head>` 인라인 스크립트(`THEME_INIT_SCRIPT`, `src/lib/theme-core.ts`)가 HTML 을 읽는 도중,
+  `<body>` 가 생기기 전에 저장값과 `matchMedia('(prefers-color-scheme: dark)')` 를 읽어 `<html data-theme="light|dark">`,
+  `data-theme-pref`, `style.color-scheme` 을 붙입니다. 정적 HTML 에 그대로 들어가므로 basePath 와 무관하고, `localStorage`·`matchMedia` 가
+  막혀도 try/catch 로 시스템/라이트로 갑니다. `<html suppressHydrationWarning>` 로 하이드레이션 경고를 막습니다
+  (Next 가이드 `preventing-flash-before-hydration` 와 같은 방식). 주소창 색은 `viewport.themeColor` 를 시스템별로 두고, 직접 고르면 그 색으로 맞춥니다.
+- **색**: `globals.css` 의 `:root[data-theme="dark"]` 에서 같은 `--color-*` 변수를 덮어씁니다 — `bg-bg`·`text-ink` 등 유틸리티는 그대로.
+  새 토큰: `field`(글자 입력칸 테두리, 3:1), `feature`/`on-feature`(마무리 CTA 판), `on-coral`(코랄 면 위 글자 — 흰 글자는 코랄 위에서 2.8:1).
+  그림자는 `--shadow-card`·`--shadow-lift`, 일러스트 색은 `--ill-*` 변수(`illustrations.tsx` 는 `style` 로 받음 — SVG 속성 안 `var()` 는 브라우저마다 다름).
+  `dark:` 변형은 로고 겹침 섞기(곱하기 → 스크린)와 CTA 테두리처럼 변수로 못 바꾸는 곳에만 씁니다.
+- **느낌**: 순검정·순백 없는 "밤에 켠 스탠드" — 갈색 기운 바탕 `#16130F`, 카드 `#221E19`, 크림 글자 `#F3ECE2`. 잉크 주 버튼은 크림 버튼 +
+  어두운 글자로 뒤집히고, 마무리 CTA 는 코랄·청록 빛이 번지는 따뜻한 판이 됩니다. 일러스트는 선이 밝은 잉크, 해는 가장자리로 스러지는
+  호박색 빛, 노트북 화면(청록·보라)은 채도를 낮췄습니다.
+- **대비 확인**: `node scripts/contrast.mjs` (저장소 루트에서는 `node web/scripts/contrast.mjs`) — 두 테마에서 실제로 쓰는 글자·바탕 짝
+  112개를 토큰 값으로 계산(겹친 반투명 바탕·투명 글자 합성 포함). 본문 4.5:1 · 큰 글자 3:1 · UI 경계·초점·상태 면 3:1 미달이면 종료 코드 1.
+  비활성 컨트롤·그림 속 글자·장식 테두리는 WCAG 예외라 참고값만 보여 줍니다(`--all` 로 전체 표).
+  E2E 의 `e2e/readability.ts` 는 브라우저에 실제로 그려진 모든 글자를 같은 기준으로 다시 잽니다.
+
 ## 실행
 
 ```bash
@@ -43,6 +69,7 @@ npm install          # ~/.npmrc 의 allow-scripts 때문에 막히면: NPM_CONFI
 npm run dev          # http://localhost:3000
 npm run lint
 npx tsc --noEmit
+node scripts/contrast.mjs   # 두 테마 대비 확인
 ```
 
 ## 정적 빌드
@@ -69,6 +96,16 @@ npm run e2e:only                  # 이미 basePath 로 빌드했다면 테스�
   - 리워드는 체험 건당 한 번(두 탭), 리워드 거절 시 고객에게는 상태·메모만, 고객 화면 어디에도 검토 표시·예상 코드·일치 여부 없음
   - v1 `/my/record/` 주소 이동, 결제 기한 만료·고객 취소·초기화
   - 저장소 보장: 손상된 저장본 보존·명시적 초기화, 부분 초기화 실패(데모 시계 +25 보존), 저장 실패 시 성공 표시 없음(운영 단계·미션 답)
-- `e2e/screenshots.spec.ts` — `../docs/screenshots/web-*.png` 를 다시 찍습니다
-  (intro-mobile · intro-desktop · pack · request · my · missions · decide · ops-reward)
+  - 전체 흐름은 `chromium`(라이트)과 `chromium-dark`(시스템 다크, `playwright.config.ts`) 두 프로젝트에서 돌고, 단계마다
+    `expectReadable` 로 화면의 모든 글자 대비를 잽니다(안 보이거나 읽기 어려운 글자 잡기)
+- `e2e/theme.spec.ts` — 다크 모드
+  - 기본은 시스템(다크 흉내) · 라이트가 시스템 다크보다 우선하고 새로고침·화면 이동에도 유지 · 시스템으로 돌아가면 OS 변경을 바로 따라감 · 다른 탭 동기화
+  - 번쩍임 없음: 정적 HTML `<head>` 에 스크립트가 `<body>` 앞에 있음 · `<body>` 가 들어오는 순간 이미 `data-theme`·`color-scheme` 이 붙어 있음 ·
+    JS 번들을 막아(하이드레이션 없음)도 저장값/시스템 테마가 첫 화면에 적용되고 스위처 모양도 맞음
+  - 테마 저장 실패: 이번 화면에 적용 + 알림(role=status), 메뉴 누르기 가능, 데모 오류 막대 없음, 새로고침하면 시스템 · `localStorage` 접근 자체가 막혀도 오류 없음
+  - 키보드(Tab → ←/→, 초점 링) · 390px 에서 로고와 같은 줄·가로 넘침 없음·36px 이상 누르기 칸
+  - 두 테마 읽기 대비: 소개·비교팩·요청(오류)·내 체험(결제 대기·체험 중)·미션(폼·오류·신청 후)·결정·운영(결제 대기·기한 지남·리워드 확인)·
+    저장 실패 막대·손상된 저장본 막대·테마 알림
+- `e2e/screenshots.spec.ts` — `../docs/screenshots/` 의 라이트 `web-*.png` 와 다크 `web-dark-*.png` 를 다시 찍습니다
+  (intro-mobile · intro-desktop · pack · request · my · missions · decide · ops-reward, 테마는 `colorScheme` 흉내로 '시스템'이 고름)
 - `e2e/serve.mjs` — GitHub Pages 처럼 `/tbyb-mvp-miku/` 아래에서 `out/` 을 서빙하는 의존성 없는 정적 서버

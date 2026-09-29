@@ -1,6 +1,8 @@
 // 앱(Expo 웹 빌드) 저장 실패 처리 검증 — TETO 교차검토(2026-09-29) 재현 사례 포함. v2: 미션·리워드 흐름.
 // 저장(setItem)이 실패하면: 성공 표시 없음 · 상태 변경 없음 · 입력값 유지 · 다시 누르면 저장.
 // + 리워드 검토 메모·표시(flag)는 고객 화면에 나오지 않는다 (거절 사유만 고객에게 보인다).
+// + 화면 모드(시스템/라이트/다크): 고른 값은 새로고침 뒤에도 남고, 저장 실패 시 이번 실행에만 적용 + 저장 오류 표시,
+//   기기 설정이 다크(colorScheme: 'dark')면 첫 화면 바탕이 다크.
 //
 // 사용 (저장소 루트에서):
 //   (cd app && rm -rf dist && EXPO_BASE_URL=/tbyb-mvp-miku/app npx expo export --platform web --output-dir dist)
@@ -112,8 +114,8 @@ const writeError = (page) => page.getByText(D.STORAGE_WRITE_ERROR).filter({ visi
 const restoreWrites = (page) => page.evaluate(() => (Storage.prototype.setItem = window.__setItem));
 const stored = (page) => page.evaluate((k) => JSON.parse(localStorage.getItem(k) ?? 'null'), D.STORAGE_KEY);
 
-async function newPage(browser, seed) {
-  const context = await browser.newContext({ viewport: { width: 390, height: 844 }, locale: 'ko-KR', timezoneId: 'Asia/Seoul' });
+async function newPage(browser, seed, { colorScheme = 'light' } = {}) {
+  const context = await browser.newContext({ viewport: { width: 390, height: 844 }, locale: 'ko-KR', timezoneId: 'Asia/Seoul', colorScheme });
   const page = await context.newPage();
   page.setDefaultTimeout(30_000);
   if (seed) {
@@ -314,6 +316,98 @@ await check('리워드 거절 → 거절 사유는 미션 탭 리워드 카드�
   }
   if (!texts.missions.includes(`거절 사유: ${NOTE}`)) throw new Error('미션 탭에 거절 사유가 없음');
   if (texts['my/'].includes(NOTE) || texts['decide/'].includes(NOTE)) throw new Error('거절 사유가 이력·다른 화면에 보임');
+  await page.context().close();
+});
+
+// ───────── 화면 모드 ─────────
+const LIGHT_BG = 'rgb(250, 246, 239)'; // palette.ts light.bg #FAF6EF
+const DARK_BG = 'rgb(22, 19, 15)'; // palette.ts dark.bg #16130F
+const storedUi = (page) => page.evaluate((k) => JSON.parse(localStorage.getItem(k) ?? 'null'), UI_KEY);
+// 문서에 적용된 모드: <html data-theme> · 앱이 다시 그린 뒤 붙는 data-theme-ready · body 바탕
+const docTheme = (page) =>
+  page.evaluate(() => ({
+    theme: document.documentElement.dataset.theme,
+    ready: document.documentElement.dataset.themeReady === '1',
+    body: getComputedStyle(document.body).backgroundColor,
+  }));
+// 화면 왼쪽 여백(카드 바깥)의 요소에서 위로 올라가며 처음 칠해진 바탕색 = 탭 화면의 실제 바탕
+const screenBg = (page) =>
+  page.evaluate(() => {
+    let el = document.elementFromPoint(6, window.innerHeight / 2);
+    while (el) {
+      const bg = getComputedStyle(el).backgroundColor;
+      if (bg && bg !== 'rgba(0, 0, 0, 0)' && bg !== 'transparent') return bg;
+      el = el.parentElement;
+    }
+    return getComputedStyle(document.body).backgroundColor;
+  });
+const themeRadio = (page, name) => page.getByRole('radio', { name, exact: true });
+
+await check('화면 모드 다크 선택 → UI 키에 저장, 새로고침 뒤에도 다크 (기기 설정은 라이트)', async () => {
+  const page = await newPage(browser, trialState());
+  await page.goto(`${base}my/`, { waitUntil: 'domcontentloaded', timeout: 60_000 });
+  await expect(themeRadio(page, '시스템 설정 따라가기')).toBeChecked();
+  await expect.poll(async () => (await docTheme(page)).theme).toBe('light');
+  await themeRadio(page, '다크').click();
+  await expect(themeRadio(page, '다크')).toBeChecked();
+  await expect.poll(async () => (await storedUi(page))?.theme).toBe('dark');
+  await expect.poll(() => docTheme(page)).toEqual({ theme: 'dark', ready: true, body: DARK_BG });
+  await expect.poll(() => screenBg(page)).toBe(DARK_BG);
+  await expect(writeError(page)).toHaveCount(0);
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await expect(themeRadio(page, '다크')).toBeChecked();
+  await expect.poll(() => docTheme(page)).toEqual({ theme: 'dark', ready: true, body: DARK_BG });
+  await expect.poll(() => screenBg(page)).toBe(DARK_BG);
+  // 다른 탭(정적 HTML 로 바로 연 페이지)도 첫 화면부터 다크
+  await page.goto(`${base}decide/`, { waitUntil: 'domcontentloaded', timeout: 60_000 });
+  await page.getByText('미션 답 모아 보기').first().waitFor();
+  await expect.poll(() => screenBg(page)).toBe(DARK_BG);
+  // 데모 초기화를 해도 화면 모드는 남는다 (기기 설정)
+  await page.goto(`${base}simulator`, { waitUntil: 'domcontentloaded', timeout: 60_000 });
+  await page.getByRole('button', { name: '데모 초기화' }).click();
+  await page.getByRole('button', { name: '초기화', exact: true }).click();
+  await expect(page.getByText('진행할 요청이 없습니다')).toBeVisible();
+  if ((await storedUi(page))?.theme !== 'dark') throw new Error('데모 초기화 뒤 화면 모드가 사라짐');
+  await page.context().close();
+});
+
+await check('화면 모드 저장 실패 → 이번 실행에만 적용·저장 오류 표시·앱은 계속 쓸 수 있음, 새로고침하면 이전 모드', async () => {
+  const page = await newPage(browser, trialState());
+  await page.goto(`${base}my/`, { waitUntil: 'domcontentloaded', timeout: 60_000 });
+  await expect(themeRadio(page, '시스템 설정 따라가기')).toBeChecked();
+  await failWritesFor(page, UI_KEY);
+  await themeRadio(page, '다크').click();
+  await expect(writeError(page)).toBeVisible();
+  await expect(page.getByText('이번 실행에만 적용됐어요')).toBeVisible();
+  await expect(themeRadio(page, '다크')).toBeChecked();
+  await expect.poll(() => docTheme(page)).toEqual({ theme: 'dark', ready: true, body: DARK_BG });
+  if ((await storedUi(page))?.theme === 'dark') throw new Error('실패했는데 화면 모드가 저장됨');
+  // 탭을 옮겨도 다크 그대로, 데모 저장(도메인 키)은 정상
+  await page.getByRole('tab', { name: /결정·반납/ }).click();
+  await fillDecision(page);
+  await page.getByRole('button', { name: '결정 저장', exact: true }).click();
+  await expect(page.getByRole('button', { name: '저장됨', exact: true })).toBeVisible();
+  if (!(await stored(page)).reservations[0].decision) throw new Error('화면 모드 실패 뒤 결정 저장이 안 됨');
+  await expect.poll(() => screenBg(page)).toBe(DARK_BG);
+  await restoreWrites(page);
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.getByRole('button', { name: '저장됨', exact: true }).waitFor();
+  await expect.poll(() => docTheme(page)).toEqual({ theme: 'light', ready: true, body: LIGHT_BG });
+  await page.context().close();
+});
+
+await check('기기 설정 다크(colorScheme: dark) + 시스템 모드 → 미션 화면 첫 바탕부터 다크, 글자는 밝은 잉크', async () => {
+  const page = await newPage(browser, readyState(), { colorScheme: 'dark' });
+  await page.goto(`${base}missions`, { waitUntil: 'domcontentloaded', timeout: 60_000 });
+  // <head> 스크립트가 앱보다 먼저 다크를 정한다 (번쩍임 방지)
+  if ((await page.evaluate(() => document.documentElement.dataset.theme)) !== 'dark') throw new Error('첫 HTML 에서 다크가 적용되지 않음');
+  await page.getByText('미션 리워드').first().waitFor();
+  await expect.poll(() => docTheme(page)).toEqual({ theme: 'dark', ready: true, body: DARK_BG });
+  await expect.poll(() => screenBg(page)).toBe(DARK_BG);
+  const ink = await page.getByText('미션 리워드', { exact: true }).first().evaluate((el) => getComputedStyle(el).color);
+  if (ink !== 'rgb(243, 236, 226)') throw new Error(`제목 글자색이 다크 잉크가 아님: ${ink}`);
+  await page.emulateMedia({ colorScheme: 'light' });
+  await expect.poll(() => screenBg(page)).toBe(LIGHT_BG);
   await page.context().close();
 });
 

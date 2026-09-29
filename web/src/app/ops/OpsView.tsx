@@ -121,7 +121,7 @@ function paymentCell(r: Reservation, now: Date) {
   if (r.ops.txMatched) return <span className="font-medium text-success-ink">대조 완료</span>;
   if (r.status === "payment_pending") {
     return isPaymentExpired(r, now) ? (
-      <span className="font-medium text-danger">기한 지남</span>
+      <span className="font-medium text-danger-ink">기한 지남</span>
     ) : (
       <span className="font-medium text-warn">대조 전</span>
     );

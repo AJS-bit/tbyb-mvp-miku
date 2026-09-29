@@ -68,7 +68,8 @@ import { haptic } from '@/lib/haptics';
 import { clearFor } from '@/lib/reminder-actions';
 import { cancelAllReminders } from '@/lib/reminders';
 import { apply, resetAll, setDealerTermsConfirmed, useCurrent } from '@/lib/store';
-import { C, DEVICE_COLOR, MONO_FAMILY, RADIUS } from '@/lib/theme';
+import { MONO_FAMILY, RADIUS } from '@/lib/theme';
+import { themed, useTheme } from '@/lib/theme-context';
 
 const KINDS: DeviceKey[] = ['air', 'pro'];
 
@@ -96,6 +97,8 @@ async function run(fn: (s: DemoState) => Result<DemoState>): Promise<string | nu
 
 export default function SimulatorScreen() {
   const { app, current } = useCurrent();
+  const { c } = useTheme();
+  const styles = useStyles();
   const demo = app.demo;
   const scrollRef = useRef<ScrollView>(null);
   const [rewardY, setRewardY] = useState(0);
@@ -111,12 +114,12 @@ export default function SimulatorScreen() {
   return (
     <Screen scrollRef={scrollRef}>
       <View style={styles.banner} accessibilityRole="summary">
-        <Icon ios="exclamationmark.triangle.fill" web="warning" size={18} color="#FFFFFF" style={{ marginTop: 2 }} />
+        <Icon ios="exclamationmark.triangle.fill" web="warning" size={18} color={c.ivory} style={{ marginTop: 2 }} />
         <View style={{ flex: 1, gap: 2 }}>
-          <T variant="headline" color="#FFFFFF">
+          <T variant="headline" color={c.ivory}>
             데모 — 실제 운영자 기능 아님
           </T>
-          <T variant="footnote" color="#D9CFC2">
+          <T variant="footnote" color={c.onInkSub}>
             운영자 인증 없이 이 기기에 저장된 데모 데이터만 바꿉니다. 고객 흐름을 끝까지 시연하기 위한 화면입니다.
           </T>
         </View>
@@ -125,7 +128,7 @@ export default function SimulatorScreen() {
       {!current ? (
         <Card style={{ gap: 10 }}>
           <T variant="title3">진행할 요청이 없습니다</T>
-          <T variant="callout" color={C.sub}>
+          <T variant="callout" color={c.sub}>
             먼저 비교팩 탭에서 데모 일정 요청을 만들면 여기서 단계를 진행할 수 있습니다.
           </T>
           <Button
@@ -172,6 +175,9 @@ export default function SimulatorScreen() {
 // ───────── 단계별 운영 조작 ─────────
 
 function StepPanel({ r, demo }: { r: Reservation; demo: DemoState }) {
+  const t = useTheme();
+  const { c } = t;
+  const styles = useStyles();
   const [error, setError] = useState<string | null>(null);
   const [txDraft, setTxDraft] = useState(r.ops.demoTxId);
 
@@ -193,7 +199,7 @@ function StepPanel({ r, demo }: { r: Reservation; demo: DemoState }) {
               <View key={k} style={{ gap: 8 }}>
                 <Row style={{ justifyContent: 'space-between' }}>
                   <DeviceTag kind={k} full />
-                  <T variant="footnote" weight="700" color={assigned ? C.ink : C.muted}>
+                  <T variant="footnote" weight="700" color={assigned ? c.ink : c.sub}>
                     {assigned ? `확보: ${assigned}` : '미확보'}
                   </T>
                 </Row>
@@ -204,14 +210,14 @@ function StepPanel({ r, demo }: { r: Reservation; demo: DemoState }) {
                       accessibilityRole="button"
                       accessibilityLabel={`${d.id} 배정`}
                       onPress={() => run((s) => assignDevice(s, r.id, k, d.id)).then(setError)}
-                      style={({ pressed }) => [styles.devChip, { borderColor: DEVICE_COLOR[k].main }, pressed && { opacity: 0.7 }]}>
-                      <T variant="callout" weight="700" color={C.ink}>
+                      style={({ pressed }) => [styles.devChip, { borderColor: t.device[k].main }, pressed && { opacity: 0.7 }]}>
+                      <T variant="callout" weight="700" color={c.ink}>
                         {d.id} 배정
                       </T>
                     </Pressable>
                   ))}
                   {!options.length && !assigned ? (
-                    <T variant="footnote" color={C.error}>
+                    <T variant="footnote" color={c.error}>
                       배정 가능한 기기가 없습니다 (보류·사용 중·검수 대기·구매 대기 제외).
                     </T>
                   ) : null}
@@ -232,14 +238,14 @@ function StepPanel({ r, demo }: { r: Reservation; demo: DemoState }) {
             <T variant="callout" weight="700">
               {formatDateTime(r.ops.paymentDeadline)}
             </T>
-            <T variant="footnote" color={expired ? C.error : C.warnText}>
+            <T variant="footnote" color={expired ? c.error : c.warnText}>
               {formatRemaining(r.ops.paymentDeadline)}
             </T>
           </KeyValue>
           {expired ? <Notice tone="error">기한이 지났습니다. 자동 확정하지 않습니다 — 취소·환불 또는 대체 일정으로 처리하세요.</Notice> : null}
           <T variant="footnote">{PAYMENT_RULE}</T>
           <View style={{ gap: 6 }}>
-            <T variant="footnote" weight="700" color={C.ink}>
+            <T variant="footnote" weight="700" color={c.ink}>
               데모 거래 식별자
             </T>
             <Row gap={8}>
@@ -286,7 +292,8 @@ function StepPanel({ r, demo }: { r: Reservation; demo: DemoState }) {
               key={k}
               label={`${DEVICE_LABEL[k]} 상태·부속품 기록`}
               sub={r.ops.deviceIds[k] ? `기기 ${r.ops.deviceIds[k]}` : undefined}
-              color={DEVICE_COLOR[k].main}
+              color={t.device[k].main}
+              onColor={c.onMark}
               value={r.ops.checkout[k]}
               onValueChange={(v) => run((s) => setCheckout(s, r.id, k, v)).then(setError)}
             />
@@ -323,14 +330,14 @@ function StepPanel({ r, demo }: { r: Reservation; demo: DemoState }) {
             const done = isInspectionDone(r.ops.inspection[k]);
             const count = (Object.keys(INSPECTION_LABEL) as (keyof Inspection)[]).filter((f) => r.ops.inspection[k][f]).length;
             return (
-              <View key={k} style={[styles.inspectBox, { borderLeftColor: DEVICE_COLOR[k].main }]}>
+              <View key={k} style={[styles.inspectBox, { borderLeftColor: t.device[k].main }]}>
                 <Row style={{ justifyContent: 'space-between' }}>
                   <Row gap={6}>
                     <DeviceTag kind={k} full />
                     <T variant="caption">{r.ops.deviceIds[k]}</T>
                   </Row>
                   {inspect ? (
-                    <Pill label={done ? '검수 완료' : `${count}/4`} bg={done ? C.doneSoft : C.proSoft} fg={done ? C.doneText : C.proInk} />
+                    <Pill label={done ? '검수 완료' : `${count}/4`} bg={done ? c.doneSoft : c.proSoft} fg={done ? c.doneText : c.proInk} />
                   ) : null}
                 </Row>
                 {inspect ? (
@@ -339,7 +346,8 @@ function StepPanel({ r, demo }: { r: Reservation; demo: DemoState }) {
                       <SwitchRow
                         key={f}
                         label={INSPECTION_LABEL[f]}
-                        color={DEVICE_COLOR[k].main}
+                        color={t.device[k].main}
+                        onColor={c.onMark}
                         value={r.ops.inspection[k][f]}
                         onValueChange={(v) => run((s) => setInspection(s, r.id, k, f, v)).then(setError)}
                       />
@@ -348,7 +356,7 @@ function StepPanel({ r, demo }: { r: Reservation; demo: DemoState }) {
                     <T variant="footnote">반납 기기 — &lsquo;검수 중&rsquo;으로 넘기면 검수 항목이 열립니다.</T>
                   )
                 ) : (
-                  <T variant="footnote" color={C.warnText}>
+                  <T variant="footnote" color={c.warnText}>
                     {r.ops.sale === 'confirmed' ? DEVICE_STATE_LABEL.sold : DEVICE_STATE_LABEL.sale_pending}
                   </T>
                 )}
@@ -393,6 +401,8 @@ function SalePanel({
   dealerTermsConfirmed: boolean;
   onError: (e: string | null) => void;
 }) {
+  const { c } = useTheme();
+  const styles = useStyles();
   const pending = r.ops.sale === 'none';
   return (
     <View style={styles.saleBox}>
@@ -406,8 +416,8 @@ function SalePanel({
         <T variant="footnote">판매 상태</T>
         <Pill
           label={SALE_LABEL[r.ops.sale]}
-          bg={r.ops.sale === 'confirmed' ? C.doneSoft : r.ops.sale === 'failed' ? C.greySoft : C.warnBg}
-          fg={r.ops.sale === 'confirmed' ? C.doneText : r.ops.sale === 'failed' ? C.grey : C.warnText}
+          bg={r.ops.sale === 'confirmed' ? c.doneSoft : r.ops.sale === 'failed' ? c.greySoft : c.warnBg}
+          fg={r.ops.sale === 'confirmed' ? c.doneText : r.ops.sale === 'failed' ? c.grey : c.warnText}
         />
       </Row>
       {pending ? (
@@ -434,17 +444,19 @@ function SalePanel({
 // ───────── 바탕화면 코드 (운영자만 봄) ─────────
 
 function WallCodes({ r }: { r: Reservation }) {
+  const t = useTheme();
+  const styles = useStyles();
   const codes = r.ops.wallCodes!;
   return (
     <Section eyebrow="Wallpaper codes" title="출고 때 바탕화면에 띄울 코드" caption="예약·기기마다 다른 4자리 — 고객 화면에는 보이지 않아요">
       <Card style={{ gap: 12 }}>
         <Row gap={10}>
           {KINDS.map((k) => (
-            <View key={k} style={[styles.codeBox, { backgroundColor: DEVICE_COLOR[k].soft }]} accessible accessibilityLabel={`${DEVICE_LABEL[k]} 바탕화면 코드 ${codes[k].split('').join(' ')}`}>
+            <View key={k} style={[styles.codeBox, { backgroundColor: t.device[k].soft }]} accessible accessibilityLabel={`${DEVICE_LABEL[k]} 바탕화면 코드 ${codes[k].split('').join(' ')}`}>
               <Row gap={6}>
-                <View style={[styles.dot, { backgroundColor: DEVICE_COLOR[k].main }]} />
-                <T variant="footnote" weight="800" color={DEVICE_COLOR[k].ink}>
-                  {DEVICE_COLOR[k].short} {r.ops.deviceIds[k] ?? ''}
+                <View style={[styles.dot, { backgroundColor: t.device[k].main }]} />
+                <T variant="footnote" weight="800" color={t.device[k].ink}>
+                  {t.device[k].short} {r.ops.deviceIds[k] ?? ''}
                 </T>
               </Row>
               <T variant="title" style={styles.codeText}>
@@ -475,6 +487,8 @@ function RewardReview({ r }: { r: Reservation }) {
   const [note, setNote] = useState(r.reward.reviewNote ?? '');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const { c } = useTheme();
+  const styles = useStyles();
   const status = r.reward.status;
   const flags = status === 'none' ? rewardFlags(r) : r.reward.flags;
   const p = missionProgress(r);
@@ -513,8 +527,8 @@ function RewardReview({ r }: { r: Reservation }) {
             <View style={{ gap: 6 }}>
               {flags.map((f) => (
                 <Row key={f} gap={8} style={styles.flag}>
-                  <Icon ios="flag.fill" web="flag" size={13} color={C.warnText} />
-                  <T variant="footnote" weight="700" color={C.warnText} style={{ flex: 1 }}>
+                  <Icon ios="flag.fill" web="flag" size={13} color={c.warnText} />
+                  <T variant="footnote" weight="700" color={c.warnText} style={{ flex: 1 }}>
                     {REWARD_FLAG_LABEL[f]}
                   </T>
                 </Row>
@@ -549,7 +563,7 @@ function RewardReview({ r }: { r: Reservation }) {
                   <View style={{ flex: 1 }}>
                     <DeviceTag kind={k} />
                   </View>
-                  <T variant="callout" weight="700" color={typed ? C.ink : C.muted} style={[styles.codeCell, styles.mono]}>
+                  <T variant="callout" weight="700" color={typed ? c.ink : c.sub} style={[styles.codeCell, styles.mono]}>
                     {typed ?? '—'}
                   </T>
                   <T variant="callout" weight="700" style={[styles.codeCell, styles.mono]}>
@@ -557,7 +571,7 @@ function RewardReview({ r }: { r: Reservation }) {
                   </T>
                   <View style={{ width: 22, alignItems: 'center' }}>
                     {typed ? (
-                      <Icon ios={same ? 'checkmark.circle.fill' : 'xmark.circle.fill'} web={same ? 'check_circle' : 'cancel'} size={17} color={same ? C.done : C.error} />
+                      <Icon ios={same ? 'checkmark.circle.fill' : 'xmark.circle.fill'} web={same ? 'check_circle' : 'cancel'} size={17} color={same ? c.doneText : c.error} />
                     ) : null}
                   </View>
                 </Row>
@@ -570,7 +584,7 @@ function RewardReview({ r }: { r: Reservation }) {
           <View style={{ gap: 10 }}>
             <Divider />
             <View style={{ gap: 6 }}>
-              <T variant="footnote" weight="700" color={C.ink}>
+              <T variant="footnote" weight="700" color={c.ink}>
                 확인 메모 {flags.length ? '(필수 — 표시 있음)' : '(거절 시 필수)'}
               </T>
               <Input
@@ -593,7 +607,7 @@ function RewardReview({ r }: { r: Reservation }) {
           </View>
         ) : status === 'approved' || status === 'rejected' ? (
           <View style={styles.reviewed}>
-            <T variant="footnote" weight="700" color={C.ink}>
+            <T variant="footnote" weight="700" color={c.ink}>
               {`${REWARD_STATUS_LABEL[status]} · ${formatShortDateTime(r.reward.reviewedAt)}`}
             </T>
             {r.reward.reviewNote ? <T variant="footnote">{r.reward.reviewNote}</T> : null}
@@ -612,7 +626,7 @@ function RewardReview({ r }: { r: Reservation }) {
                 <MissionIcon id={m.id} size={30} />
                 <View style={{ flex: 1, gap: 4 }}>
                   <Row style={{ justifyContent: 'space-between' }} gap={6}>
-                    <T variant="footnote" weight="700" color={C.ink} style={{ flexShrink: 1 }}>
+                    <T variant="footnote" weight="700" color={c.ink} style={{ flexShrink: 1 }}>
                       {m.title}
                     </T>
                     {a ? <T variant="caption">{formatShortDateTime(a.answeredAt)}</T> : null}
@@ -623,12 +637,12 @@ function RewardReview({ r }: { r: Reservation }) {
                       {a.followUp ? <T variant="caption">{a.followUp}</T> : null}
                     </Row>
                   ) : (
-                    <T variant="caption" color={C.muted}>
+                    <T variant="caption">
                       답 없음
                     </T>
                   )}
                   {extra ? (
-                    <T variant="caption" color={C.ink}>
+                    <T variant="caption" color={c.ink}>
                       {extra}
                     </T>
                   ) : null}
@@ -649,19 +663,20 @@ function NextStep({ r, demo }: { r: Reservation; demo: DemoState }) {
   const forward = targets.find((t) => t !== 'cancelled');
   const [reason, setReason] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const { c } = useTheme();
+  const styles = useStyles();
 
   if (!targets.length) {
     return (
       <Section title="다음 단계">
         <Card>
-          <T variant="callout" color={C.sub}>
+          <T variant="callout" color={c.sub}>
             더 진행할 단계가 없습니다.
           </T>
         </Card>
       </Section>
     );
   }
-
 
   const go = async (to: ReservationStatus) => {
     const res = await apply((s) => transition(s, r.id, to, 'operator', reason));
@@ -678,7 +693,7 @@ function NextStep({ r, demo }: { r: Reservation; demo: DemoState }) {
     <Section title="다음 단계" caption="허용된 다음 단계만 보입니다 — 건너뛰기 불가, 사유 필수">
       <Card style={{ gap: 12 }}>
         <View style={{ gap: 6 }}>
-          <T variant="footnote" weight="700" color={C.ink}>
+          <T variant="footnote" weight="700" color={c.ink}>
             변경 사유 (필수)
           </T>
           <Input value={reason} onChangeText={setReason} placeholder="이력에 남는 사유" accessibilityLabel="상태 변경 사유" />
@@ -688,8 +703,8 @@ function NextStep({ r, demo }: { r: Reservation; demo: DemoState }) {
               accessibilityLabel={`추천 사유 넣기: ${SUGGESTED_REASON[forward]}`}
               onPress={() => setReason(SUGGESTED_REASON[forward] ?? '')}
               style={({ pressed }) => [styles.suggest, pressed && { opacity: 0.7 }]}>
-              <Icon ios="text.badge.plus" web="add_notes" size={14} color={C.coralInk} />
-              <T variant="footnote" weight="600" color={C.coralInk}>
+              <Icon ios="text.badge.plus" web="add_notes" size={14} color={c.coralInk} />
+              <T variant="footnote" weight="600" color={c.coralInk}>
                 {SUGGESTED_REASON[forward]}
               </T>
             </Pressable>
@@ -709,7 +724,7 @@ function NextStep({ r, demo }: { r: Reservation; demo: DemoState }) {
               />
               {!check.ok ? (
                 <Row gap={6} style={{ alignItems: 'flex-start' }}>
-                  <Icon ios="lock.fill" web="lock" size={13} color={C.sub} style={{ marginTop: 3 }} />
+                  <Icon ios="lock.fill" web="lock" size={13} color={c.sub} style={{ marginTop: 3 }} />
                   <T variant="footnote" style={{ flex: 1 }}>
                     {check.error}
                   </T>
@@ -727,6 +742,8 @@ function NextStep({ r, demo }: { r: Reservation; demo: DemoState }) {
 // ───────── 이력 ─────────
 
 function History({ r }: { r: Reservation }) {
+  const { c } = useTheme();
+  const styles = useStyles();
   return (
     <Section title="이력" caption="최근 순">
       <Card style={{ gap: 0, paddingVertical: 6 }}>
@@ -735,7 +752,7 @@ function History({ r }: { r: Reservation }) {
             <Row style={{ justifyContent: 'space-between' }}>
               {h.from === h.to ? (
                 <Row gap={6} style={{ flexShrink: 1 }}>
-                  <Icon ios="note.text" web="description" size={12} color={C.sub} />
+                  <Icon ios="note.text" web="description" size={12} color={c.sub} />
                   <T variant="footnote">운영 기록 · {STATUS_LABEL[h.to]} 단계</T>
                 </Row>
               ) : (
@@ -743,23 +760,23 @@ function History({ r }: { r: Reservation }) {
                   {h.from ? (
                     <>
                       <T variant="footnote">{STATUS_LABEL[h.from]}</T>
-                      <Icon ios="arrow.right" web="arrow_forward" size={11} color={C.sub} />
+                      <Icon ios="arrow.right" web="arrow_forward" size={11} color={c.sub} />
                     </>
                   ) : null}
-                  <T variant="footnote" weight="700" color={C.ink}>
+                  <T variant="footnote" weight="700" color={c.ink}>
                     {STATUS_LABEL[h.to]}
                   </T>
                 </Row>
               )}
               <Pill
                 label={h.actor === 'operator' ? '운영자' : '고객'}
-                bg={h.actor === 'operator' ? C.greySoft : C.coralSoft}
-                fg={h.actor === 'operator' ? C.sub : C.coralInk}
+                bg={h.actor === 'operator' ? c.greySoft : c.coralSoft}
+                fg={h.actor === 'operator' ? c.sub : c.coralInk}
               />
             </Row>
             <T variant="callout">{h.reason}</T>
             {h.internalNote ? (
-              <T variant="footnote" color={C.warnText}>
+              <T variant="footnote" color={c.warnText}>
                 운영 메모: {h.internalNote}
               </T>
             ) : null}
@@ -773,16 +790,19 @@ function History({ r }: { r: Reservation }) {
 
 // ───────── 기기 보드 ─────────
 
-const STATE_TONE: Record<DeviceState, { bg: string; fg: string }> = {
-  available: { bg: C.doneSoft, fg: C.doneText },
-  held: { bg: C.warnBg, fg: C.warnText },
-  out: { bg: C.coralSoft, fg: C.coralInk },
-  inspection: { bg: C.proSoft, fg: C.pro },
-  sale_pending: { bg: C.warnBg, fg: C.warnText },
-  sold: { bg: C.greySoft, fg: C.grey },
-};
+const useStateTone = themed(({ c }): Record<DeviceState, { bg: string; fg: string }> => ({
+  available: { bg: c.doneSoft, fg: c.doneText },
+  held: { bg: c.warnBg, fg: c.warnText },
+  out: { bg: c.coralSoft, fg: c.coralInk },
+  inspection: { bg: c.proSoft, fg: c.proInk },
+  sale_pending: { bg: c.warnBg, fg: c.warnText },
+  sold: { bg: c.greySoft, fg: c.grey },
+}));
 
 function DeviceBoard({ demo }: { demo: DemoState }) {
+  const t = useTheme();
+  const styles = useStyles();
+  const STATE_TONE = useStateTone();
   return (
     <Section title="기기 보드" caption="검수를 마치기 전 기기는 다시 배정할 수 없습니다">
       <Card style={{ gap: 0, paddingVertical: 4 }}>
@@ -790,12 +810,12 @@ function DeviceBoard({ demo }: { demo: DemoState }) {
           const tone = STATE_TONE[d.state];
           return (
             <View key={d.id} style={[styles.devRow, i > 0 && styles.histLine]}>
-              <View style={[styles.devBar, { backgroundColor: DEVICE_COLOR[d.kind].main }]} />
+              <View style={[styles.devBar, { backgroundColor: t.device[d.kind].main }]} />
               <View style={{ width: 70 }}>
                 <T variant="callout" weight="700" style={{ fontVariant: ['tabular-nums'] }}>
                   {d.id}
                 </T>
-                <T variant="caption">{DEVICE_COLOR[d.kind].short}</T>
+                <T variant="caption">{t.device[d.kind].short}</T>
               </View>
               <View style={{ flex: 1, alignItems: 'flex-end', gap: 3 }}>
                 <View style={[styles.stateChip, { backgroundColor: tone.bg }]}>
@@ -840,6 +860,7 @@ function DemoSettings({ dealerTermsConfirmed }: { dealerTermsConfirmed: boolean 
 function ResetBlock() {
   const [confirming, setConfirming] = useState(false);
   const [done, setDone] = useState(false);
+  const { c } = useTheme();
   return (
     <Section title="데모 초기화" caption="모든 요청·기록·기기 상태·예약된 알림을 지웁니다">
       {!confirming ? (
@@ -853,7 +874,7 @@ function ResetBlock() {
           }}
         />
       ) : (
-        <Card accent={C.errorLine}>
+        <Card accent={c.errorLine}>
           <T variant="callout" weight="700">
             정말 초기화할까요? 되돌릴 수 없습니다.
           </T>
@@ -881,39 +902,41 @@ function ResetBlock() {
   );
 }
 
-const styles = StyleSheet.create({
-  banner: {
-    flexDirection: 'row',
-    gap: 10,
-    backgroundColor: C.ink,
-    borderRadius: RADIUS.card,
-    padding: 14,
-  },
-  devChip: {
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: RADIUS.chip,
-    borderWidth: 1.5,
-    backgroundColor: C.surface,
-  },
-  inspectBox: { borderLeftWidth: 4, paddingLeft: 12, gap: 4 },
-  saleBox: { backgroundColor: C.warnBg, borderRadius: 10, padding: 12, gap: 8, borderWidth: 1, borderColor: C.warnLine },
-  suggest: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', paddingVertical: 4 },
-  hist: { paddingVertical: 10, gap: 3 },
-  histLine: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.line },
-  devRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10 },
-  devBar: { width: 4, height: 32, borderRadius: 2 },
-  stateChip: { paddingVertical: 3, paddingHorizontal: 10, borderRadius: 999, maxWidth: 220 },
-  codeBox: { flex: 1, borderRadius: 16, padding: 14, gap: 6 },
-  dot: { width: 8, height: 8, borderRadius: 4 },
-  codeText: { fontFamily: MONO_FAMILY, letterSpacing: 6, fontSize: 28, lineHeight: 36 },
-  ansRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, paddingVertical: 8 },
-  codeTable: { borderRadius: 14, borderWidth: 1, borderColor: C.line, overflow: 'hidden' },
-  codeRowHead: { paddingHorizontal: 12, paddingVertical: 8, backgroundColor: C.sunk },
-  codeRow: { paddingHorizontal: 12, paddingVertical: 10, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.line },
-  codeCell: { width: 82, textAlign: 'center' },
-  mono: { fontFamily: MONO_FAMILY, letterSpacing: 2 },
-  flag: { backgroundColor: C.warnBg, borderRadius: 10, paddingVertical: 8, paddingHorizontal: 10 },
-  reviewed: { backgroundColor: C.sunk, borderRadius: 12, padding: 12, gap: 4 },
-});
+const useStyles = themed(({ c }) =>
+  StyleSheet.create({
+    banner: {
+      flexDirection: 'row',
+      gap: 10,
+      backgroundColor: c.ink,
+      borderRadius: RADIUS.card,
+      padding: 14,
+    },
+    devChip: {
+      paddingVertical: 8,
+      paddingHorizontal: 12,
+      borderRadius: RADIUS.chip,
+      borderWidth: 1.5,
+      backgroundColor: c.surface,
+    },
+    inspectBox: { borderLeftWidth: 4, paddingLeft: 12, gap: 4 },
+    saleBox: { backgroundColor: c.warnBg, borderRadius: 10, padding: 12, gap: 8, borderWidth: 1, borderColor: c.warnLine },
+    suggest: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', paddingVertical: 4 },
+    hist: { paddingVertical: 10, gap: 3 },
+    histLine: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: c.line },
+    devRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10 },
+    devBar: { width: 4, height: 32, borderRadius: 2 },
+    stateChip: { paddingVertical: 3, paddingHorizontal: 10, borderRadius: 999, maxWidth: 220 },
+    codeBox: { flex: 1, borderRadius: 16, padding: 14, gap: 6 },
+    dot: { width: 8, height: 8, borderRadius: 4 },
+    codeText: { fontFamily: MONO_FAMILY, letterSpacing: 6, fontSize: 28, lineHeight: 36 },
+    ansRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, paddingVertical: 8 },
+    codeTable: { borderRadius: 14, borderWidth: 1, borderColor: c.line, overflow: 'hidden' },
+    codeRowHead: { paddingHorizontal: 12, paddingVertical: 8, backgroundColor: c.sunk },
+    codeRow: { paddingHorizontal: 12, paddingVertical: 10, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: c.line },
+    codeCell: { width: 82, textAlign: 'center' },
+    mono: { fontFamily: MONO_FAMILY, letterSpacing: 2 },
+    flag: { backgroundColor: c.warnBg, borderRadius: 10, paddingVertical: 8, paddingHorizontal: 10 },
+    reviewed: { backgroundColor: c.sunk, borderRadius: 12, padding: 12, gap: 4 },
+  }),
+);
 

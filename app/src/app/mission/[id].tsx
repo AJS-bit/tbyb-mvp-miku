@@ -23,7 +23,8 @@ import {
 import { formatShortDateTime } from '@/lib/format';
 import { haptic } from '@/lib/haptics';
 import { apply, useCurrent } from '@/lib/store';
-import { C, DEVICE_COLOR, MAX_WIDTH, PICK_COLOR } from '@/lib/theme';
+import { MAX_WIDTH } from '@/lib/theme';
+import { themed, useTheme } from '@/lib/theme-context';
 
 // 웹 정적 내보내기: 미션 6개 페이지를 미리 만든다 (mission/carry.html …)
 export async function generateStaticParams(): Promise<Record<string, string>[]> {
@@ -38,6 +39,8 @@ function close() {
 export default function MissionSheet() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { app, current } = useCurrent();
+  const t = useTheme();
+  const styles = useStyles();
   const index = MISSIONS.findIndex((m) => m.id === id);
   const def = MISSIONS[index];
 
@@ -45,6 +48,7 @@ export default function MissionSheet() {
     <View style={styles.sheet}>
       <ScrollView
         style={{ flex: 1 }}
+        indicatorStyle={t.scheme === 'dark' ? 'white' : 'black'}
         contentContainerStyle={styles.content}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="interactive"
@@ -58,7 +62,7 @@ export default function MissionSheet() {
               hitSlop={10}
               onPress={close}
               style={({ pressed }) => [styles.close, pressed && { opacity: 0.6 }]}>
-              <Icon ios="xmark" web="close" size={14} color={C.ink} />
+              <Icon ios="xmark" web="close" size={14} color={t.c.ink} />
             </Pressable>
           </Row>
           {!app.ready ? null : !def ? (
@@ -85,20 +89,22 @@ export default function MissionSheet() {
 }
 
 function Header({ def, index }: { def: MissionDef; index: number }) {
+  const { c } = useTheme();
+  const styles = useStyles();
   const optional = !CORE_MISSIONS.includes(def.id);
   return (
     <View style={{ gap: 14 }}>
       <Row gap={14}>
         <MissionIcon id={def.id} size={72} />
         <View style={{ flex: 1, gap: 4 }}>
-          <Eyebrow color={optional ? C.sub : C.coralInk}>{`Mission 0${index + 1} · ${optional ? 'optional' : 'core'}`}</Eyebrow>
+          <Eyebrow color={optional ? c.sub : c.coralInk}>{`Mission 0${index + 1} · ${optional ? 'optional' : 'core'}`}</Eyebrow>
           <T variant="title" accessibilityRole="header">
             {def.title}
           </T>
         </View>
       </Row>
       <View style={styles.how}>
-        <T variant="footnote" weight="700" color={C.sub}>
+        <T variant="footnote" weight="700" color={c.sub}>
           이렇게 해 보세요
         </T>
         <T variant="body">{def.how}</T>
@@ -111,6 +117,8 @@ type Pct = { before: string; after: string };
 const toStr = (n: number | undefined) => (n === undefined ? '' : String(n));
 
 function MissionForm({ r, def }: { r: Reservation; def: MissionDef }) {
+  const t = useTheme();
+  const styles = useStyles();
   const saved = r.missions[def.id];
   const editable = missionsEditable(r);
   const [pick, setPick] = useState<Pick | null>(saved?.pick ?? null);
@@ -199,7 +207,7 @@ function MissionForm({ r, def }: { r: Reservation; def: MissionDef }) {
       <View style={{ gap: 12 }}>
         <View style={{ gap: 4 }}>
           <T variant="title3">{def.question}</T>
-          <T variant="callout" color={C.sub}>
+          <T variant="callout" color={t.c.sub}>
             비슷했거나 모르겠어도 그대로 골라 주세요. 그것도 좋은 답이에요.
           </T>
         </View>
@@ -241,11 +249,11 @@ function MissionForm({ r, def }: { r: Reservation; def: MissionDef }) {
           <Field label="배터리 % 적기" optional hint="30분쯤 틀어 두고 시작·끝 배터리를 적어 주면 더 정확해요. 안 적어도 괜찮아요.">
             <View style={{ flexDirection: 'row', gap: 10 }}>
               {(['air', 'pro'] as DeviceKey[]).map((k) => (
-                <View key={k} style={[styles.devCol, { backgroundColor: DEVICE_COLOR[k].soft }]}>
+                <View key={k} style={[styles.devCol, { backgroundColor: t.device[k].soft }]}>
                   <DevLabel kind={k} />
                   <NumberInput
                     label="시작 %"
-                    a11y={`${DEVICE_COLOR[k].short} 시작 배터리 %`}
+                    a11y={`${t.device[k].short} 시작 배터리 %`}
                     value={battery[k].before}
                     editable={editable}
                     onChange={(v) => {
@@ -255,7 +263,7 @@ function MissionForm({ r, def }: { r: Reservation; def: MissionDef }) {
                   />
                   <NumberInput
                     label="끝 %"
-                    a11y={`${DEVICE_COLOR[k].short} 끝 배터리 %`}
+                    a11y={`${t.device[k].short} 끝 배터리 %`}
                     value={battery[k].after}
                     editable={editable}
                     onChange={(v) => {
@@ -293,11 +301,11 @@ function MissionForm({ r, def }: { r: Reservation; def: MissionDef }) {
         <Field label="같은 작업에 걸린 시간" required hint="두 맥에서 같은 사진·영상 작업을 했을 때 걸린 시간(분)이에요. 대충이어도 괜찮아요.">
           <View style={{ flexDirection: 'row', gap: 10 }}>
             {(['air', 'pro'] as DeviceKey[]).map((k) => (
-              <View key={k} style={[styles.devCol, { backgroundColor: DEVICE_COLOR[k].soft }]}>
+              <View key={k} style={[styles.devCol, { backgroundColor: t.device[k].soft }]}>
                 <DevLabel kind={k} />
                 <NumberInput
                   label="분"
-                  a11y={`${DEVICE_COLOR[k].short} 걸린 시간(분)`}
+                  a11y={`${t.device[k].short} 걸린 시간(분)`}
                   value={minutes[k]}
                   editable={editable}
                   decimal
@@ -335,7 +343,9 @@ function MissionForm({ r, def }: { r: Reservation; def: MissionDef }) {
 }
 
 function PickButton({ pick, selected, disabled, onPress }: { pick: Pick; selected: boolean; disabled?: boolean; onPress: () => void }) {
-  const t = PICK_COLOR[pick];
+  const theme = useTheme();
+  const styles = useStyles();
+  const t = theme.pick[pick];
   return (
     <Pressable
       accessibilityRole="radio"
@@ -358,11 +368,11 @@ function PickButton({ pick, selected, disabled, onPress }: { pick: Pick; selecte
         <PickMark pick={pick} size={30} />
         {selected ? (
           <View style={[styles.pickCheck, { backgroundColor: t.main }]}>
-            <Icon ios="checkmark" web="check" size={12} color="#FFFFFF" />
+            <Icon ios="checkmark" web="check" size={12} color={theme.c.onMark} />
           </View>
         ) : null}
       </Row>
-      <T variant="headline" weight="800" color={selected ? t.ink : C.ink}>
+      <T variant="headline" weight="800" color={selected ? t.ink : theme.c.ink}>
         {PICK_LABEL[pick]}
       </T>
     </Pressable>
@@ -370,11 +380,12 @@ function PickButton({ pick, selected, disabled, onPress }: { pick: Pick; selecte
 }
 
 function DevLabel({ kind }: { kind: DeviceKey }) {
+  const d = useTheme().device[kind];
   return (
     <Row gap={6}>
-      <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: DEVICE_COLOR[kind].main }} />
-      <T variant="footnote" weight="800" color={DEVICE_COLOR[kind].ink}>
-        {DEVICE_COLOR[kind].short}
+      <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: d.main }} />
+      <T variant="footnote" weight="800" color={d.ink}>
+        {d.short}
       </T>
     </Row>
   );
@@ -409,34 +420,36 @@ function NumberInput({
         placeholder="—"
         maxLength={5}
         accessibilityLabel={a11y}
-        style={{ paddingVertical: 10, borderColor: 'transparent', fontWeight: '700', fontSize: 18 }}
+        style={{ paddingVertical: 10, borderColor: 'transparent', fontWeight: '700', fontSize: 18 }} // 연한 기기 색 칸 위 — 테두리 없음
       />
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  sheet: { flex: 1, backgroundColor: C.bg },
-  handle: { alignSelf: 'center', width: 38, height: 5, borderRadius: 3, backgroundColor: C.lineStrong, marginTop: -4 },
-  content: { paddingHorizontal: 20, paddingTop: 14, paddingBottom: 48 },
-  inner: { width: '100%', maxWidth: MAX_WIDTH, alignSelf: 'center', gap: 22 },
-  close: { width: 32, height: 32, borderRadius: 16, backgroundColor: C.sunk, alignItems: 'center', justifyContent: 'center' },
-  how: { backgroundColor: C.surface, borderRadius: 18, padding: 16, gap: 4, borderWidth: StyleSheet.hairlineWidth, borderColor: C.line },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  pick: {
-    flexBasis: '46%',
-    flexGrow: 1,
-    minHeight: 104,
-    borderRadius: 20,
-    borderWidth: 1.5,
-    borderColor: C.line,
-    backgroundColor: C.surface,
-    padding: 14,
-    justifyContent: 'space-between',
-    gap: 10,
-  },
-  pickCheck: { width: 22, height: 22, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  optBox: { backgroundColor: C.surface, borderRadius: 18, padding: 16, borderWidth: 1, borderColor: C.line, borderStyle: 'dashed' },
-  devCol: { flex: 1, borderRadius: 16, padding: 12, gap: 10 },
-});
+const useStyles = themed(({ c }) =>
+  StyleSheet.create({
+    sheet: { flex: 1, backgroundColor: c.bg },
+    handle: { alignSelf: 'center', width: 38, height: 5, borderRadius: 3, backgroundColor: c.lineStrong, marginTop: -4 },
+    content: { paddingHorizontal: 20, paddingTop: 14, paddingBottom: 48 },
+    inner: { width: '100%', maxWidth: MAX_WIDTH, alignSelf: 'center', gap: 22 },
+    close: { width: 32, height: 32, borderRadius: 16, backgroundColor: c.sunk, alignItems: 'center', justifyContent: 'center' },
+    how: { backgroundColor: c.surface, borderRadius: 18, padding: 16, gap: 4, borderWidth: StyleSheet.hairlineWidth, borderColor: c.line },
+    grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+    pick: {
+      flexBasis: '46%',
+      flexGrow: 1,
+      minHeight: 104,
+      borderRadius: 20,
+      borderWidth: 1.5,
+      borderColor: c.line,
+      backgroundColor: c.surface,
+      padding: 14,
+      justifyContent: 'space-between',
+      gap: 10,
+    },
+    pickCheck: { width: 22, height: 22, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
+    chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+    optBox: { backgroundColor: c.surface, borderRadius: 18, padding: 16, borderWidth: 1, borderColor: c.line, borderStyle: 'dashed' },
+    devCol: { flex: 1, borderRadius: 16, padding: 12, gap: 10 },
+  }),
+);

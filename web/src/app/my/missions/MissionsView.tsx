@@ -307,7 +307,7 @@ function MissionCard({ r, def, n, editable }: { r: Reservation; def: MissionDef;
       data-testid={`mission-${def.id}`}
       className={cx(
         "rounded-3xl border bg-surface p-5 transition-colors sm:p-6",
-        openForm ? "border-ink/40 shadow-[0_8px_30px_-12px_rgba(31,27,22,0.18)]" : "border-line",
+        openForm ? "border-ink/40 shadow-(--shadow-lift)" : "border-line",
       )}
     >
       <div className="flex gap-4">
@@ -448,7 +448,7 @@ function MissionForm({
             <label
               key={p}
               className={cx(
-                "flex min-h-16 cursor-pointer items-center justify-center gap-2 rounded-2xl border border-line-strong bg-surface px-3 py-3 text-center text-[16px] font-bold text-ink transition-colors hover:bg-cream has-[:checked]:text-white",
+                "flex min-h-16 cursor-pointer items-center justify-center gap-2 rounded-2xl border border-line-strong bg-surface px-3 py-3 text-center text-[16px] font-bold text-ink transition-colors hover:bg-cream has-[:checked]:text-ivory",
                 "has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-ink",
                 pickSolidTone[p],
               )}

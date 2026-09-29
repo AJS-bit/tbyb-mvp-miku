@@ -13,7 +13,7 @@ import {
   type DeviceKey,
   type Reservation,
 } from '@/domain';
-import { C } from '@/lib/theme';
+import { themed, useTheme } from '@/lib/theme-context';
 
 import { DeviceTag, Notice, Pill, Row, T } from './ui';
 
@@ -22,6 +22,7 @@ export const SALE_PENDING_COPY =
 
 /** 결정 초안/저장본으로 계산한 반납 계획 (체험 중 미리보기) */
 export function ReturnPlan({ decision }: { decision: Pick<Decision, 'choice' | 'model'> | undefined }) {
+  const { c } = useTheme();
   const d = decision as Decision | undefined;
   const back = devicesToReturn(d);
   const buy = saleDevice(d);
@@ -42,23 +43,23 @@ export function ReturnPlan({ decision }: { decision: Pick<Decision, 'choice' | '
               구매 선택
             </T>
             <DeviceTag kind={buy} full />
-            <Pill label="딜러 판매 확인 전" bg={C.warnBg} fg={C.warnText} />
+            <Pill label="딜러 판매 확인 전" bg={c.warnBg} fg={c.warnText} />
           </Row>
-          <T variant="callout" color={C.sub}>
+          <T variant="callout" color={c.sub}>
             나머지 한 대와 부속품은 반납·검수합니다.
           </T>
           <Notice tone="warn">{SALE_PENDING_COPY}</Notice>
         </>
       ) : decision?.choice === 'buy_new' ? (
-        <T variant="callout" color={C.sub}>
+        <T variant="callout" color={c.sub}>
           새 제품 구매는 딜러 판매 조건에 따릅니다. 체험한 두 대는 모두 반납·검수합니다.
         </T>
       ) : decision?.choice === 'undecided' ? (
-        <T variant="callout" color={C.sub}>
+        <T variant="callout" color={c.sub}>
           결정을 못 해도 두 대 모두 반납합니다. 부속품까지 함께 반납·검수합니다.
         </T>
       ) : (
-        <T variant="callout" color={C.sub}>
+        <T variant="callout" color={c.sub}>
           두 대와 부속품을 모두 반납·검수합니다.
         </T>
       )}
@@ -80,15 +81,16 @@ function deviceLine(r: Reservation, k: DeviceKey): { text: string; tone: 'done' 
   return { text: '—', tone: 'grey' };
 }
 
-const LINE_TONE = {
-  done: { bg: C.doneSoft, fg: C.doneText },
-  warn: { bg: C.warnBg, fg: C.warnText },
-  pro: { bg: C.proSoft, fg: C.proInk },
-  grey: { bg: C.greySoft, fg: C.grey },
-};
+const useLineTone = themed(({ c }) => ({
+  done: { bg: c.doneSoft, fg: c.doneText },
+  warn: { bg: c.warnBg, fg: c.warnText },
+  pro: { bg: c.proSoft, fg: c.proInk },
+  grey: { bg: c.greySoft, fg: c.grey },
+}));
 
 /** 반납 이후: 기기별로 반납 / 구매(판매 확인 여부) 표시 */
 export function ReturnOutcome({ r }: { r: Reservation }) {
+  const LINE_TONE = useLineTone();
   const buy = saleDevice(r.decision);
   return (
     <View style={{ gap: 12 }}>

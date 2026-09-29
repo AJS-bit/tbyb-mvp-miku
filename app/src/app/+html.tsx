@@ -1,14 +1,34 @@
 // 웹 정적 HTML 뼈대 (웹 미리보기 전용). 한국어 줄바꿈이 단어 중간에서 끊기지 않도록 keep-all, '동작 줄이기' 설정 존중.
+// 화면 모드: 정적 HTML 은 라이트로 미리 그려진다. <head> 스크립트가 저장된 모드(앱 UI 키)·기기 설정을 먼저 읽어
+// 바탕을 칠하고, 다크라면 앱이 다크로 다시 그릴 때까지(theme-context 가 data-theme-ready 를 붙일 때까지) 화면을 가린다.
 import { ScrollViewStyleReset } from 'expo-router/html';
 import { type PropsWithChildren } from 'react';
 
+import { STORAGE_KEY } from '@/domain';
+import { PALETTES } from '@/lib/palette';
+
+const LIGHT_BG = PALETTES.light.bg;
+const DARK_BG = PALETTES.dark.bg;
+
 const css = `
-body { background-color: #FAF6EF; }
+html, body { background-color: ${LIGHT_BG}; }
+html[data-theme="dark"], html[data-theme="dark"] body { background-color: ${DARK_BG}; }
+html[data-theme="dark"]:not([data-theme-ready]) #root { visibility: hidden; animation: tbyb-reveal 0s 2.5s forwards; }
+@keyframes tbyb-reveal { to { visibility: visible; } }
 * { word-break: keep-all; overflow-wrap: break-word; }
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; transition-duration: 0.01ms !important; }
+  *:not(#root), *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; transition-duration: 0.01ms !important; }
 }
 `;
+
+// 저장본이 손상됐으면(읽기 실패) 앱도 system 으로 시작하므로 여기서도 system 으로 둔다
+const themeScript = `(function(){try{
+var p='system';
+try{var u=JSON.parse(localStorage.getItem(${JSON.stringify(`${STORAGE_KEY}:app-ui`)})||'null');if(u&&u.version===1&&(u.theme==='light'||u.theme==='dark'||u.theme==='system'))p=u.theme;}catch(e){}
+var d=p==='system'?(window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'):p;
+var r=document.documentElement;r.setAttribute('data-theme',d);r.style.colorScheme=d;
+var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute('content',d==='dark'?${JSON.stringify(DARK_BG)}:${JSON.stringify(LIGHT_BG)});
+}catch(e){}})();`;
 
 export default function Root({ children }: PropsWithChildren) {
   return (
@@ -17,7 +37,9 @@ export default function Root({ children }: PropsWithChildren) {
         <meta charSet="utf-8" />
         <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
         <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
-        <meta name="theme-color" content="#FAF6EF" />
+        <meta name="theme-color" content={LIGHT_BG} />
+        <meta name="color-scheme" content="light dark" />
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
         <ScrollViewStyleReset />
         <style dangerouslySetInnerHTML={{ __html: css }} />
       </head>

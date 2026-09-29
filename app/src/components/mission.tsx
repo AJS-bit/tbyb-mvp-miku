@@ -25,7 +25,8 @@ import {
 import { formatShortDateTime } from '@/lib/format';
 import { haptic } from '@/lib/haptics';
 import { apply } from '@/lib/store';
-import { C, DEVICE_COLOR, MONO_FAMILY, PICK_COLOR, SOFT_SHADOW } from '@/lib/theme';
+import { MONO_FAMILY } from '@/lib/theme';
+import { themed, useTheme } from '@/lib/theme-context';
 
 import { GiftEnvelope, MissionIcon, ProgressRing } from './illustrations';
 import { Button, Card, ErrorText, Eyebrow, Icon, Input, Notice, Pill, Row, T } from './ui';
@@ -43,19 +44,20 @@ export function missionHref(id: string) {
 
 // ───────── 답 표시 ─────────
 
-export function PickMark({ pick, size = 22, inverted }: { pick: Pick; size?: number; inverted?: boolean }) {
-  const t = PICK_COLOR[pick];
+export function PickMark({ pick, size = 22 }: { pick: Pick; size?: number }) {
+  const theme = useTheme();
+  const t = theme.pick[pick];
   return (
     <View
       style={{
         width: size,
         height: size,
         borderRadius: size / 2,
-        backgroundColor: inverted ? '#FFFFFF' : t.main,
+        backgroundColor: t.main,
         alignItems: 'center',
         justifyContent: 'center',
       }}>
-      <T variant="caption" weight="800" color={inverted ? t.ink : '#FFFFFF'} style={{ fontSize: size * 0.52, lineHeight: size * 0.7 }}>
+      <T variant="caption" weight="800" color={theme.c.onMark} style={{ fontSize: size * 0.52, lineHeight: size * 0.7 }}>
         {t.mark}
       </T>
     </View>
@@ -63,7 +65,8 @@ export function PickMark({ pick, size = 22, inverted }: { pick: Pick; size?: num
 }
 
 export function PickChip({ pick }: { pick: Pick }) {
-  const t = PICK_COLOR[pick];
+  const styles = useStyles();
+  const t = useTheme().pick[pick];
   return (
     <View style={[styles.pickChip, { backgroundColor: t.soft }]}>
       <PickMark pick={pick} size={16} />
@@ -74,21 +77,23 @@ export function PickChip({ pick }: { pick: Pick }) {
   );
 }
 
-const REWARD_TONE: Record<RewardStatus, { bg: string; fg: string }> = {
-  none: { bg: C.greySoft, fg: C.sub },
-  submitted: { bg: C.coralSoft, fg: C.coralInk },
-  approved: { bg: C.doneSoft, fg: C.doneText },
-  rejected: { bg: C.greySoft, fg: C.grey },
-};
+const useRewardTone = themed(({ c }): Record<RewardStatus, { bg: string; fg: string }> => ({
+  none: { bg: c.greySoft, fg: c.sub },
+  submitted: { bg: c.coralSoft, fg: c.coralInk },
+  approved: { bg: c.doneSoft, fg: c.doneText },
+  rejected: { bg: c.greySoft, fg: c.grey },
+}));
 
 export function RewardStatusPill({ status }: { status: RewardStatus }) {
-  const t = REWARD_TONE[status];
+  const t = useRewardTone()[status];
   return <Pill label={REWARD_STATUS_LABEL[status]} bg={t.bg} fg={t.fg} />;
 }
 
 // ───────── 리워드 카드 ─────────
 
 export function RewardCard({ r }: { r: Reservation }) {
+  const styles = useStyles();
+  const { c } = useTheme();
   const p = missionProgress(r);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -119,9 +124,9 @@ export function RewardCard({ r }: { r: Reservation }) {
       <Row gap={16} style={{ alignItems: 'center' }}>
         <ProgressRing done={p.done} total={p.total} complete={missionsDone} />
         <View style={{ flex: 1, gap: 3, paddingRight: 44 }}>
-          <Eyebrow color={C.coralInk}>Mission reward</Eyebrow>
+          <Eyebrow color={c.coralInk}>Mission reward</Eyebrow>
           <T variant="title3">미션 리워드</T>
-          <T variant="headline" color={C.coralInk}>
+          <T variant="headline" color={c.coralInk}>
             {REWARD_AMOUNT_LABEL}
           </T>
         </View>
@@ -182,15 +187,17 @@ export function RewardCard({ r }: { r: Reservation }) {
 }
 
 function Requirement({ done, label, detail }: { done: boolean; label: string; detail: string }) {
+  const styles = useStyles();
+  const { c } = useTheme();
   return (
     <Row gap={10}>
-      <View style={[styles.reqDot, done && { backgroundColor: C.coral, borderColor: C.coral }]}>
-        {done ? <Icon ios="checkmark" web="check" size={11} color="#FFFFFF" /> : null}
+      <View style={[styles.reqDot, done && { backgroundColor: c.coral, borderColor: c.coral }]}>
+        {done ? <Icon ios="checkmark" web="check" size={11} color={c.onCoral} /> : null}
       </View>
       <T variant="callout" weight={done ? '700' : '500'} style={{ flex: 1 }}>
         {label}
       </T>
-      <T variant="footnote" weight="700" color={done ? C.coralInk : C.muted}>
+      <T variant="footnote" weight="700" color={done ? c.coralInk : c.sub}>
         {detail}
       </T>
     </Row>
@@ -200,6 +207,8 @@ function Requirement({ done, label, detail }: { done: boolean; label: string; de
 // ───────── 바탕화면 코드 ─────────
 
 export function CodeCard({ r }: { r: Reservation }) {
+  const styles = useStyles();
+  const t = useTheme();
   const saved = r.codeCheck;
   const [air, setAir] = useState(saved?.air ?? '');
   const [pro, setPro] = useState(saved?.pro ?? '');
@@ -228,17 +237,17 @@ export function CodeCard({ r }: { r: Reservation }) {
       <View style={{ gap: 3 }}>
         <Eyebrow>Wallpaper code</Eyebrow>
         <T variant="title3">바탕화면 코드</T>
-        <T variant="callout" color={C.sub}>
+        <T variant="callout" color={t.c.sub}>
           픽업할 때 두 맥 바탕화면에 적힌 4자리 코드를 적어 주세요. 운영자가 리워드를 확인할 때 참고해요.
         </T>
       </View>
       <Row gap={10} style={{ alignItems: 'flex-start' }}>
         {(['air', 'pro'] as DeviceKey[]).map((k) => (
-          <View key={k} style={[styles.codeCol, { backgroundColor: DEVICE_COLOR[k].soft }]}>
+          <View key={k} style={[styles.codeCol, { backgroundColor: t.device[k].soft }]}>
             <Row gap={6}>
-              <View style={[styles.codeDot, { backgroundColor: DEVICE_COLOR[k].main }]} />
-              <T variant="footnote" weight="700" color={C.ink}>
-                {DEVICE_COLOR[k].short} 바탕화면
+              <View style={[styles.codeDot, { backgroundColor: t.device[k].main }]} />
+              <T variant="footnote" weight="700" color={t.c.ink}>
+                {t.device[k].short} 바탕화면
               </T>
             </Row>
             <Input
@@ -280,6 +289,8 @@ export function CodeCard({ r }: { r: Reservation }) {
 // ───────── 미션 목록 ─────────
 
 export function MissionList({ r, preview }: { r: Reservation; preview?: boolean }) {
+  const styles = useStyles();
+  const { c } = useTheme();
   return (
     <View style={{ gap: 12 }}>
       {MISSIONS.map((m, i) => {
@@ -323,10 +334,10 @@ export function MissionList({ r, preview }: { r: Reservation; preview?: boolean 
             {!preview ? (
               a ? (
                 <View style={styles.doneBadge}>
-                  <Icon ios="checkmark" web="check" size={13} color={C.ivory} />
+                  <Icon ios="checkmark" web="check" size={13} color={c.ivory} />
                 </View>
               ) : (
-                <Icon ios="chevron.right" web="chevron_right" size={14} color={C.muted} />
+                <Icon ios="chevron.right" web="chevron_right" size={14} color={c.muted} />
               )
             ) : null}
           </Pressable>
@@ -339,13 +350,14 @@ export function MissionList({ r, preview }: { r: Reservation; preview?: boolean 
 // ───────── 내 체험: 미션 진행 요약 ─────────
 
 export function MissionProgressCard({ r }: { r: Reservation }) {
+  const { c } = useTheme();
   const p = missionProgress(r);
   return (
     <Card style={{ gap: 14 }}>
       <Row gap={14}>
         <ProgressRing done={p.done} total={p.total} size={66} stroke={7} complete={p.done === p.total} />
         <View style={{ flex: 1, gap: 4 }}>
-          <Eyebrow color={C.coralInk}>Missions</Eyebrow>
+          <Eyebrow color={c.coralInk}>Missions</Eyebrow>
           <T variant="headline">
             {p.done === p.total ? '핵심 미션을 모두 했어요' : p.done === 0 ? '쉬운 미션부터 시작해 볼까요?' : `핵심 미션 ${p.done}개 했어요`}
           </T>
@@ -357,7 +369,7 @@ export function MissionProgressCard({ r }: { r: Reservation }) {
       </Row>
       <View style={{ gap: 2 }}>
         <T variant="footnote">{`핵심 미션 ${p.total}개와 바탕화면 코드를 채우면 리워드를 신청할 수 있어요.`}</T>
-        <T variant="footnote" weight="700" color={C.coralInk}>
+        <T variant="footnote" weight="700" color={c.coralInk}>
           {REWARD_AMOUNT_LABEL}
         </T>
       </View>
@@ -369,12 +381,14 @@ export function MissionProgressCard({ r }: { r: Reservation }) {
 // ───────── 결정·반납: 미션 답 모아 보기 ─────────
 
 export function MissionDigest({ r }: { r: Reservation }) {
+  const styles = useStyles();
+  const t = useTheme();
   const sum = missionSummary(r);
   const total = PICKS.reduce((n, k) => n + sum[k], 0);
   if (!total) {
     return (
       <View style={{ gap: 10 }}>
-        <T variant="callout" color={C.sub}>
+        <T variant="callout" color={t.c.sub}>
           아직 미션 답이 없어요. 미션 탭에서 쉬운 것부터 해 보면 여기에 모여요.
         </T>
         {MISSION_OPEN.includes(r.status) ? (
@@ -387,17 +401,17 @@ export function MissionDigest({ r }: { r: Reservation }) {
     <View style={{ gap: 16 }}>
       <View style={styles.bar} accessible accessibilityLabel={PICKS.map((k) => `${PICK_LABEL[k]} ${sum[k]}개`).join(', ')}>
         {PICKS.filter((k) => sum[k] > 0).map((k) => (
-          <View key={k} style={{ flex: sum[k], backgroundColor: PICK_COLOR[k].main }} />
+          <View key={k} style={{ flex: sum[k], backgroundColor: t.pick[k].main }} />
         ))}
       </View>
       <View style={styles.legend}>
         {PICKS.map((k) => (
-          <View key={k} style={[styles.legendItem, { backgroundColor: PICK_COLOR[k].soft }]}>
+          <View key={k} style={[styles.legendItem, { backgroundColor: t.pick[k].soft }]}>
             <PickMark pick={k} size={18} />
-            <T variant="footnote" weight="700" color={PICK_COLOR[k].ink} style={{ flex: 1 }} numberOfLines={1}>
+            <T variant="footnote" weight="700" color={t.pick[k].ink} style={{ flex: 1 }} numberOfLines={1}>
               {PICK_LABEL[k]}
             </T>
-            <T variant="headline" color={C.ink} style={{ fontVariant: ['tabular-nums'] }}>
+            <T variant="headline" color={t.c.ink} style={{ fontVariant: ['tabular-nums'] }}>
               {sum[k]}
             </T>
           </View>
@@ -415,7 +429,7 @@ export function MissionDigest({ r }: { r: Reservation }) {
                 </T>
                 {a?.followUp ? <T variant="caption">{a.followUp}</T> : null}
               </View>
-              {a ? <PickChip pick={a.pick} /> : <T variant="caption" color={C.muted}>아직</T>}
+              {a ? <PickChip pick={a.pick} /> : <T variant="caption">아직</T>}
             </View>
           );
         })}
@@ -425,74 +439,76 @@ export function MissionDigest({ r }: { r: Reservation }) {
   );
 }
 
-const styles = StyleSheet.create({
-  pickChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    alignSelf: 'flex-start',
-    paddingVertical: 3,
-    paddingLeft: 4,
-    paddingRight: 10,
-    borderRadius: 999,
-  },
-  reward: {
-    backgroundColor: C.surface,
-    borderRadius: 24,
-    borderWidth: 1.5,
-    borderColor: '#FFD5C8',
-    padding: 18,
-    gap: 14,
-    overflow: 'hidden',
-    ...SOFT_SHADOW,
-  },
-  rewardArt: { position: 'absolute', top: 12, right: 12 },
-  reqBox: { backgroundColor: '#FFF8F4', borderRadius: 14, padding: 12, gap: 10 },
-  reqDot: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    borderWidth: 1.5,
-    borderColor: '#E9C9BD',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  codeCol: { flex: 1, borderRadius: 16, padding: 12, gap: 8 },
-  codeDot: { width: 8, height: 8, borderRadius: 4 },
-  codeInput: {
-    fontFamily: MONO_FAMILY,
-    fontSize: 22,
-    fontWeight: '700',
-    letterSpacing: 6,
-    textAlign: 'center',
-    paddingVertical: 10,
-    borderColor: 'transparent',
-  },
-  mCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 14,
-    backgroundColor: C.surface,
-    borderRadius: 20,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: C.line,
-    padding: 14,
-    ...SOFT_SHADOW,
-  },
-  mCardDone: { borderColor: C.lineStrong },
-  doneBadge: { width: 24, height: 24, borderRadius: 12, backgroundColor: C.ink, alignItems: 'center', justifyContent: 'center' },
-  bar: { flexDirection: 'row', height: 14, borderRadius: 7, overflow: 'hidden', gap: 2, backgroundColor: C.sunk },
-  legend: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  legendItem: {
-    flexBasis: '47%',
-    flexGrow: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingVertical: 9,
-    paddingHorizontal: 10,
-    borderRadius: 12,
-  },
-  digestRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10 },
-  digestLine: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: C.line },
-});
+const useStyles = themed(({ c, shadow }) =>
+  StyleSheet.create({
+    pickChip: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 5,
+      alignSelf: 'flex-start',
+      paddingVertical: 3,
+      paddingLeft: 4,
+      paddingRight: 10,
+      borderRadius: 999,
+    },
+    reward: {
+      backgroundColor: c.surface,
+      borderRadius: 24,
+      borderWidth: 1.5,
+      borderColor: c.coralLine,
+      padding: 18,
+      gap: 14,
+      overflow: 'hidden',
+      ...shadow,
+    },
+    rewardArt: { position: 'absolute', top: 12, right: 12 },
+    reqBox: { backgroundColor: c.coralWash, borderRadius: 14, padding: 12, gap: 10 },
+    reqDot: {
+      width: 20,
+      height: 20,
+      borderRadius: 10,
+      borderWidth: 1.5,
+      borderColor: c.coralControl,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    codeCol: { flex: 1, borderRadius: 16, padding: 12, gap: 8 },
+    codeDot: { width: 8, height: 8, borderRadius: 4 },
+    codeInput: {
+      fontFamily: MONO_FAMILY,
+      fontSize: 22,
+      fontWeight: '700',
+      letterSpacing: 6,
+      textAlign: 'center',
+      paddingVertical: 10,
+      borderColor: 'transparent', // 연한 기기 색 칸 위의 입력칸 — 테두리 없음 (테마와 무관)
+    },
+    mCard: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 14,
+      backgroundColor: c.surface,
+      borderRadius: 20,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: c.line,
+      padding: 14,
+      ...shadow,
+    },
+    mCardDone: { borderColor: c.lineStrong },
+    doneBadge: { width: 24, height: 24, borderRadius: 12, backgroundColor: c.ink, alignItems: 'center', justifyContent: 'center' },
+    bar: { flexDirection: 'row', height: 14, borderRadius: 7, overflow: 'hidden', gap: 2, backgroundColor: c.sunk },
+    legend: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+    legendItem: {
+      flexBasis: '47%',
+      flexGrow: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      paddingVertical: 9,
+      paddingHorizontal: 10,
+      borderRadius: 12,
+    },
+    digestRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10 },
+    digestLine: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: c.line },
+  }),
+);

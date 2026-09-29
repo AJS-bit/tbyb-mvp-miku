@@ -82,4 +82,14 @@
 | danger / danger-ink / danger-soft | #D92D20 / #B42318 / #FEF1EF | #FF6B5E / #FFA39B / #3A1614 |
 | success / success-ink / success-soft | #12B76A / #067647 / #E8F7EE | #3DD68C / #86E8B8 / #10301F |
 | mute-ink / mute-soft | #5A5249 / #F1EBE1 | #CBC1B4 / #2A251F |
-위 값은 출발점 — 대비 계산에서 기준 미달이면 조정하고 최종 값을 이 표에 반영한다.
+최종(2026-09-30): 위 값 그대로 통과. 앱 해(sun)는 조금 더 호박색 #664729. 추가 토큰(라이트/다크):
+| 토큰 | 라이트 | 다크 | 용도 |
+|---|---|---|---|
+| ink-hover | #3A342D | #E2D8CA | 주 버튼 hover (웹) |
+| field | #958B7E | #7A7064 | 입력칸 테두리 (웹) |
+| feature / on-feature | #1F1B16 / #FAF6EF | #2A221B / #F3ECE2 | 마지막 CTA 판 (웹) |
+| on-coral | #1F1B16 | #16130F | 코랄 위 글자 — 흰 글자는 2.8:1이라 폐기 |
+| placeholder | #7E7467 | #948A7C | 입력 안내 글자 (앱) |
+| control | #978C7F | #857B6E | 체크박스·라디오 테두리 (앱) |
+라이트 쪽 보정: 라이트 오류 빨강 #D3291D(앱), 회색 칩 글자 #6E655B(앱), 코랄 버튼·칩 글자는 잉크.
+대비 검사: `web/scripts/contrast.mjs`(112쌍/테마), `app/scripts/contrast.mjs`(51쌍/테마), 웹 E2E의 화면 실측(`e2e/readability.ts`).
