@@ -65,7 +65,7 @@ SPEC.md 「다크 모드」 — "밤에 켠 스탠드" 같은 따뜻한 다크(�
   - `src/lib/theme.ts` — 팔레트에서 테마 객체 `THEMES.light/dark` 를 만든다: `t.c`(토큰) · `t.device`(Air/Pro) · `t.pick`(미션 답) · `t.status`(상태 칩) · `t.shadow`.
   - `src/lib/theme-context.tsx` — `AppThemeProvider`(루트) · `useTheme()` · `useThemeControl()`(고르기) · `themed(make)`: 두 테마의 `StyleSheet`/색 표를 모듈에서 한 번씩 미리 만들고 지금 테마 것을 돌려주는 훅 팩토리.
   - 네이티브 UI 맞추기: `Appearance.setColorScheme`(라이트/다크 고정 시 앱 창 모드 → 네이티브 탭 바·시트·키보드·스위치), `expo-system-ui` 루트 배경, `expo-status-bar` 글자색, 내비게이션 테마(헤더·모달), 탭 화면 `contentStyle` 배경, 입력칸 `keyboardAppearance`. `app.config.ts` 는 `userInterfaceStyle: 'automatic'` + 스플래시 `dark.backgroundColor`.
-  - 웹: 정적 HTML 은 라이트로 미리 그려지므로 `+html.tsx` 의 `<head>` 스크립트가 저장된 모드·기기 설정을 먼저 읽어 바탕을 칠하고, 다크면 앱이 다크로 다시 그릴 때까지(`data-theme-ready`) 화면을 가린다(번쩍임 방지, 2.5초 안전장치). 첫 렌더는 하이드레이션을 위해 라이트로 맞춘 뒤 바꾼다.
+  - 웹: 정적 HTML 은 라이트로 미리 그려지므로 `+html.tsx` 의 `<head>` 스크립트가 저장된 모드·기기 설정을 먼저 읽어 바탕을 칠하고, 다크면 앱이 다크로 다시 그릴 때까지(`data-theme-ready`) 화면을 가린다(번쩍임 방지). 가리는 동안은 다크 '불러오는 중…' 문구를 보이고, 8초가 지나도 준비되지 않으면 다크 안내 문구(새로고침 안내)로 바꾼다 — 라이트로 미리 그려진 화면은 시간이 지나도 드러내지 않는다. 첫 렌더는 하이드레이션을 위해 라이트로 맞춘 뒤 바꾼다.
 - **일러스트**: 모든 색이 `art*`·`tile*` 토큰. 다크는 밝은 잉크 선, 호박색 해 + 은은한 빛(방사형 그라데이션), 채도를 낮춘 청록/보라 화면.
 - **대비 검사**: `node scripts/contrast.mjs`(app/ 에서) — 화면에서 실제로 함께 쓰는 글자/바탕·상태 그래픽 쌍을 두 테마 모두 계산한다. 작은 글자 4.5:1 · 큰 제목 3:1 · 상태 그래픽(체크·채운 선택·체크박스/라디오 테두리) 3:1 미만이면 실패. 장식 선·입력칸 테두리·비활성, 옆 글자가 같은 뜻을 전하는 보조 그래픽은 `INFO` 로 값만 보여 준다. `--all` 이면 통과한 쌍도 출력.
 - 화면: `docs/screenshots/app-dark-*.png` (iPhone 17 · Expo Go).

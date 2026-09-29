@@ -411,6 +411,71 @@ await check('기기 설정 다크(colorScheme: dark) + 시스템 모드 → 미�
   await page.context().close();
 });
 
+// ── 앱 JS 가 늦거나 안 올 때: 다크 사용자에게 라이트로 미리 그려진 화면을 드러내지 않는다 (TETO 교차검토 2026-09-30)
+// 문서 시작부터 100ms 마다 상태를 적어 두고, 준비 전 #root 가 보인 순간이 한 번도 없어야 한다.
+async function slowJsPage({ delayMs, abort = false, reducedMotion = 'no-preference' }) {
+  const context = await browser.newContext({ viewport: { width: 390, height: 844 }, locale: 'ko-KR', colorScheme: 'dark', reducedMotion });
+  await context.route('**/_expo/static/js/**', async (route) => {
+    if (abort) return route.abort();
+    await new Promise((r) => setTimeout(r, delayMs));
+    return route.continue();
+  });
+  await context.addInitScript(() => {
+    window.__samples = [];
+    const tick = () => {
+      const root = document.getElementById('root');
+      const de = document.documentElement;
+      if (root && document.body) {
+        window.__samples.push({
+          t: Math.round(performance.now()),
+          visible: getComputedStyle(root).visibility !== 'hidden',
+          ready: de.hasAttribute('data-theme-ready'),
+          body: getComputedStyle(document.body).backgroundColor,
+          text: getComputedStyle(document.body, '::before').content,
+        });
+      }
+    };
+    setInterval(tick, 100);
+  });
+  const page = await context.newPage();
+  page.setDefaultTimeout(30_000);
+  return page;
+}
+const leaked = (samples) => samples.filter((x) => x.visible && !x.ready);
+
+for (const reducedMotion of ['no-preference', 'reduce']) {
+  await check(`다크 + 앱 JS 3.5초 지연 (${reducedMotion}) → 준비 전엔 다크 '불러오는 중'만, 라이트 화면 노출 없음`, async () => {
+    const page = await slowJsPage({ delayMs: 3500, reducedMotion });
+    await page.goto(`${base}missions`, { waitUntil: 'domcontentloaded', timeout: 60_000 });
+    await expect.poll(() => page.evaluate(() => document.documentElement.hasAttribute('data-theme-ready')), { timeout: 30_000 }).toBe(true);
+    const samples = await page.evaluate(() => window.__samples);
+    const before = samples.filter((x) => !x.ready);
+    if (before.length < 20) throw new Error(`지연 구간 표본이 너무 적음: ${before.length}`);
+    if (leaked(samples).length) throw new Error(`준비 전 #root 노출 ${leaked(samples).length}회 (첫 ${leaked(samples)[0].t}ms)`);
+    if (before.some((x) => x.body !== DARK_BG)) throw new Error('준비 전 바탕이 다크가 아님');
+    if (!before.every((x) => x.text.includes('불러오는 중'))) throw new Error('준비 전 다크 로딩 문구가 없음');
+    // 예약 없이 연 미션 탭(잠김 화면)이 다크로 그려졌는지
+    await page.getByText('미션은 픽업한 날부터 열려요').first().waitFor();
+    await expect.poll(() => docTheme(page)).toEqual({ theme: 'dark', ready: true, body: DARK_BG });
+    await page.context().close();
+  });
+}
+
+await check('다크 + 앱 JS 차단 → 8초 뒤 다크 안내 문구, 라이트 화면은 끝까지 노출 없음', async () => {
+  const page = await slowJsPage({ abort: true });
+  await page.goto(`${base}missions`, { waitUntil: 'domcontentloaded', timeout: 60_000 });
+  await page.waitForTimeout(9_000);
+  const state = await page.evaluate(() => ({
+    slow: document.documentElement.hasAttribute('data-load-slow'),
+    text: getComputedStyle(document.body, '::before').content,
+    samples: window.__samples,
+  }));
+  if (!state.slow || !state.text.includes('불러오지 못하고')) throw new Error(`8초 뒤 안내 문구 없음: ${state.text}`);
+  if (leaked(state.samples).length) throw new Error('JS 없이 라이트 화면이 드러남');
+  if (state.samples.some((x) => x.body !== DARK_BG)) throw new Error('바탕이 다크가 아닌 순간이 있음');
+  await page.context().close();
+});
+
 await browser.close();
 local?.server.close();
 console.log(`target: ${base}`);
