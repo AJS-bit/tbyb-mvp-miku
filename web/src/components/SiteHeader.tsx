@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { SERVICE_NAME } from "@/lib/domain";
-import { BrandLockup } from "./Brand";
+import { PLATFORM_NAME } from "@/lib/copy";
+import { HeaderLockup } from "./Brand";
 import { ThemeSwitcher } from "./ThemeSwitcher";
 import { cx } from "./ui";
 
@@ -35,10 +35,10 @@ export function SiteHeader() {
       <div className="mx-auto grid max-w-6xl grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2 px-5 pt-3 pb-2 sm:px-8 lg:flex lg:gap-6 lg:py-3.5">
         <Link
           href="/"
-          className="col-start-1 row-start-1 flex min-w-0 items-center gap-2.5 justify-self-start rounded-lg lg:mr-auto"
-          aria-label={`${SERVICE_NAME} 소개로`}
+          className="col-start-1 row-start-1 flex min-h-11 min-w-0 items-center justify-self-start rounded-lg lg:mr-auto"
+          aria-label={`${PLATFORM_NAME} 소개로`}
         >
-          <BrandLockup uid="brand-header" />
+          <HeaderLockup />
         </Link>
         <nav aria-label="주 메뉴" className="col-span-2 row-start-2 -mx-5 overflow-x-auto px-5 sm:-mx-8 sm:px-8 lg:mx-0 lg:min-w-0 lg:px-0">
           <ul className="flex min-w-max items-center gap-1">

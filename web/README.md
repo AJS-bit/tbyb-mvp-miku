@@ -1,14 +1,15 @@
-# Try Before You Buy — 웹 데모 (v2)
+# tbyb — 웹 데모 (v2)
 
-MacBook Air · 14형 Pro 비교팩 시연용 웹. Next.js(App Router) 정적 빌드이며 서버·분석 도구·실제 결제·리워드 지급이 없습니다.
+비교 체험 플랫폼 **tbyb**("써 보고, 나의 기준으로.")의 **첫 비교팩: MacBook Air · 14형 Pro** 시연용 웹. tbyb 는 작업명 Try Before You Buy 의 줄임이고,
+플랫폼이 말하는 자리(헤더·푸터·메타데이터)는 tbyb, MacBook 내용은 "첫 비교팩"으로 구분합니다. Next.js(App Router) 정적 빌드이며 서버·분석 도구·실제 결제·리워드 지급이 없습니다.
 모든 데이터는 브라우저 `localStorage`(`tbyb-miku-demo-v2`, v1 데이터와 분리)에만 저장됩니다.
 
 ## 화면
 
 | 경로 | 내용 |
 |---|---|
-| `/` | 소개 — 히어로, "이런 고민 해 본 적 있죠?", 이용 흐름 4단계, 미션 6개 미리보기, 리워드 안내, 미확정 항목 |
-| `/pack/` | 비교팩 상세 — 같은 기준 확인 포인트(`COMPARE_POINTS`), 구성·픽업·취소/반납 규칙 |
+| `/` | 소개 — 히어로(첫 비교팩), 신뢰 한 줄(가치 3개), "이런 고민 해 본 적 있죠?"(상상한 예시), 이용 흐름 4단계, 미션 6개 미리보기, 리워드(금액 미정 · 확인 순서), FAQ "미리 알아두면 좋아요"(질문 5개, 미확정 항목 포함) |
+| `/pack/` | 비교팩 상세 — 조건 표(요금·기간 / 매장·계약 주체 / 취소·환불·보증), 같은 기준 확인 포인트(`COMPARE_POINTS`), 구성·픽업·취소/반납 규칙 |
 | `/request/` | 데모 일정 요청 — 날짜·픽업만 필수. 용도(기본 '잘 모르겠어요')·궁금한 점은 선택, 지금 마음 + 확신 1–5. 이름·전화번호 없음 |
 | `/my/?id=` | 내 체험 — 상태·타임라인·다음 할 일. 체험 중~검수 중에는 미션 진행(n/5)과 리워드 상태 |
 | `/my/missions/?id=` | 미션과 리워드 — 리워드 카드(진행·금액·규칙·상태·신청), 바탕화면 코드 입력, 미션 6개(답 4개 + 후속 칩 + 선택 입력) |
@@ -17,8 +18,16 @@ MacBook Air · 14형 Pro 비교팩 시연용 웹. Next.js(App Router) 정적 빌
 | `/my/record/?id=` | v1 주소 — `/my/missions/` 로 옮겨 준다 |
 
 규칙·문구·데모 데이터는 `src/lib/domain.ts`(= `../shared/domain.ts` 복사본)에서만 옵니다. 직접 고치지 말고 원본을 고친 뒤
-`../scripts/sync-domain.sh` 로 복사하세요. 화면 전용 문구는 `src/lib/copy.ts` 와 각 화면 파일.
-문구 다듬기(SPEC '다듬기 · 문장 원칙')로 바뀐 문장은 전·후를 `COPY_CHANGES.md` 에 모두 적어 두었습니다.
+`../scripts/sync-domain.sh` 로 복사하세요. 화면 전용 문구는 `src/lib/copy.ts`(플랫폼 이름·태그라인·첫 비교팩·미확정 목록·리워드 확인 순서)와 각 화면 파일.
+문구 다듬기(SPEC '다듬기 · 문장 원칙')와 tbyb 브랜드 적용으로 바뀐 문장은 전·후를 `COPY_CHANGES.md` 에 모두 적어 두었습니다.
+
+### tbyb 브랜드 적용 (SPEC 'tbyb 브랜드 적용 + 교차 리뷰 업그레이드')
+
+- 리워드: 금액은 항상 '금액 미정'을 앞세우고(`RewardAmount`), 1,000원은 '검토 중인 예'로만 보입니다. 확인 순서 미션 기록 → 반납 점검 → 운영자 확인을
+  소개(`RewardFlowIntro`)와 내 체험·미션 화면(`RewardFlow`, 지금 단계 표시)에 보여 줍니다. 자세한 규칙(`REWARD_RULE`)은 소개 화면에서는 FAQ 한 곳에.
+- 로컬 데모에 맞는 말: 연락·안내를 약속하지 않습니다. 요청은 이 기기에 저장되고, 다음 단계는 '내 체험'과 운영 시뮬레이터에서 이어서 본다고 안내합니다
+  (소개 마지막 CTA · 요청 폼 · 내 체험 요청 접수 단계 · 결제 기한 지남 · 설문 안내).
+- 고민 카드는 "이런 고민을 상상했어요. 실제 후기는 아니에요." 표시와 '예:' 이름표로 실제 후기처럼 보이지 않게 합니다.
 
 ### 리워드·검토 표시를 다루는 방식
 
@@ -33,13 +42,19 @@ MacBook Air · 14형 Pro 비교팩 시연용 웹. Next.js(App Router) 정적 빌
 - 토큰: `src/app/globals.css` — 아이보리 바탕 `#FAF6EF`, 잉크 주 버튼, Air `#1E9E8A` · Pro `#6D4AFF` · 리워드 코랄 `#FF6B4A`.
   작은 글자용 `*-ink` 색은 흰 바탕·아이보리 바탕에서 4.5:1 이상으로 맞췄습니다.
 - 글: 큰 굵은 한글 제목(자간 -0.02em) + 작은 영문 대문자 아이브로우(`Eyebrow`), 본문 16–17px/행간 1.7, `word-break: keep-all`.
-- 명조(세리프): **고운바탕 Bold** (`font-serif`, `--font-serif`) — 노트북 화면 문구, "이런 고민 해 본 적 있죠?" 인용 카드 문장,
-  로고 워드마크에만 씁니다. 본문은 기존 산세리프 그대로입니다. 아래 '글꼴' 참고.
-- 로고: `src/components/Brand.tsx` — 겹쳐 선 노트북 두 대(앞 왼쪽 얇은 Air 청록 · 뒤 오른쪽 Pro 보라) + 코랄 반짝임, 워드마크
-  "Try Before You Buy"(고운바탕) + 태그라인 "써 보고 고르는 맥북". 원본 SVG·앱 아이콘·파비콘은 `../shared/brand/`(README 있음).
-  색은 `--brand-*` 변수라 라이트/다크를 따라가고(다크는 받침이 크림색), 겹친 틈은 마스크로 비워 어느 바탕에서도 보입니다.
-  헤더·푸터에 쓰고, 파비콘은 `src/app/icon.svg`(아이보리 타일 + 마크), apple-touch 는 `src/app/apple-icon.png`(180, 앱 아이콘과 같은 그림) —
-  Next 메타데이터 파일 규칙이라 basePath 가 자동으로 붙습니다.
+- 명조(세리프): **고운바탕 Bold** (`font-serif`, `--font-serif`) — 노트북 화면 문구, "이런 고민 해 본 적 있죠?" 인용 카드 문장에만 씁니다.
+  본문은 기존 산세리프 그대로입니다. 아래 '글꼴' 참고.
+- 로고: **tbyb** (TETO 선택안, 규칙은 `../shared/brand/tbyb/README.md` — 도형·색을 바꾸지 않습니다). `src/components/Brand.tsx` 가
+  `MARK.svg` 도형(viewBox 0 0 100 80: 왼쪽 forest 프레임 + 가운데 점, 오른쪽 apricot 프레임)을 인라인 SVG 로 그리고, 워드마크는 소문자
+  `tbyb` — `Georgia, serif` 600, 자간 -0.06em(`font-wordmark`), 심볼 높이 ≈ 글자 크기 × 0.9, 간격 ≈ 0.22em (헤더 모바일 25px 심볼 + 28px 글자,
+  sm 부터 29px + 32px, 푸터 32px + 36px). 색은 `--color-brand-left/right/dot/word` 토큰: 라이트는 MARK.svg 색(forest #193D35 · apricot #F18463),
+  다크는 `MARK_REVERSE.svg` 와 같은 cream #F7F3EA 단색. 태그라인 "써 보고, 나의 기준으로."는 sm 이상 헤더(세로 구분선 옆)와 푸터에만 —
+  320·390px 헤더는 테마 스위처와 한 줄에 들어가야 해서 심볼 + tbyb 만 둡니다.
+  파비콘 `src/app/icon.svg` = `APP_ICON_COLOR.svg`(cream 둥근 타일 + 컬러 심볼 — 라이트·다크 탭 모두에서 타일이 바탕이 됨),
+  apple-touch `src/app/apple-icon.png` = 같은 그림 180px, 투명도 없음. 둘 다 `node scripts/brand.mjs` 로 다시 만들고, Next 메타데이터 파일 규칙이라
+  basePath 가 자동으로 붙습니다. 예전 MIKU 노트북 로고(`../shared/brand/_archive-miku-laptops/`)는 쓰지 않습니다.
+  대비: forest·cream 은 헤더 바탕 대비 10:1 이상이지만, **라이트의 apricot 프레임은 헤더 바탕 #FAF6EF 대비 2.37:1(푸터 2.27:1)로 3:1 미만**입니다 —
+  브랜드 원본 색이라 바꾸지 않고 `scripts/contrast.mjs` 가 '로고 보고'로 알립니다(심볼은 forest 프레임·점과 워드마크로 알아볼 수 있고, 링크 이름은 글자 "tbyb 소개로").
 - 일러스트: `src/components/illustrations.tsx` — 히어로(기울어진 두 노트북·해), 미션 아이콘 6개, 흐름 아이콘 4개, 선물 봉투, 작은 노트북.
   직접 그린 인라인 SVG이며 Apple 로고·제품 사진은 쓰지 않습니다. **기울인 그림은 히어로 하나뿐**입니다(비교팩의 작은 노트북·미션 아이콘은 똑바로).
   히어로 화면 문구(SPEC 확정): Air "오늘은 어디로 갈까?" · Pro "오늘은 어디까지 해 볼까?" — 작은 "오늘은" 위에 큰 두 줄을 얹어
@@ -69,7 +84,7 @@ MacBook Air · 14형 Pro 비교팩 시연용 웹. Next.js(App Router) 정적 빌
   어두운 글자로 뒤집히고, 마무리 CTA 는 코랄·청록 빛이 번지는 따뜻한 판이 됩니다. 일러스트는 선이 밝은 잉크, 해는 가장자리로 스러지는
   호박색 빛, 노트북 화면(청록·보라)은 채도를 낮췄습니다.
 - **대비 확인**: `node scripts/contrast.mjs` (저장소 루트에서는 `node web/scripts/contrast.mjs`) — 두 테마에서 실제로 쓰는 글자·바탕 짝
-  112개를 토큰 값으로 계산(겹친 반투명 바탕·투명 글자 합성 포함). 본문 4.5:1 · 큰 글자 3:1 · UI 경계·초점·상태 면 3:1 미달이면 종료 코드 1.
+  124개(테마마다, tbyb 로고·신뢰 한 줄·조건 표 포함)를 토큰 값으로 계산(겹친 반투명 바탕·투명 글자 합성 포함). 본문 4.5:1 · 큰 글자 3:1 · UI 경계·초점·상태 면 3:1 미달이면 종료 코드 1.
   비활성 컨트롤·그림 속 글자·장식 테두리는 WCAG 예외라 참고값만 보여 줍니다(`--all` 로 전체 표).
   E2E 의 `e2e/readability.ts` 는 브라우저에 실제로 그려진 모든 글자를 같은 기준으로 다시 잽니다.
 
@@ -80,8 +95,8 @@ MacBook Air · 14형 Pro 비교팩 시연용 웹. Next.js(App Router) 정적 빌
   `@fontsource/gowun-batang`(npm) 로 **자체 호스팅**합니다 — `layout.tsx` 가 `@fontsource/gowun-batang/700.css` 를 불러오고, 글꼴 파일은
   빌드 때 `out/_next/static/media/` 로 복사되어 상대 경로로 읽히므로 basePath(`/tbyb-mvp-miku`) 아래에서도 그대로 동작합니다. 외부 CDN 은 쓰지 않습니다.
   한글은 unicode-range 조각으로 나뉘어 있어 화면에 쓰인 글자의 조각만 내려받습니다. 글꼴이 늦게 오면 `font-display: swap` 으로 명조 대체 글꼴이 먼저 보입니다.
-- 로고 워드마크(`../shared/brand/logo-lockup*.svg`)는 같은 글꼴을 윤곽선으로 바꾼 것입니다 — OFL 은 글꼴로 만든 결과물(로고·그림)에 제한을 두지 않습니다.
-  글꼴 파일 자체를 따로 팔거나 이름을 바꿔 다시 배포하지 않습니다.
+- 글꼴 파일 자체를 따로 팔거나 이름을 바꿔 다시 배포하지 않습니다.
+- tbyb 워드마크의 Georgia 는 운영체제에 들어 있는 글꼴을 이름으로만 부릅니다(글꼴 파일을 싣지 않음). Georgia 가 없는 기기는 `serif` 로 보입니다.
 
 ## 실행
 
@@ -91,7 +106,7 @@ npm run dev          # http://localhost:3000
 npm run lint
 npx tsc --noEmit
 node scripts/contrast.mjs   # 두 테마 대비 확인
-node scripts/brand.mjs      # ../shared/brand/*.svg → 앱 아이콘·파비콘 PNG, src/app/icon.svg·apple-icon.png, 로고 시트 다시 만들기
+node scripts/brand.mjs      # ../shared/brand/tbyb/APP_ICON_COLOR.svg(읽기만) → src/app/icon.svg · apple-icon.png(180, 불투명) · ../docs/screenshots/web-brand-icons.png
 ```
 
 ## 정적 빌드
@@ -128,6 +143,13 @@ npm run e2e:only                  # 이미 basePath 로 빌드했다면 테스�
   - 키보드(Tab → ←/→, 초점 링) · 390px 에서 로고와 같은 줄·가로 넘침 없음·36px 이상 누르기 칸
   - 두 테마 읽기 대비: 소개·비교팩·요청(오류)·내 체험(결제 대기·체험 중)·미션(폼·오류·신청 후)·결정·운영(결제 대기·기한 지남·리워드 확인)·
     저장 실패 막대·손상된 저장본 막대·테마 알림
+- `e2e/brand.spec.ts` — tbyb 브랜드 적용
+  - 모든 화면(정적 HTML 원문 포함)에 "써 보고 고르는 맥북"이 없음 · 헤더 로고는 tbyb · 탭 제목 `tbyb — 첫 비교팩: MacBook Air · 14형 Pro` / `… · tbyb` · 설명에 태그라인과 첫 비교팩
+  - 로고 색(라이트 forest·apricot·forest / 다크 cream) · 워드마크 Georgia 600 · 파비콘 SVG 색 · apple-touch 180px RGB(알파 없음) · 320·390px 헤더 한 줄·가로 넘침 없음
+  - 리워드: 소개·내 체험·미션에서 '금액 미정'이 먼저, 모든 "1,000원" 바로 앞에 '예' · 지금 단계(반납 점검) 표시 · "미션 5개를 마치면"·"리워드를 드려요" 없음
+  - 연락 약속 없음(마지막 CTA·요청 폼·요청 접수 단계 → 운영 시뮬레이터 링크) · 고민 카드 '상상한 예시' 표시와 '예:' 이름표
+  - 신뢰 한 줄(히어로 바로 아래 3개) · FAQ 5개(마지막 CTA 앞, Tab·Enter·Space 로 여닫기, 미확정 칩 6개) · 비교팩 조건 표 3줄 · FAQ 를 펼친 두 테마 읽기 대비
 - `e2e/screenshots.spec.ts` — `../docs/screenshots/` 의 라이트 `web-*.png` 와 다크 `web-dark-*.png` 를 다시 찍습니다
-  (intro-mobile · intro-desktop · pack · request · my · missions · decide · ops-reward, 테마는 `colorScheme` 흉내로 '시스템'이 고름)
+  (intro-mobile · intro-desktop · intro-faq(FAQ 두 개 펼침) · pack · request · my · missions · decide · ops-reward · brand-header-320/390/1280(2배),
+  테마는 `colorScheme` 흉내로 '시스템'이 고름)
 - `e2e/serve.mjs` — GitHub Pages 처럼 `/tbyb-mvp-miku/` 아래에서 `out/` 을 서빙하는 의존성 없는 정적 서버

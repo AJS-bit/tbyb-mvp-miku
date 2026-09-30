@@ -7,7 +7,6 @@ import {
   DAY_STATUS_LABEL,
   LEANING_LABEL,
   PICKUP_STORES,
-  RESPONSE_TARGET,
   USAGE_LABEL,
   calendarDays,
   createReservation,
@@ -299,8 +298,17 @@ export function RequestForm() {
       <Notice title="이름이나 전화번호는 받지 않아요">고른 날짜와 매장, 답만 이 기기에 저장해요.</Notice>
 
       <div className="rounded-3xl bg-cream/70 p-5 sm:p-7">
-        <p className="text-sm text-sub">요청을 보내면 운영자가 Air와 Pro를 함께 준비한 뒤 결제를 안내해 드려요. 결제가 확인되면 예약이 확정돼요.</p>
-        <p className="mt-1 text-sm text-sub">{RESPONSE_TARGET}</p>
+        {/* 로컬 데모에 맞게: 연락이 오지 않는다 — 다음 단계는 '내 체험'과 운영 시뮬레이터에서 이어서 본다 */}
+        <p className="text-sm text-sub">
+          운영자가 Air와 Pro를 함께 준비하면 &lsquo;내 체험&rsquo;에 결제 안내가 떠요. 결제가 확인되면 예약이 확정돼요.
+        </p>
+        <p className="mt-1 text-sm text-sub">
+          데모라서 실제로 연락이 가지는 않아요. 운영자 단계는{" "}
+          <Link href="/ops/" className="font-semibold text-ink underline underline-offset-2">
+            운영 시뮬레이터
+          </Link>
+          에서 직접 넘겨 볼 수 있어요.
+        </p>
         <ErrorText>{error}</ErrorText>
         <button type="submit" disabled={!!savedId} className={cx(btn.primary, "mt-5 w-full sm:w-auto sm:px-10")}>
           데모 일정 요청 보내기

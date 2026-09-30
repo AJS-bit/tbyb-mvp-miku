@@ -8,7 +8,6 @@ import {
   MISSION_OPEN,
   PAYMENT_RULE,
   RESPONSE_TARGET,
-  REWARD_AMOUNT_LABEL,
   SALE_LABEL,
   STATUS_HELP,
   USAGE_LABEL,
@@ -23,7 +22,7 @@ import {
 import { apply, demoNow, useDemo } from "@/lib/store";
 import { fmtDateKey, fmtDateTime, fmtRemaining } from "@/lib/format";
 import { GiftEnvelope, StepIcon } from "@/components/illustrations";
-import { MissionDots, RewardStatusChip } from "@/components/mission";
+import { MissionDots, RewardAmount, RewardFlow, RewardStatusChip } from "@/components/mission";
 import { BackLink, HistoryList, NotFound, RequestSummary, Timeline, decisionText, myHref, useIdParam } from "@/components/reservation";
 import {
   ButtonLink,
@@ -252,10 +251,11 @@ function RewardMini({ r }: { r: Reservation }) {
         </div>
         <GiftEnvelope className="h-auto w-16 shrink-0" />
       </div>
-      <p className="mt-2 text-[17px] font-extrabold text-coral-ink">{REWARD_AMOUNT_LABEL}</p>
+      <RewardAmount className="mt-2 text-[17px]" />
       <div className="mt-3">
         <RewardStatusChip status={status} />
       </div>
+      <RewardFlow r={r} className="mt-4" />
       {status === "rejected" && reviewNote ? (
         <p className="mt-3 rounded-2xl bg-surface/80 px-3 py-2 text-sm text-ink">운영자 메모: {reviewNote}</p>
       ) : null}
@@ -265,7 +265,7 @@ function RewardMini({ r }: { r: Reservation }) {
           : status === "submitted"
             ? "돌려주신 기기를 점검한 뒤 운영자가 확인해요."
             : status === "approved"
-              ? "데모라서 실제로 지급되지는 않아요."
+              ? "금액과 지급 방식은 아직 정하는 중이에요. 데모라서 실제로 지급되지는 않아요."
               : "궁금한 점은 운영자에게 물어봐 주세요."}
       </p>
       <Link
@@ -314,12 +314,14 @@ function ReturnCard({ r }: { r: Reservation }) {
       {r.decision?.choice === "buy_new" ? (
         <p className="mt-3 text-[15px] text-sub">체험한 두 대는 모두 돌려주시면 돼요. 새 제품은 딜러의 판매 조건에 맞춰 따로 안내해 드려요.</p>
       ) : null}
-      {/* 완료 단계에서는 STATUS_HELP 가 같은 설문 안내를 하므로 반복하지 않는다 */}
+      {/* 완료 단계에서는 STATUS_HELP 가 같은 설문 안내를 하므로, 데모라서 보내지 않는다는 사실만 짧게 남긴다 */}
       {r.status !== "completed" ? (
-        <Notice className="mt-4" title="짧은 설문을 보내 드릴게요">
-          체험이 끝나고 7일 뒤와 30일 뒤에 보내 드려요. 고른 맥이 정말 잘 맞는지 알고 싶어서예요. 데모에서는 보내지 않아요.
+        <Notice className="mt-4" title="체험이 끝나면 짧은 설문을 드리려고 해요">
+          7일 뒤와 30일 뒤에 한 번씩이에요. 고른 맥이 정말 잘 맞는지 알고 싶어서예요. 데모라서 실제로 보내지는 않아요.
         </Notice>
-      ) : null}
+      ) : (
+        <p className="mt-4 text-sm text-sub">데모라서 설문은 실제로 보내지 않아요.</p>
+      )}
     </Card>
   );
 }
@@ -330,9 +332,19 @@ function StagePanel({ r }: { r: Reservation }) {
     case "requested":
     case "operator_check":
       return (
-        <Notice title="다음 안내를 기다려 주세요">
-          <p>두 기기가 준비되면 결제 기한과 함께 알려 드릴게요.</p>
-          <p className="mt-1 text-sub">{RESPONSE_TARGET}</p>
+        // 로컬 데모: 실제 운영자가 없어 연락이 가지 않는다 — 운영 시뮬레이터에서 단계를 넘기면 이 화면이 바뀐다
+        <Notice title="다음 단계는 운영 시뮬레이터에서 넘겨 볼 수 있어요">
+          <p>
+            이 데모에는 실제 운영자가 없어서 따로 연락이 가지 않아요. 운영 시뮬레이터에서 두 대를 준비하고 결제를 요청하면, 이 화면에 결제
+            안내가 나타나요.
+          </p>
+          <p className="mt-1 text-sub">실제 서비스에서는 {RESPONSE_TARGET}</p>
+          <Link
+            href="/ops/"
+            className="mt-3 inline-flex min-h-10 items-center gap-1 text-sm font-bold text-ink underline-offset-4 hover:underline"
+          >
+            운영 시뮬레이터 열기 <span aria-hidden>→</span>
+          </Link>
         </Notice>
       );
 
@@ -352,7 +364,7 @@ function StagePanel({ r }: { r: Reservation }) {
           </div>
           {expired ? (
             <Notice tone="danger" className="mt-3" title="결제 기한이 지났어요">
-              예약이 저절로 확정되지는 않아요. 운영자가 취소하거나 다른 일정을 안내해 드릴게요.
+              예약이 저절로 확정되지는 않아요. 운영자가 이 요청을 취소하면, 다른 날짜로 다시 요청할 수 있어요.
             </Notice>
           ) : null}
           <p className="mt-4 text-[15px] leading-relaxed text-ink">{PAYMENT_RULE}</p>

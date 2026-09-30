@@ -1,17 +1,20 @@
 import type { Metadata, Viewport } from "next";
-import { DEMO_NOTICE, PACK_NAME, SERVICE_NAME } from "@/lib/domain";
+import { DEMO_NOTICE } from "@/lib/domain";
 import { SiteHeader } from "@/components/SiteHeader";
-import { BrandLockup } from "@/components/Brand";
+import { FooterLockup } from "@/components/Brand";
 import { StorageBanner } from "@/components/StorageBanner";
-import { UNDECIDED } from "@/lib/copy";
+import { DEALER_UNDECIDED, FIRST_PACK_LABEL, PLATFORM_NAME, PLATFORM_TAGLINE, REWARD_UNDECIDED_NOTE } from "@/lib/copy";
 import { THEME_COLOR, THEME_INIT_SCRIPT } from "@/lib/theme-core";
+import { josa } from "@/lib/format";
 // 고운바탕 Bold(SIL OFL 1.1) — 외부 CDN 없이 자체 호스팅. 한글은 unicode-range 조각이라 화면에 쓰인 글자 조각만 받는다.
 import "@fontsource/gowun-batang/700.css";
 import "./globals.css";
 
+// 플랫폼은 tbyb, MacBook Air · 14형 Pro 는 첫 비교팩 (SPEC 'tbyb 브랜드 적용')
 export const metadata: Metadata = {
-  title: { default: `${SERVICE_NAME} — ${PACK_NAME}`, template: `%s · ${SERVICE_NAME}` },
-  description: "맥이 처음이어도 괜찮아요. MacBook Air와 14형 Pro를 사기 전에 먼저 써 보고 고르는 비교 체험이에요. (시연용 데모)",
+  title: { default: `${PLATFORM_NAME} — ${FIRST_PACK_LABEL}`, template: `%s · ${PLATFORM_NAME}` },
+  description: `${PLATFORM_TAGLINE} ${PLATFORM_NAME}는 사기 전에 두 제품을 같은 기준으로 직접 써 보고 고르는 비교 체험이에요. ${FIRST_PACK_LABEL}. (시연용 데모)`,
+  applicationName: PLATFORM_NAME,
   robots: { index: false, follow: false },
 };
 
@@ -56,12 +59,15 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <footer className="mt-10 border-t border-line bg-cream/60">
           <div className="mx-auto grid max-w-6xl gap-6 px-5 py-10 text-sm text-sub sm:px-8 md:grid-cols-[1fr_1.4fr]">
             <div>
-              <BrandLockup uid="brand-footer" />
-              <p className="mt-3 leading-relaxed">{PACK_NAME} · 시연용 데모</p>
+              <FooterLockup />
+              <p className="mt-2 leading-relaxed">{FIRST_PACK_LABEL} · 시연용 데모</p>
             </div>
             <div>
               <p className="font-bold text-ink">아직 정해지지 않은 것들</p>
-              <p className="mt-1 leading-relaxed">{UNDECIDED.join(" · ")}. 모두 딜러와 계약한 뒤에 정해져요.</p>
+              <p className="mt-1 leading-relaxed">
+                {DEALER_UNDECIDED.join(" · ")}
+                {josa(DEALER_UNDECIDED[DEALER_UNDECIDED.length - 1], "은", "는")} 딜러와 계약한 뒤에 정해져요. {REWARD_UNDECIDED_NOTE}
+              </p>
               <p className="mt-3 text-xs leading-relaxed">
                 이 데모에는 서버와 분석 도구가 없고, 실제 결제나 문자 발송, 리워드 지급도 없어요. Apple과 MacBook은 Apple Inc.의
                 상표이며, 이 데모는 Apple과 관련이 없어요.

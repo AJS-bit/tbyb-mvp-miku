@@ -23,6 +23,11 @@ export const light = {
   thumb: '#FFFFFF',
   sun: '#FFE2C2',
 
+  // ── tbyb 브랜드 (lib/brand.ts BRAND 값 그대로 — 라이트 MARK.svg · 다크 MARK_DARK.svg, 다크에서도 심볼은 컬러) ──
+  brandWord: '#193D35', // forest — 워드마크 tbyb
+  brandMark: '#193D35', // forest — 심볼 왼쪽 프레임 · 가운데 점
+  brandAccent: '#F18463', // apricot — 심볼 오른쪽 프레임
+
   // ── 기기 색 ──
   air: '#1E9E8A',
   airSoft: '#E3F4F0',
@@ -113,6 +118,10 @@ export const dark: Palette = {
   switchOff: '#4A4238',
   thumb: '#EDE5DA',
   sun: '#664729', // SPEC 출발값 #5C4128 → 조금 더 호박색으로 (스탠드 불빛)
+
+  brandWord: '#F7F3EA', // cream — 다크에서 워드마크는 크림
+  brandMark: '#DCE6CF', // sage — MARK_DARK.svg 왼쪽 프레임 · 가운데 점
+  brandAccent: '#F18463', // apricot — 다크에서도 그대로
 
   air: '#3CC4AE',
   airSoft: '#13322D',

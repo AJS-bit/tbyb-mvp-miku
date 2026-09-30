@@ -67,9 +67,11 @@ export function ReminderCard({ r }: { r: Reservation }) {
   return (
     <Section eyebrow="Nudge" title="미션 알림" caption={`${formatDateKey(toDateKey(start))}에 체험을 시작했어요`}>
       <Card style={{ gap: 16 }}>
+        {/* 약속은 이 환경에서 참인 것만: iOS 는 이 기기의 로컬 알림을 실제로 예약하고, 웹은 계획만 저장한다 */}
         <T variant="callout">
-          잊지 않게 살짝 알려 드릴게요. 둘째 날에는 쉬운 미션 하나를, 마지막 날 전날에는 남은 미션과 리워드 신청을 챙겨 드려요. 두 날이 겹치면
-          한 번만 보내요.
+          {REMINDERS_SUPPORTED
+            ? '알림 받기를 누르면 이 기기에서 살짝 알려 드려요. 둘째 날에는 쉬운 미션 하나를, 마지막 날 전날에는 남은 미션과 리워드 신청을 챙겨 드려요. 두 날이 겹치면 한 번만 보내요.'
+            : '웹 미리보기에서는 알림을 보내지 않아요. 둘째 날과 마지막 날 전날, 언제 알려 드릴지 계획만 이 기기에 저장돼요.'}
         </T>
         <Field label="마지막 날 (반납하는 날)" hint="운영자가 안내한 반납 날짜를 골라 주세요. 체험 기간은 딜러와 계약한 뒤에 정해져요.">
           <ScrollView

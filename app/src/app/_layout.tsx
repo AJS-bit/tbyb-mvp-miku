@@ -4,6 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect, useMemo, useState } from 'react';
 
 import { CloseButton } from '@/components/header';
+import { WebHead } from '@/components/web-head';
 import { SerifProvider, useAppFonts } from '@/lib/fonts';
 import { hydrate } from '@/lib/store';
 import { AppThemeProvider, useTheme } from '@/lib/theme-context';
@@ -51,6 +52,7 @@ function RootStack() {
 
   return (
     <NavigationThemeProvider value={navigation}>
+      <WebHead />
       <StatusBar style={t.scheme === 'dark' ? 'light' : 'dark'} />
       <Stack screenOptions={{ contentStyle: { backgroundColor: c.bg } }}>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />

@@ -5,12 +5,12 @@ const baseUrl = (process.env.EXPO_BASE_URL ?? '').replace(/\/+$/, '');
 
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
-  name: 'Try Before You Buy',
+  name: 'tbyb', // 플랫폼 워드마크 (shared/brand/tbyb). MacBook Air·Pro 는 앱 안에서 "첫 비교팩"으로 부른다
   slug: 'tbyb-mvp-miku',
   version: '0.1.0',
   orientation: 'portrait',
-  // 앱 아이콘·적응형 아이콘·파비콘·스플래시 = 새 브랜드 로고 (원본: shared/brand/ · README 「브랜드」)
-  icon: './assets/images/icon.png', // 1024 · 아이보리 꽉 찬 정사각형 · 투명도 없음 (iOS 가 모서리를 둥글게 자른다)
+  // 앱 아이콘·적응형 아이콘·파비콘·스플래시 = tbyb 심볼 (원본: shared/brand/tbyb · PNG 는 scripts/brand-icons.mjs 로 만든다)
+  icon: './assets/images/icon.png', // 1024 · 크림 #F7F3EA 꽉 찬 정사각형 + APP_ICON_COLOR 비율의 심볼 · 투명도 없음 (iOS 가 모서리를 둥글게 자른다)
   scheme: 'tbyb',
   // 기기 라이트/다크를 따라간다 (앱 안 '화면 모드'에서 라이트·다크로 고정할 수 있다 — src/lib/theme-context.tsx)
   userInterfaceStyle: 'automatic',
@@ -20,16 +20,17 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   },
   android: {
     adaptiveIcon: {
-      backgroundColor: '#FAF6EF', // 아이보리 (palette.ts light.bg)
-      foregroundImage: './assets/images/android-icon-foreground.png', // 해 + 마크, 안전 원(66dp) 안
-      monochromeImage: './assets/images/android-icon-monochrome.png', // 테마 아이콘용 — 마크만 한 색
+      backgroundColor: '#F7F3EA', // 브랜드 cream (lib/brand.ts BRAND.cream)
+      foregroundImage: './assets/images/android-icon-foreground.png', // 컬러 심볼, 투명 바탕 · 안전 원(66dp) 안
+      monochromeImage: './assets/images/android-icon-monochrome.png', // 테마 아이콘용 — MARK_MONO (한 색)
     },
     predictiveBackGestureEnabled: false,
   },
   web: {
     output: 'static',
     favicon: './assets/images/favicon.png',
-    name: 'Try Before You Buy — 비교팩 데모',
+    name: 'tbyb — 써 보고, 나의 기준으로.',
+    shortName: 'tbyb',
     lang: 'ko',
   },
   plugins: [
@@ -37,12 +38,12 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     [
       'expo-splash-screen',
       {
-        // 스플래시 바탕 = palette.ts 의 bg (라이트 아이보리 / 다크 따뜻한 밤색). 설정 파일이라 값을 그대로 적는다.
-        // 가운데 마크: 라이트는 잉크 받침, 다크는 크림 받침(logo-mark-dark.svg)
-        backgroundColor: '#FAF6EF',
+        // 스플래시: 라이트 = 브랜드 cream 바탕 + 컬러 심볼(MARK.svg), 다크 = forest 바탕 + 다크용 컬러 심볼(MARK_DARK.svg: sage·apricot).
+        // 설정 파일이라 lib/brand.ts 의 값을 그대로 적는다.
+        backgroundColor: '#F7F3EA',
         image: './assets/images/splash-icon.png',
         imageWidth: 120,
-        dark: { backgroundColor: '#16130F', image: './assets/images/splash-icon-dark.png' },
+        dark: { backgroundColor: '#193D35', image: './assets/images/splash-icon-dark.png' },
       },
     ],
     'expo-notifications',

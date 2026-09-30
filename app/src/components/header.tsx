@@ -44,7 +44,7 @@ export function CloseButton() {
 // 네이티브에서는 fontFamily 를 아예 넘기지 않는다 (undefined 를 넘기면 큰 제목이 그려지지 않았다)
 const FONT = FONT_FAMILY ? { fontFamily: FONT_FAMILY } : {};
 
-/** 탭마다 하나씩: 큰 제목 헤더 + 시뮬레이터 버튼. 비교팩(첫 화면)은 본문 맨 위 브랜드 로고가 제목 역할이라 큰 제목을 끈다. */
+/** 탭마다 하나씩: 큰 제목 헤더 + 시뮬레이터 버튼. 비교팩은 본문 맨 위 tbyb 로고가, 내 체험은 상태에 맞는 인사가 제목 역할이라 큰 제목을 끈다. */
 export function TabStack({ title, largeTitle = true }: { title: string; largeTitle?: boolean }) {
   const { c } = useTheme();
   return (

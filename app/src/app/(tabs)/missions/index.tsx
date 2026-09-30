@@ -1,7 +1,7 @@
 import { StyleSheet, View } from 'react-native';
 
 import { GiftEnvelope, MissionIcon } from '@/components/illustrations';
-import { CodeCard, MissionList, RewardCard } from '@/components/mission';
+import { CodeCard, MissionList, RewardCard, RewardFlow } from '@/components/mission';
 import { ReminderCard } from '@/components/reminder-card';
 import { Screen, ScrollTarget } from '@/components/screen';
 import { EmptyState, ReservationSwitcher } from '@/components/shared';
@@ -126,9 +126,16 @@ function Locked({ r }: { r: Reservation }) {
           {/* \u2060: 숫자와 '개' 사이에서 줄이 끊기지 않게 */}
           {`두 맥을 받는 날 일상 미션 ${MISSIONS.length}\u2060개가 열려요. 핵심 미션 ${CORE_MISSIONS.length}\u2060개를 하고 바탕화면 코드를 적으면 리워드를 신청할 수 있어요.`}
         </T>
+        {/* 금액 미정을 먼저 — 1,000원은 검토 중인 예일 뿐 */}
         <T variant="headline" color={c.coralInk}>
-          {`리워드 ${REWARD_AMOUNT_LABEL}`}
+          {`미션 리워드 · ${REWARD_AMOUNT_LABEL}`}
         </T>
+      </View>
+      <View style={{ gap: 8 }}>
+        <T variant="footnote" weight="700" color={c.sub}>
+          리워드는 이렇게 정해져요
+        </T>
+        <RewardFlow stage={-1} />
       </View>
       <View style={{ gap: 8 }}>
         <T variant="footnote" weight="700" color={c.sub}>

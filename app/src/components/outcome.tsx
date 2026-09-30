@@ -122,8 +122,9 @@ export function ReturnOutcome({ r }: { r: Reservation }) {
 
 export function FollowUpNotice() {
   return (
-    <Notice tone="info" title="써 본 뒤의 마음도 들려주세요">
-      체험이 끝나고 7일 뒤와 30일 뒤에 짧은 설문을 보내 드려요. 데모에서는 보내지 않아요.
+    // 로컬 데모에서 참인 말만: 설문은 실제 서비스의 계획이고, 데모는 연락처를 받지 않으니 보내지 않는다
+    <Notice tone="info" title="써 본 뒤의 마음도 궁금해요">
+      실제 서비스에서는 체험이 끝나고 7일 뒤와 30일 뒤에 짧은 설문을 드릴 계획이에요. 이 데모는 연락처를 받지 않아서 보내지 않아요.
     </Notice>
   );
 }

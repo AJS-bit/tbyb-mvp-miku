@@ -5,14 +5,13 @@ import {
   DEVICE_LABEL,
   PACK_NAME,
   PICKUP_STORES,
-  PRICE_TBD,
   STATUS_LABEL,
   type DeviceKey,
 } from "@/lib/domain";
-import { ButtonLink, Card, CardTitle, DeviceName, Notice, PageHeader, cx, delay, deviceTone } from "@/components/ui";
+import { ButtonLink, Card, CardTitle, DeviceName, Eyebrow, PageHeader, cx, delay, deviceTone } from "@/components/ui";
 import { LaptopMini } from "@/components/illustrations";
 
-export const metadata: Metadata = { title: "비교팩" };
+export const metadata: Metadata = { title: "첫 비교팩" };
 
 const KEYS: DeviceKey[] = ["air", "pro"];
 // 히어로 화면 문구(어디로 · 어디까지)와 짝을 맞춘 한 줄
@@ -20,6 +19,13 @@ const MOOD: Record<DeviceKey, string> = {
   air: "가볍게 들고 어디든 가고 싶다면",
   pro: "무거운 작업도 끝까지 해내고 싶다면",
 };
+
+// 조건 표 — 아직 정해지지 않은 조건과 정해지는 때 (예전 '요금과 기간' 알림 · '누가 빌려주고 파나요?' 카드 · 픽업 매장 안내를 한 곳에)
+const TERMS = [
+  { label: "체험 요금 · 기간", value: "딜러와 계약한 뒤 안내해요" },
+  { label: "픽업 매장 · 계약 주체", value: "협의하고 있어요" },
+  { label: "취소 · 환불 · 보증", value: "유료 운영 전에 확정해요" },
+];
 
 const RULES = [
   {
@@ -47,8 +53,9 @@ const RULES = [
 export default function PackPage() {
   return (
     <div className="space-y-6 sm:space-y-8">
-      <PageHeader eyebrow="The pack · MacBook Air & Pro 14" title={PACK_NAME}>
-        두 대를 함께 빌려 똑같은 하루를 보내 보는 구성이에요. 맥이 처음이어도 차이를 느낄 수 있게 비교할 점을 골라 뒀어요.
+      <PageHeader eyebrow="The first pack" title={PACK_NAME}>
+        tbyb의 첫 비교팩이에요. 두 대를 함께 빌려 똑같은 하루를 보내 보는 구성이에요. 맥이 처음이어도 차이를 느낄 수 있게 비교할 점을 골라
+        뒀어요.
       </PageHeader>
 
       {/* 두 기기 머리 */}
@@ -62,6 +69,32 @@ export default function PackPage() {
           </div>
         ))}
       </div>
+
+      {/* 조건 표 — 숫자는 만들지 않고, 언제 정해지는지만 */}
+      <section
+        aria-labelledby="terms"
+        data-testid="pack-terms"
+        className="grid gap-4 rounded-3xl border border-warn-line bg-warn-bg/60 px-5 py-6 sm:px-7 sm:py-7 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.5fr)] lg:items-center lg:gap-10"
+      >
+        <div>
+          <Eyebrow className="mb-2">Terms</Eyebrow>
+          <h2 id="terms" className="text-[19px] font-bold leading-snug text-ink">
+            요금과 조건은 아직 정하는 중이에요
+          </h2>
+          <p className="mt-1.5 text-[15px] leading-relaxed text-sub">정해지기 전까지는 금액을 표시하지 않아요.</p>
+        </div>
+        <dl className="divide-y divide-warn-line border-y border-warn-line text-[14px] sm:text-[15px]">
+          {TERMS.map((t) => (
+            <div key={t.label} className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5 py-3">
+              <dt className="text-sub">{t.label}</dt>
+              <dd className="ml-auto flex items-center gap-2 text-right font-bold text-ink">
+                <span aria-hidden className="h-1.5 w-1.5 shrink-0 rounded-full bg-warn" />
+                {t.value}
+              </dd>
+            </div>
+          ))}
+        </dl>
+      </section>
 
       {/* 같은 기준 비교 포인트 */}
       <Card aria-labelledby="points">
@@ -112,7 +145,6 @@ export default function PackPage() {
               </li>
             ))}
           </ul>
-          <p className="mt-4 text-[15px] leading-relaxed text-sub">매장 위치는 딜러와 계약한 뒤에 알려 드려요.</p>
         </Card>
       </div>
 
@@ -132,19 +164,6 @@ export default function PackPage() {
           ))}
         </ul>
       </Card>
-
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Card aria-labelledby="party">
-          <CardTitle id="party" eyebrow="Who">
-            누가 빌려주고 파나요?
-          </CardTitle>
-          <p className="text-[15px] font-bold text-warn">아직 정해지지 않았어요</p>
-          <p className="mt-1 text-[15px] leading-relaxed text-sub">대여와 판매를 맡을 곳은 딜러와 계약한 뒤 여기에 적어 둘게요.</p>
-        </Card>
-        <Notice tone="warn" title="요금과 기간도 아직 정해지지 않았어요" className="self-start rounded-3xl p-6! sm:p-7!">
-          {PRICE_TBD}
-        </Notice>
-      </div>
 
       <div className="flex flex-col gap-3 pt-2 sm:flex-row">
         <ButtonLink href="/request/" className="sm:px-7">

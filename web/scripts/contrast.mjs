@@ -4,6 +4,7 @@
 //       node scripts/contrast.mjs --all      통과한 짝도 모두 표로 출력
 // 기준(WCAG 2.2): 본문·작은 글자 4.5:1 · 큰 글자(24px↑ 또는 18.66px↑ 굵게) 3:1 · UI 경계·초점·상태 면 3:1.
 // 비활성 컨트롤과 그림 속 글자는 WCAG 1.4.3 예외라 기준 대신 참고값만 보여 준다(단, 비활성은 3:1 아래면 경고).
+// tbyb 로고의 apricot 프레임은 브랜드 원본 색(shared/brand/tbyb — 바꾸지 않는다)이라 3:1 을 기준으로 재되 실패로 치지 않고 '로고 보고'로 알린다.
 // 기준 미달이 하나라도 있으면 종료 코드 1.
 //
 // 짝 표기: 글자 'ink' · 투명도 'ink/80' · 겹친 바탕 'cream/60>bg'(bg 위에 60% cream) · 일러스트 토큰은 'ill-*'.
@@ -103,6 +104,7 @@ const hex = ({ r, g, b }) => "#" + [r, g, b].map((x) => Math.round(x).toString(1
 
 // ───────── 실제로 쓰는 짝 ─────────
 // kind: text 4.5 · large 3 · ui 3 · disabled(참고, 3 아래면 경고) · picture(참고) · info(참고: 장식 경계)
+//       logo(3:1 로 재지만 미달이면 '로고 보고' — 브랜드 원본 색이라 고칠 수 없는 그림)
 const MIN = { text: 4.5, large: 3, ui: 3 };
 
 const P = (fg, bg, kind, where) => ({ fg, bg, kind, where });
@@ -146,6 +148,15 @@ const PAIRS = [
   ...each(["air-ink", "pro", "mute-ink"], ["surface"], "ui", "고른 답 버튼 면 vs 카드"),
 
   ...each(["ill-line"], ["bg", "surface", "cream", "coral-soft", "air-soft", "pro-soft"], "ui", "일러스트 선 (의미 있는 그림)"),
+
+  // tbyb 로고 (헤더 bg · 푸터 cream/60>bg). 라이트 = MARK.svg 색, 다크 = MARK_REVERSE.svg cream
+  ...each(["brand-word"], ["bg", "cream/60>bg"], "text", "워드마크 tbyb (Georgia 600, 28–36px — 작은 글자 기준으로도 확인)"),
+  ...each(["brand-left", "brand-dot"], ["bg", "cream/60>bg"], "ui", "로고 심볼 왼쪽 프레임·가운데 점 (forest / 다크 sage)"),
+  ...each(["brand-right"], ["bg", "cream/60>bg"], "logo", "로고 심볼 오른쪽 프레임 (apricot #F18463, 라이트·다크 같음)"),
+  // 새 면: 신뢰 한 줄 · 비교팩 조건 표 · FAQ
+  P("ink", "surface/70>bg", "text", "히어로 아래 신뢰 한 줄"),
+  ...each(["ink", "sub"], ["warn-bg/60>bg"], "text", "비교팩 조건 표 (값·항목 이름)"),
+  P("warn", "warn-bg/60>bg", "ui", "비교팩 조건 표 값 앞 점"),
   // 비활성 (WCAG 1.4.3 예외 — 참고)
   P("sub", "line", "disabled", "주 버튼 비활성"),
   P("sub/80", "cream", "disabled", "보조 버튼 비활성"),
@@ -164,6 +175,7 @@ const PAIRS = [
 const showAll = process.argv.includes("--all");
 let failures = 0;
 let warnings = 0;
+const logoNotes = [];
 const summary = [];
 
 for (const [theme, t] of Object.entries(THEMES)) {
@@ -176,8 +188,10 @@ for (const [theme, t] of Object.entries(THEMES)) {
     let status = "참고";
     if (min) status = r >= min ? "통과" : "미달";
     else if (p.kind === "disabled" && r < 3) status = "경고";
+    else if (p.kind === "logo") status = r >= 3 ? "통과" : "로고 보고";
     if (status === "미달") failures++;
     if (status === "경고") warnings++;
+    if (status === "로고 보고") logoNotes.push(`${theme} ${p.fg} on ${p.bg} ${r.toFixed(2)}:1`);
     rows.push({ ...p, r, min, status, fgHex: hex(fg), bgHex: hex(bg) });
   }
   const worst = (kind) => Math.min(...rows.filter((x) => x.kind === kind).map((x) => x.r));
@@ -188,7 +202,7 @@ for (const [theme, t] of Object.entries(THEMES)) {
   console.log(`\n## ${theme === "light" ? "라이트" : "다크"} (${theme})`);
   for (const x of rows) {
     if (!showAll && x.status === "통과") continue;
-    const need = x.min ? `≥${x.min}` : x.kind;
+    const need = x.min ? `≥${x.min}` : x.kind === "logo" ? "≥3 로고" : x.kind;
     console.log(
       `${x.status}  ${x.r.toFixed(2).padStart(5)}:1 ${need.padEnd(8)} ${x.fg.padEnd(16)} on ${x.bg.padEnd(22)} ${x.fgHex} / ${x.bgHex}  — ${x.where}`,
     );
@@ -198,6 +212,12 @@ for (const [theme, t] of Object.entries(THEMES)) {
 
 console.log("\n" + summary.join("\n"));
 if (warnings) console.log(`비활성 3:1 미만 경고 ${warnings}개`);
+if (logoNotes.length) {
+  console.log(
+    `로고 보고 ${logoNotes.length}개 — tbyb apricot 프레임은 3:1 미만(브랜드 원본 색, 바꾸지 않음). ` +
+      `심볼은 forest 프레임·점과 워드마크로 알아볼 수 있고 링크 이름은 글자로 있음: ${logoNotes.join(" · ")}`,
+  );
+}
 if (failures) {
   console.error(`\n대비 기준 미달 ${failures}개`);
   process.exit(1);

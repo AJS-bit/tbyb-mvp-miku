@@ -3,6 +3,7 @@
 import {
   MISSIONS,
   PICK_LABEL,
+  REWARD_AMOUNT_LABEL,
   REWARD_STATUS_LABEL,
   missionProgress,
   missionSummary,
@@ -14,6 +15,7 @@ import {
   type RewardStatus,
 } from "@/lib/domain";
 import { fmtDateTime } from "@/lib/format";
+import { REWARD_STEPS } from "@/lib/copy";
 import { MissionIcon } from "./illustrations";
 import { cx, shortName } from "./ui";
 
@@ -85,6 +87,116 @@ export function RewardStatusChip({ status }: { status: RewardStatus }) {
     >
       {REWARD_STATUS_LABEL[status]}
     </span>
+  );
+}
+
+// ───────── 리워드: 금액 미정 · 확인 순서 (미션 기록 → 반납 점검 → 운영자 확인) ─────────
+
+/**
+ * 리워드 금액 — REWARD_AMOUNT_LABEL('금액 미정 (검토 중인 예: 1,000원)')에서 '금액 미정'을 앞세우고,
+ * 괄호 속 예시는 작게 붙인다. 1,000원은 항상 '검토 중인 예'와 한 문장으로만 보인다.
+ */
+export function RewardAmount({ className, pill }: { className?: string; pill?: boolean }) {
+  const cut = REWARD_AMOUNT_LABEL.indexOf(" (");
+  const lead = cut > 0 ? REWARD_AMOUNT_LABEL.slice(0, cut) : REWARD_AMOUNT_LABEL;
+  const note = cut > 0 ? REWARD_AMOUNT_LABEL.slice(cut + 1) : "";
+  return (
+    <p
+      data-testid="reward-amount"
+      className={cx(
+        "flex-wrap items-baseline gap-x-2 gap-y-0.5 text-coral-ink",
+        pill ? "inline-flex rounded-full bg-surface px-4 py-2 ring-1 ring-coral/30" : "flex",
+        className,
+      )}
+    >
+      <strong className="font-extrabold">{lead}</strong>
+      {note ? <span className="text-[0.8em] font-semibold">{note}</span> : null}
+    </p>
+  );
+}
+
+/** 지금 리워드가 어느 단계인지: 0 미션 기록 · 1 반납 점검 · 2 운영자 확인 · 3 모두 끝남 (reviewReward 는 검수 단계부터) */
+export function rewardStep(r: Reservation): 0 | 1 | 2 | 3 {
+  const { status } = r.reward;
+  if (status === "approved" || status === "rejected") return 3;
+  if (status === "submitted") return r.status === "inspecting" || r.status === "completed" ? 2 : 1;
+  return 0;
+}
+
+/** 소개 화면용 — 세 단계와 한 줄 설명 */
+export function RewardFlowIntro({ className }: { className?: string }) {
+  return (
+    <ol aria-label="리워드 확인 순서" data-testid="reward-flow" className={cx("grid gap-2.5 sm:grid-cols-3 sm:gap-4", className)}>
+      {REWARD_STEPS.map((s, i) => (
+        <li key={s.label} className="relative flex gap-3 rounded-2xl bg-surface/85 p-4 sm:flex-col sm:gap-2.5">
+          {/* 넓은 화면: 카드 사이 화살표로 순서를 보여 준다 */}
+          {i < REWARD_STEPS.length - 1 ? (
+            <span
+              aria-hidden
+              className="absolute top-1/2 -right-5 z-10 hidden h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full bg-coral-soft text-coral-ink sm:flex"
+            >
+              <svg viewBox="0 0 16 16" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M6 3.5 10.5 8 6 12.5" />
+              </svg>
+            </span>
+          ) : null}
+          <span
+            aria-hidden
+            className="tabular flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-coral text-xs font-bold text-on-coral"
+          >
+            {i + 1}
+          </span>
+          <span className="min-w-0">
+            <span className="block text-[15px] font-bold leading-snug text-ink">
+              <span className="sr-only">{i + 1}단계 </span>
+              {s.label}
+            </span>
+            <span className="mt-0.5 block text-sm leading-relaxed text-sub">{s.body}</span>
+          </span>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+/** 내 체험 · 미션 화면용 — 지금 단계가 보이는 가로 진행 표시 */
+export function RewardFlow({ r, className }: { r: Reservation; className?: string }) {
+  const cur = rewardStep(r);
+  return (
+    <ol aria-label="리워드 확인 순서" data-testid="reward-flow" className={cx("grid grid-cols-3", className)}>
+      {REWARD_STEPS.map((s, i) => {
+        const done = i < cur;
+        const now = i === cur;
+        return (
+          <li key={s.label} aria-current={now ? "step" : undefined} className="relative flex flex-col items-center px-1 text-center">
+            {i < REWARD_STEPS.length - 1 ? (
+              <span
+                aria-hidden
+                className={cx(
+                  "absolute top-[13px] right-[calc(-50%+18px)] left-[calc(50%+18px)] h-0.5 rounded-full",
+                  done ? "bg-coral" : "bg-ink/15",
+                )}
+              />
+            ) : null}
+            <span
+              aria-hidden
+              className={cx(
+                "tabular relative flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold",
+                done && "bg-coral text-on-coral",
+                now && "bg-surface text-coral-ink ring-2 ring-coral-ink",
+                !done && !now && "bg-surface text-sub ring-1 ring-line-strong",
+              )}
+            >
+              {done ? "✓" : i + 1}
+            </span>
+            <span className={cx("mt-1.5 text-[13px] leading-tight", now ? "font-extrabold text-ink" : done ? "font-semibold text-ink" : "font-semibold text-sub")}>
+              {s.label}
+              <span className="sr-only">{done ? " — 끝났어요" : now ? " — 지금 단계" : ""}</span>
+            </span>
+          </li>
+        );
+      })}
+    </ol>
   );
 }
 

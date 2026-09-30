@@ -1,65 +1,69 @@
-// 로고 — shared/brand/logo-mark.svg 와 같은 그림을 인라인 SVG 로 그린다(색은 globals.css 의 --brand-* 변수라 테마를 따라간다).
-// 앞 왼쪽의 얇은 Air(청록) · 뒤 오른쪽의 Pro(보라) · 코랄 반짝임. 겹친 곳의 틈은 마스크로 비워 어느 바탕에서도 보인다.
-// 헤더·푸터에 동시에 나오므로 그라데이션·마스크 id 는 uid 로 나눈다.
-import { SERVICE_NAME } from "@/lib/domain";
+// tbyb 플랫폼 로고 — shared/brand/tbyb/MARK.svg 의 도형을 그대로 인라인 SVG 로 그린다 (TETO 선택안 · 도형·색을 바꾸지 않는다).
+// 같은 크기의 열린 프레임 두 개(왼쪽 forest · 오른쪽 apricot)가 가운데 점(나의 기준)을 마주 본다. viewBox 0 0 100 80.
+// 색은 globals.css 의 --color-brand-* 토큰: 라이트는 MARK.svg 색, 다크는 MARK_DARK.svg(sage·apricot 컬러, 워드마크는 cream).
+// 워드마크는 소문자 tbyb — Georgia 600, 자간 -0.06em, 심볼 높이 ≈ 글자 크기 × 0.9, 간격 ≈ 0.22em (README 비율).
+import { PLATFORM_NAME, PLATFORM_TAGLINE } from "@/lib/copy";
 import { cx } from "./ui";
 
-const b = (name: string) => `var(--brand-${name})`;
-
-export function BrandMark({ uid, className }: { uid: string; className?: string }) {
-  const air = `${uid}-air`;
-  const pro = `${uid}-pro`;
-  const gap = `${uid}-gap`;
+export function BrandMark({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 64 64" className={cx("shrink-0", className)} aria-hidden focusable="false">
-      <defs>
-        <linearGradient id={air} x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" style={{ stopColor: b("air-a") }} />
-          <stop offset="1" style={{ stopColor: b("air-b") }} />
-        </linearGradient>
-        <linearGradient id={pro} x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" style={{ stopColor: b("pro-a") }} />
-          <stop offset="1" style={{ stopColor: b("pro-b") }} />
-        </linearGradient>
-        <mask id={gap} maskUnits="userSpaceOnUse" x="-8" y="-8" width="80" height="80">
-          <rect x="-8" y="-8" width="80" height="80" fill="#fff" />
-          <g fill="#000" stroke="#000" strokeWidth="4.8" strokeLinejoin="round">
-            <rect x="5" y="24" width="33" height="23" rx="3.4" />
-            <rect x="1" y="48.2" width="41" height="3" />
-          </g>
-        </mask>
-      </defs>
-      <g transform="translate(0 2.2)">
-        <g mask={`url(#${gap})`}>
-          <rect x="23" y="10" width="36" height="25" rx="3.6" fill={`url(#${pro})`} />
-          <circle cx="41" cy="11.9" r="0.75" style={{ fill: b("cam"), fillOpacity: 0.55 }} />
-          <path d="M19 36.2H63L61.6 39Q61.2 40.6 60 40.6H22Q20.8 40.6 20.4 39Z" style={{ fill: b("base") }} />
-        </g>
-        <rect x="5" y="24" width="33" height="23" rx="3.4" fill={`url(#${air})`} />
-        <circle cx="21.5" cy="25.8" r="0.7" style={{ fill: b("cam"), fillOpacity: 0.5 }} />
-        <path d="M1 48.2H42L41 49.7Q40.6 51.2 39.5 51.2H3.5Q2.4 51.2 2 49.7Z" style={{ fill: b("base") }} />
-        <path
-          d="M13.5 8Q15.04 11.96 19 13.5Q15.04 15.04 13.5 19Q11.96 15.04 8 13.5Q11.96 11.96 13.5 8Z"
-          style={{ fill: b("spark") }}
-        />
-      </g>
+    <svg viewBox="0 0 100 80" className={cx("shrink-0", className)} aria-hidden focusable="false">
+      <path
+        className="fill-brand-left"
+        d="M42 8H24C13 8 4 17 4 28V52C4 63 13 72 24 72H42V56H27C23 56 20 53 20 49V31C20 27 23 24 27 24H42Z"
+      />
+      <path
+        className="fill-brand-right"
+        d="M58 8H76C87 8 96 17 96 28V52C96 63 87 72 76 72H58V56H73C77 56 80 53 80 49V31C80 27 77 24 73 24H58Z"
+      />
+      <circle className="fill-brand-dot" cx="50" cy="40" r="6" />
     </svg>
   );
 }
 
-/** 마크 + 워드마크(고운바탕) + 태그라인 "써 보고 고르는 맥북" */
-export function BrandLockup({ uid, className, tagline = true }: { uid: string; className?: string; tagline?: boolean }) {
+/** 심볼 + 워드마크. 글자 크기와 심볼 높이는 README 비율(0.9)대로 짝을 맞춘다. */
+function Mark({ size }: { size: "header" | "footer" }) {
   return (
-    <span className={cx("flex min-w-0 items-center gap-2.5", className)}>
-      <BrandMark uid={uid} className="h-9 w-9 sm:h-10 sm:w-10" />
-      <span className="flex min-w-0 flex-col">
-        <span className="truncate font-serif text-[17px] font-bold leading-[1.15] tracking-[-0.005em] text-ink sm:text-[18px]">
-          {SERVICE_NAME}
-        </span>
-        {tagline ? (
-          <span className="mt-0.5 truncate text-[11.5px] font-semibold leading-tight tracking-[0.02em] text-sub">써 보고 고르는 맥북</span>
-        ) : null}
+    <span
+      data-testid="brand-lockup"
+      className={cx(
+        "flex shrink-0 items-center",
+        size === "header" ? "gap-[6px] sm:gap-[7px]" : "gap-[8px]",
+      )}
+    >
+      <BrandMark className={size === "header" ? "h-[25px] w-[31px] sm:h-[29px] sm:w-[36px]" : "h-[32px] w-[40px]"} />
+      <span
+        className={cx(
+          "font-wordmark font-semibold leading-none tracking-[-0.06em] text-brand-word",
+          size === "header" ? "text-[28px] sm:text-[32px]" : "text-[36px]",
+        )}
+      >
+        {PLATFORM_NAME}
       </span>
     </span>
+  );
+}
+
+/**
+ * 헤더 로고 — 좁은 화면은 심볼 + tbyb, sm 부터 오른쪽에 태그라인 "써 보고, 나의 기준으로."
+ * (320·390px 에서는 테마 스위처와 한 줄에 들어가야 해서 태그라인을 뺀다)
+ */
+export function HeaderLockup() {
+  return (
+    <span className="flex min-w-0 items-center gap-3">
+      <Mark size="header" />
+      <span aria-hidden className="hidden h-6 w-px shrink-0 bg-line-strong sm:block" />
+      <span className="hidden truncate text-[13px] font-semibold leading-tight text-sub sm:block">{PLATFORM_TAGLINE}</span>
+    </span>
+  );
+}
+
+/** 푸터 로고 — 심볼 + tbyb 아래에 태그라인 */
+export function FooterLockup() {
+  return (
+    <div>
+      <Mark size="footer" />
+      <p className="mt-3 text-[15px] font-semibold text-ink">{PLATFORM_TAGLINE}</p>
+    </div>
   );
 }

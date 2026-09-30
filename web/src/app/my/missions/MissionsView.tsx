@@ -8,7 +8,6 @@ import {
   MISSIONS,
   MISSION_OPEN,
   PICK_LABEL,
-  REWARD_AMOUNT_LABEL,
   REWARD_RULE,
   STATUS_FLOW,
   answerMission,
@@ -25,7 +24,16 @@ import {
 import { apply, useDemo } from "@/lib/store";
 import { fmtDateTime } from "@/lib/format";
 import { GiftEnvelope, MissionIcon } from "@/components/illustrations";
-import { AnswerDetails, PICKS, PickChip, RewardStatusChip, missionTitle, pickSolidTone } from "@/components/mission";
+import {
+  AnswerDetails,
+  PICKS,
+  PickChip,
+  RewardAmount,
+  RewardFlow,
+  RewardStatusChip,
+  missionTitle,
+  pickSolidTone,
+} from "@/components/mission";
 import { BackLink, NotFound, myHref, useIdParam } from "@/components/reservation";
 import {
   ButtonLink,
@@ -143,9 +151,12 @@ function RewardCard({ r, open }: { r: Reservation; open: boolean }) {
             </h2>
             <RewardStatusChip status={status} />
           </div>
-          <p className="mt-1 text-[18px] font-extrabold text-coral-ink">{REWARD_AMOUNT_LABEL}</p>
+          <RewardAmount className="mt-1 text-[18px]" />
         </div>
       </div>
+
+      {/* 금액 미정 → 확인 순서: 미션 기록 → 반납 점검 → 운영자 확인 (지금 단계 표시) */}
+      <RewardFlow r={r} className="mt-5" />
 
       <div className="mt-5 rounded-2xl bg-surface/85 p-4 sm:p-5">
         <div className="flex items-baseline justify-between gap-3">

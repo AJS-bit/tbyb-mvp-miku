@@ -11,12 +11,12 @@ import {
   ChoiceChip,
   DeviceTag,
   ErrorText,
-  Eyebrow,
   FadeUp,
   Field,
   Icon,
   Input,
   Notice,
+  Pill,
   RadioRow,
   Row,
   ScorePicker,
@@ -43,6 +43,7 @@ import {
   type Score,
   type Usage,
 } from '@/domain';
+import { FIRST_PACK } from '@/lib/brand';
 import { formatDateKey, formatDateTime, weekday } from '@/lib/format';
 import { haptic } from '@/lib/haptics';
 import { apply, selectReservation, useApp } from '@/lib/store';
@@ -84,7 +85,13 @@ function Hero({ onRequest }: { onRequest: () => void }) {
       <BrandLockup />
       <HeroIllustration style={{ marginHorizontal: -6 }} />
       <View style={{ gap: 10 }}>
-        <Eyebrow color={c.coralInk}>Two Macs · 01</Eyebrow>
+        {/* 플랫폼(tbyb) 아래 첫 비교팩 — MacBook 은 플랫폼 이름이 아니라 첫 번째 비교팩이다 */}
+        <Row gap={8} style={{ flexWrap: 'wrap' }}>
+          <Pill label={FIRST_PACK} bg={c.coralSoft} fg={c.coralInk} />
+          <T variant="footnote" weight="600">
+            MacBook Air · MacBook Pro 14형
+          </T>
+        </Row>
         <T variant="display" accessibilityRole="header">
           {'맥은 처음이어도\n괜찮아요'}
         </T>
@@ -108,13 +115,15 @@ function Hero({ onRequest }: { onRequest: () => void }) {
 }
 
 // 소개 페이지 확정 문구(SPEC.md 「다듬기 · 소개 페이지 문구」)와 같은 내용 — 제목만 앱에 맞게 해요체로
-const STEPS: { title: string; body: string; extra?: string }[] = [
+const STEPS: { title: string; body: string; extra?: string; extraSub?: string }[] = [
   { title: '일정만 골라요', body: '희망 날짜와 픽업 매장만 고르면 돼요. 이름이나 전화번호는 받지 않아요.' },
   { title: '두 대가 준비되면 결제해요', body: '운영자가 Air와 Pro를 함께 준비하면 결제를 안내해 드려요. 결제가 확인되면 예약이 확정돼요.' },
   {
     title: '평소처럼 쓰면서 미션을 해요',
     body: '가방에 넣고 나가 보고, 영상도 틀어 보고, 메모도 써 보세요. 더 마음에 든 쪽을 고르기만 하면 돼요.',
-    extra: `미션 리워드 ${REWARD_AMOUNT_LABEL}`,
+    // 리워드는 정해진 약속처럼 보이지 않게: 금액 미정을 먼저, 검토 흐름(미션 → 반납 점검 → 운영자 확인)을 함께
+    extra: `미션 리워드 · ${REWARD_AMOUNT_LABEL}`,
+    extraSub: '미션을 마치고 신청하면, 반납한 기기를 점검한 뒤 운영자가 확인해요.',
   },
   {
     title: '마지막 날 정해요',
@@ -143,6 +152,7 @@ function Story() {
                   {st.extra}
                 </T>
               ) : null}
+              {st.extraSub ? <T variant="caption">{st.extraSub}</T> : null}
             </View>
           </Row>
         ))}
@@ -256,7 +266,7 @@ function RequestForm() {
   };
 
   return (
-    <Section eyebrow="Request · 04" title="언제부터 써 볼까요?" caption="요청을 보내 주시면, 두 대를 준비한 뒤 안내해 드릴게요. 결제가 확인되면 예약이 확정돼요.">
+    <Section eyebrow="Request · 04" title="언제부터 써 볼까요?" caption="요청은 이 기기에 저장돼요. 진행 상황은 내 체험에서 이어서 볼 수 있어요.">
       <Card style={{ gap: 26, paddingVertical: 22 }}>
         <Field label="희망 시작일" required hint="운영자가 직접 고쳐 두는 달력이라 실제 재고와 다를 수 있어요.">
           <ScrollView
@@ -313,7 +323,7 @@ function RequestForm() {
             <T variant="caption">일요일에는 픽업이 없어요 (데모 가정)</T>
           </Row>
           {selectedDay?.status === 'check' ? (
-            <Notice tone="warn">확인이 필요한 날짜예요. 매장과 기기를 확인한 뒤 가능한지 알려 드릴게요.</Notice>
+            <Notice tone="warn">확인이 필요한 날짜예요. 운영자가 매장과 기기를 확인하면, 결과는 내 체험에서 이어서 볼 수 있어요.</Notice>
           ) : null}
         </Field>
 

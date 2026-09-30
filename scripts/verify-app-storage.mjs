@@ -3,7 +3,9 @@
 // + 리워드 검토 메모·표시(flag)는 고객 화면에 나오지 않는다 (거절 사유만 고객에게 보인다).
 // + 화면 모드(시스템/라이트/다크): 고른 값은 새로고침 뒤에도 남고, 저장 실패 시 이번 실행에만 적용 + 저장 오류 표시,
 //   기기 설정이 다크(colorScheme: 'dark')면 첫 화면 바탕이 다크.
-// + 노트북 화면 문구·브랜드 워드마크가 고운바탕(같은 사이트의 ttf)으로 그려지는지.
+// + 노트북 화면 문구가 고운바탕(같은 사이트의 ttf)으로 그려지는지, tbyb 워드마크(Georgia 계열 세리프)·태그라인이 보이는지.
+// + 내 체험 첫 화면(체험 중): 주 버튼이 딱 하나(다음 행동 — 아직 안 한 첫 핵심 미션 열기), 긴 진행 단계는 접혀 있음.
+// + "써 보고 고르는 맥북"(예전 태그라인)이 어느 화면·문서 제목·빌드 파일에도 없음, 리워드 1,000원은 '검토 중인 예'로만.
 //
 // 사용 (저장소 루트에서):
 //   (cd app && rm -rf dist && EXPO_BASE_URL=/tbyb-mvp-miku/app npx expo export --platform web --output-dir dist)
@@ -11,7 +13,7 @@
 //   node scripts/verify-app-storage.mjs <공개 URL>   # 예: https://ajs-bit.github.io/tbyb-mvp-miku/app/
 //   VERIFY_DEBUG=1 node scripts/verify-app-storage.mjs   # 실패 시 Playwright 호출 로그 전체 출력
 import { createServer } from 'node:http';
-import { readFile, stat } from 'node:fs/promises';
+import { readFile, readdir, stat } from 'node:fs/promises';
 import { extname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium, expect } from '../web/node_modules/@playwright/test/index.mjs';
@@ -278,8 +280,14 @@ await check('초기화 중 UI 키만 실패 → 저장된 도메인 초기화는
 // 고객 화면 — 화면마다 다 그려졌는지 확인할 글자
 const CUSTOMER_PAGES = { 'my/': '요청 내용', missions: '미션 리워드', 'decide/': '기기별 결과' };
 const FLAG_TEXTS = Object.values(D.REWARD_FLAG_LABEL);
+// 내 체험의 "진행 상황 자세히"(진행 단계·요청 내용)는 접혀 있다 — 펼친 뒤에 읽어야 이력까지 살펴볼 수 있다
+const DETAILS = (page) => page.getByRole('button', { name: '진행 상황 자세히', exact: true });
 async function customerText(page, path) {
   await page.goto(`${base}${path}`, { waitUntil: 'domcontentloaded', timeout: 60_000 });
+  if (path === 'my/') {
+    await DETAILS(page).click();
+    await expect(DETAILS(page)).toHaveAttribute('aria-expanded', 'true');
+  }
   await page.getByText(CUSTOMER_PAGES[path]).first().waitFor();
   return page.evaluate(() => document.body.innerText);
 }
@@ -324,7 +332,7 @@ await check('리워드 거절 → 거절 사유는 미션 탭 리워드 카드�
 });
 
 // ───────── 글꼴·브랜드 ─────────
-await check('노트북 화면 문구·브랜드 워드마크 — 고운바탕(자체 호스팅 ttf)으로 그려짐', async () => {
+await check('노트북 화면 문구 — 고운바탕(자체 호스팅 ttf) · tbyb 워드마크 — Georgia 세리프 + 태그라인', async () => {
   const page = await newPage(browser, null);
   const fontRequests = [];
   page.on('response', (r) => /GowunBatang-Bold-subset.*\.ttf/.test(r.url()) && fontRequests.push(r.status()));
@@ -336,14 +344,88 @@ await check('노트북 화면 문구·브랜드 워드마크 — 고운바탕(�
     const family = await el.evaluate((n) => getComputedStyle(n).fontFamily);
     if (!family.includes('GowunBatang_700Bold')) throw new Error(`'${line}' 글꼴이 고운바탕이 아님: ${family}`);
   }
-  const mark = await page.getByText('Try Before You Buy', { exact: true }).first().evaluate((n) => getComputedStyle(n).fontFamily);
-  if (!mark.includes('GowunBatang_700Bold')) throw new Error(`워드마크 글꼴이 고운바탕이 아님: ${mark}`);
+  // 플랫폼 로고: 소문자 tbyb (Georgia 600, 자간 -0.06em) + 태그라인. MacBook 은 '첫 비교팩'으로 따로 부른다.
+  const word = page.getByText('tbyb', { exact: true }).first();
+  await expect(word).toBeVisible();
+  const style = await word.evaluate((n) => { const cs = getComputedStyle(n); return { family: cs.fontFamily, weight: cs.fontWeight, ls: parseFloat(cs.letterSpacing), size: parseFloat(cs.fontSize) }; });
+  if (!/^Georgia/.test(style.family)) throw new Error(`워드마크 글꼴이 Georgia 가 아님: ${style.family}`);
+  if (+style.weight !== 600) throw new Error(`워드마크 굵기가 600 이 아님: ${style.weight}`);
+  if (Math.abs(style.ls / style.size + 0.06) > 0.005) throw new Error(`워드마크 자간이 -0.06em 이 아님: ${style.ls}px / ${style.size}px`);
+  await expect(page.getByRole('heading', { name: 'tbyb, 써 보고, 나의 기준으로.' })).toBeVisible();
+  await expect(page.getByText('첫 비교팩', { exact: true }).first()).toBeVisible();
   // 글꼴 파일이 실제로 받아지고(같은 사이트) 브라우저가 불러온 상태
   await expect
     .poll(() => page.evaluate(() => [...document.fonts].some((f) => f.family.replace(/["']/g, '') === 'GowunBatang_700Bold' && f.status === 'loaded')), { timeout: 20_000 })
     .toBe(true);
   if (!fontRequests.length || fontRequests.some((st) => st >= 400)) throw new Error(`글꼴 파일 응답: ${fontRequests.join(', ') || '요청 없음'}`);
   await page.context().close();
+});
+
+// ───────── 내 체험 첫 화면: 인사 + 다음 행동 하나 ─────────
+const primaryButtons = (page) => page.locator('[data-testid="button-primary"]').filter({ visible: true });
+
+await check('내 체험(체험 중) → 인사 + 주 버튼 딱 하나(아직 안 한 첫 핵심 미션), 진행 단계는 접힘 → 펼치면 보임', async () => {
+  // 들고 나가 보기는 이미 답함 → 다음은 '같은 영상 틀어 보기'
+  const T0 = new Date(Date.now() - 2 * 24 * H);
+  const s = ok(D.answerMission(trialState(T0), 'TB-0001', { id: 'carry', pick: 'air' }, new Date(T0.getTime() + H)));
+  const page = await newPage(browser, s);
+  await page.goto(`${base}my/`, { waitUntil: 'domcontentloaded', timeout: 60_000 });
+  await expect(page.getByText('오늘의 두 맥은 어땠나요?')).toBeVisible();
+  await expect(page.getByText('오늘 해 볼 미션 하나', { exact: true })).toBeVisible();
+  await expect(primaryButtons(page)).toHaveCount(1);
+  const next = primaryButtons(page).first();
+  await expect(next).toHaveAccessibleName('이 미션 하러 가기');
+  await expect(page.getByText(D.MISSIONS.find((m) => m.id === 'video').title, { exact: true })).toBeVisible();
+  // 첫 비교팩 요약: Air·Pro 칩
+  await expect(page.getByText('첫 비교팩', { exact: true })).toBeVisible();
+  await expect(page.getByText(D.DEVICE_LABEL.air, { exact: true }).first()).toBeVisible();
+  await expect(page.getByText(D.DEVICE_LABEL.pro, { exact: true }).first()).toBeVisible();
+  // 진행 단계·요청 내용은 접혀 있다가 펼치면 보인다
+  await expect(DETAILS(page)).toHaveAttribute('aria-expanded', 'false');
+  await expect(page.getByText('요청 내용', { exact: true })).toHaveCount(0);
+  await DETAILS(page).click();
+  await expect(page.getByText('요청 내용', { exact: true })).toBeVisible();
+  await expect(page.getByRole('list', { name: '진행 단계' })).toBeVisible();
+  await expect(primaryButtons(page)).toHaveCount(1);
+  // 다음 행동 → 그 미션 시트
+  await next.click();
+  await expect(page).toHaveURL(/mission\/video/);
+  await expect(page.getByRole('button', { name: '답 저장', exact: true })).toBeVisible();
+  await page.context().close();
+});
+
+// 예전 태그라인이 플랫폼과 첫 비교팩을 섞었다 (TETO 교차 리뷰 ①) — 화면·문서 제목·설명·빌드 파일 어디에도 없어야 한다
+const OLD_TAGLINE = '써 보고 고르는 맥북';
+await check(`"${OLD_TAGLINE}" 없음 (모든 화면 · 제목 · 설명 · 빌드 파일) · 리워드 1,000원은 '검토 중인 예'로만`, async () => {
+  if (local) {
+    const files = [];
+    const walk = async (dir) => {
+      for (const e of await readdir(dir, { withFileTypes: true })) {
+        const f = join(dir, e.name);
+        if (e.isDirectory()) await walk(f);
+        else if (/\.(html|js|json|css)$/.test(e.name)) files.push(f);
+      }
+    };
+    await walk(resolve(ROOT, 'app/dist'));
+    for (const f of files) if ((await readFile(f, 'utf8')).includes(OLD_TAGLINE)) throw new Error(`빌드 파일에 예전 태그라인: ${f}`);
+  }
+  const pages = ['', 'my/', 'missions', 'decide/', 'simulator', 'mission/carry'];
+  for (const seed of [null, readyState()]) {
+    const page = await newPage(browser, seed);
+    for (const path of pages) {
+      await page.goto(`${base}${path}`, { waitUntil: 'domcontentloaded', timeout: 60_000 });
+      await page.waitForFunction(() => document.documentElement.dataset.themeReady === '1');
+      await page.waitForTimeout(400);
+      if (path === 'my/' && seed) await DETAILS(page).click();
+      const text = await page.evaluate(() => `${document.title}\n${document.querySelector('meta[name="description"]')?.content ?? ''}\n${document.body.innerText}`);
+      if (text.includes(OLD_TAGLINE)) throw new Error(`${path || '/'}: 예전 태그라인이 보임`);
+      // 1,000원은 확정 금액처럼 보이면 안 된다 — 나올 때마다 바로 앞이 '검토 중인 예: '
+      const bare = [...text.matchAll(/1,000원/g)].filter((m) => !text.slice(0, m.index).endsWith('검토 중인 예: '));
+      if (bare.length) throw new Error(`${path || '/'}: '검토 중인 예' 없이 1,000원이 보임 (${bare.length}곳)`);
+      if (/마치면 드려요/.test(text)) throw new Error(`${path || '/'}: 리워드를 확정처럼 약속하는 문구`);
+    }
+    await page.context().close();
+  }
 });
 
 // ───────── 화면 모드 ─────────

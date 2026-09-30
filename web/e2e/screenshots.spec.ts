@@ -22,6 +22,8 @@ import {
 } from "../src/lib/domain";
 
 // docs/screenshots/web-*.png (라이트) · web-dark-*.png (다크) 를 만든다. 상태는 domain 함수로 직접 만들어 localStorage 에 넣는다.
+// tbyb 헤더 로고: web-brand-header-{320,390,1280}.png · web-dark-brand-header-*.png (맨 위 데모 막대 + 헤더만 잘라서, 2배)
+// FAQ 펼침: web-intro-faq.png · web-dark-intro-faq.png
 // 테마는 저장값 없이 '시스템'으로 두고 prefers-color-scheme 를 흉내 내 고른다.
 const OUT = join(process.cwd(), "..", "docs", "screenshots");
 const THEMES = [
@@ -97,13 +99,17 @@ async function seed(page: Page, s: DemoState) {
   );
 }
 
-async function shot(page: Page, file: string, scheme: "light" | "dark") {
+async function prepare(page: Page, scheme: "light" | "dark") {
   await expect(page.locator("html")).toHaveAttribute("data-theme", scheme);
   await page.evaluate(() => document.fonts.ready);
   // 포커스 링·호버·전환 중 색이 찍히지 않게 정리하고, 고정 헤더가 중간에 찍히지 않게 맨 위에서 캡처
   await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
   await page.mouse.move(0, 0);
   await page.evaluate(() => window.scrollTo(0, 0));
+}
+
+async function shot(page: Page, file: string, scheme: "light" | "dark") {
+  await prepare(page, scheme);
   await page.screenshot({ path: join(OUT, `${file}.png`), fullPage: true, animations: "disabled" });
 }
 
@@ -168,6 +174,46 @@ for (const { scheme, prefix } of THEMES) {
         await page.getByRole("button", { name: "+ 영상·과제엔 Air로 충분했어요" }).click();
         await expect(page.getByTestId("return-plan")).toContainText("반납할 기기: MacBook Pro 14형");
         await shot(page, `${prefix}decide`, scheme);
+      });
+    });
+
+    test.describe("tbyb 헤더 로고", () => {
+      test.use({ deviceScaleFactor: 2 });
+
+      for (const width of [320, 390, 1280]) {
+        test(`${width}px`, async ({ page }) => {
+          await page.setViewportSize({ width, height: 720 });
+          await page.goto("");
+          await expect(page.getByRole("banner").getByTestId("brand-lockup")).toBeVisible();
+          await prepare(page, scheme);
+          const header = (await page.getByRole("banner").boundingBox())!;
+          await page.screenshot({
+            path: join(OUT, `${prefix}brand-header-${width}.png`),
+            clip: { x: 0, y: 0, width, height: Math.ceil(header.y + header.height) },
+            animations: "disabled",
+          });
+        });
+      }
+    });
+
+    test.describe("FAQ", () => {
+      test.use({ viewport: MOBILE, deviceScaleFactor: 2 });
+
+      test("미리 알아두면 좋아요 — 첫 질문과 리워드 질문 펼침", async ({ page }) => {
+        await page.goto("");
+        const faq = page.locator("section", { has: page.getByTestId("faq") });
+        await faq.locator("summary").nth(0).click();
+        await faq.locator("summary").nth(3).click();
+        await expect(faq.locator("details[open]")).toHaveCount(2);
+        await prepare(page, scheme);
+        // 요소 캡처는 스크롤 위치에 따라 고정 헤더가 겹쳐 찍히므로, 맨 위에서 전체 페이지 기준으로 잘라 찍는다
+        const box = (await faq.boundingBox())!;
+        await page.screenshot({
+          path: join(OUT, `${prefix}intro-faq.png`),
+          fullPage: true,
+          clip: { x: 0, y: Math.floor(box.y) - 24, width: MOBILE.width, height: Math.ceil(box.height) + 48 },
+          animations: "disabled",
+        });
       });
     });
 

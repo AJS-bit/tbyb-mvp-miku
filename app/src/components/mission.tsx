@@ -89,6 +89,56 @@ export function RewardStatusPill({ status }: { status: RewardStatus }) {
   return <Pill label={REWARD_STATUS_LABEL[status]} bg={t.bg} fg={t.fg} />;
 }
 
+// ───────── 리워드 검토 흐름 ─────────
+// 리워드는 정해진 약속이 아니다: 금액 미정 · 미션을 마치고 신청 → 반납한 기기 점검 → 운영자 확인 순서로 정해진다.
+
+const FLOW = ['미션·코드 신청', '반납 점검', '운영자 확인'] as const;
+
+/** 지금 몇 번째 단계인지 (-1 = 체험 전 미리 보기, 3 = 확인 끝) */
+export function rewardStage(r: Reservation | undefined): number {
+  if (!r) return -1;
+  const s = r.reward.status;
+  if (s === 'approved' || s === 'rejected') return 3;
+  if (s === 'submitted') return r.status === 'inspecting' || r.status === 'completed' ? 2 : 1;
+  return MISSION_OPEN.includes(r.status) ? 0 : -1;
+}
+
+export function RewardFlow({ stage }: { stage: number }) {
+  const styles = useStyles();
+  const { c } = useTheme();
+  return (
+    <View
+      style={styles.flow}
+      accessible
+      accessibilityLabel={`리워드는 이렇게 정해져요: ${FLOW.map((f, i) => `${i + 1}. ${f}${i < stage ? ' 완료' : i === stage ? ' 지금 단계' : ''}`).join(', ')}`}>
+      {FLOW.map((label, i) => {
+        const done = i < stage;
+        const now = i === stage;
+        return (
+          <View key={label} style={styles.flowStep}>
+            <View style={styles.flowTop}>
+              <View style={[styles.flowLine, i === 0 && { opacity: 0 }, (done || now) && { backgroundColor: c.coral }]} />
+              <View style={[styles.flowDot, done && { backgroundColor: c.coral, borderColor: c.coral }, now && { borderColor: c.coral, backgroundColor: c.coralSoft }]}>
+                {done ? (
+                  <Icon ios="checkmark" web="check" size={10} color={c.onCoral} />
+                ) : (
+                  <T variant="caption" weight="800" color={now ? c.coralInk : c.sub} style={{ fontSize: 11, lineHeight: 14 }}>
+                    {i + 1}
+                  </T>
+                )}
+              </View>
+              <View style={[styles.flowLine, i === FLOW.length - 1 && { opacity: 0 }, done && { backgroundColor: c.coral }]} />
+            </View>
+            <T variant="caption" weight={now ? '800' : '600'} color={now ? c.coralInk : done ? c.ink : c.sub} style={{ textAlign: 'center' }}>
+              {label}
+            </T>
+          </View>
+        );
+      })}
+    </View>
+  );
+}
+
 // ───────── 리워드 카드 ─────────
 
 export function RewardCard({ r }: { r: Reservation }) {
@@ -126,11 +176,13 @@ export function RewardCard({ r }: { r: Reservation }) {
         <View style={{ flex: 1, gap: 3, paddingRight: 44 }}>
           <Eyebrow color={c.coralInk}>Mission reward</Eyebrow>
           <T variant="title3">미션 리워드</T>
-          <T variant="headline" color={c.coralInk}>
-            {REWARD_AMOUNT_LABEL}
-          </T>
         </View>
       </Row>
+      {/* 금액 미정을 먼저 — 1,000원은 검토 중인 예일 뿐 (도메인 REWARD_AMOUNT_LABEL). 한 줄에 들어가게 카드 폭 전체를 쓴다 */}
+      <T variant="headline" color={c.coralInk}>
+        {REWARD_AMOUNT_LABEL}
+      </T>
+      <RewardFlow stage={rewardStage(r)} />
       <Row gap={8} style={{ flexWrap: 'wrap' }}>
         <T variant="footnote" weight="600">
           지금 상태
@@ -174,8 +226,8 @@ export function RewardCard({ r }: { r: Reservation }) {
         </Notice>
       ) : status === 'approved' ? (
         // 승인 메모는 운영자 전용이라 보여 주지 않는다
-        <Notice tone="done" title="확인이 끝났어요">
-          리워드를 드리기로 했어요. 데모라서 실제로 지급되지는 않아요.
+        <Notice tone="done" title="운영자 확인이 끝났어요">
+          리워드를 드리기로 했어요. 금액과 지급 방식은 아직 정하는 중이고, 데모라서 실제로 지급되지는 않아요.
         </Notice>
       ) : (
         <Notice tone="info" title="이번에는 리워드를 드리지 못해요">
@@ -347,37 +399,6 @@ export function MissionList({ r, preview }: { r: Reservation; preview?: boolean 
   );
 }
 
-// ───────── 내 체험: 미션 진행 요약 ─────────
-
-export function MissionProgressCard({ r }: { r: Reservation }) {
-  const { c } = useTheme();
-  const p = missionProgress(r);
-  return (
-    <Card style={{ gap: 14 }}>
-      <Row gap={14}>
-        <ProgressRing done={p.done} total={p.total} size={66} stroke={7} complete={p.done === p.total} />
-        <View style={{ flex: 1, gap: 4 }}>
-          <Eyebrow color={c.coralInk}>Missions</Eyebrow>
-          <T variant="headline">
-            {p.done === p.total ? '핵심 미션을 모두 했어요' : p.done === 0 ? '쉬운 미션부터 시작해 볼까요?' : `핵심 미션을 ${p.done}개 했어요`}
-          </T>
-          <Row gap={6} style={{ flexWrap: 'wrap' }}>
-            <T variant="caption">리워드</T>
-            <RewardStatusPill status={r.reward.status} />
-          </Row>
-        </View>
-      </Row>
-      <View style={{ gap: 2 }}>
-        <T variant="footnote">{`핵심 미션 ${p.total}개를 하고 바탕화면 코드를 적으면 리워드를 신청할 수 있어요.`}</T>
-        <T variant="footnote" weight="700" color={c.coralInk}>
-          {REWARD_AMOUNT_LABEL}
-        </T>
-      </View>
-      <Button small label="미션 하러 가기" icon={['checklist', 'checklist']} onPress={() => router.navigate('/missions')} />
-    </Card>
-  );
-}
-
 // ───────── 결정·반납: 미션 답 모아 보기 ─────────
 
 export function MissionDigest({ r }: { r: Reservation }) {
@@ -463,6 +484,20 @@ const useStyles = themed(({ c, shadow }) =>
     },
     rewardArt: { position: 'absolute', top: 12, right: 12 },
     reqBox: { backgroundColor: c.coralWash, borderRadius: 14, padding: 12, gap: 10 },
+    flow: { flexDirection: 'row', alignItems: 'flex-start' },
+    flowStep: { flex: 1, alignItems: 'center', gap: 5 },
+    flowTop: { flexDirection: 'row', alignItems: 'center', alignSelf: 'stretch' },
+    flowLine: { flex: 1, height: 2, backgroundColor: c.line },
+    flowDot: {
+      width: 22,
+      height: 22,
+      borderRadius: 11,
+      borderWidth: 1.5,
+      borderColor: c.lineStrong,
+      backgroundColor: c.surface,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
     reqDot: {
       width: 20,
       height: 20,

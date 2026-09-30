@@ -185,7 +185,7 @@ export const STATUS_HELP: Record<ReservationStatus, string> = {
   in_trial: '평소처럼 써 보면서 미션을 하나씩 해 보세요. 마지막 날에는 미션 답을 보며 결정하면 돼요.',
   return_received: '반납을 받았어요. 기기마다 상태를 점검할게요.',
   inspecting: '기기 상태와 구성품, 로그아웃과 초기화 여부를 점검하고 있어요.',
-  completed: '체험이 끝났어요. 7일 뒤와 30일 뒤에 짧은 설문을 보내 드릴게요.',
+  completed: '체험이 끝났어요. 실제 서비스에서는 7일 뒤와 30일 뒤에 짧은 설문을 보낼 예정이에요.',
   cancelled: '취소된 요청이에요.',
 };
 
@@ -342,7 +342,7 @@ export const RUSHED_MINUTES = 10;
 
 // 기기를 고를 때 같은 기준으로 확인할 점 — 수치 없이 확인 포인트만 제시
 export const COMPARE_POINTS: { title: string; air: string; pro: string }[] = [
-  { title: '칩·메모리·저장공간', air: '딜러 재고가 정해지면 기기마다 알려 드려요', pro: '딜러 재고가 정해지면 기기마다 알려 드려요' },
+  { title: '칩·메모리·저장공간', air: '딜러 재고가 정해지면 기기마다 표시할 예정이에요', pro: '딜러 재고가 정해지면 기기마다 표시할 예정이에요' },
   { title: '오래 쓸 때 발열·소음', air: '팬이 없어요. 무거운 작업을 오래 돌려 보세요', pro: '팬이 있어요. 같은 작업에서 속도가 유지되는지 보세요' },
   { title: '화면', air: '같은 문서와 영상으로 읽기 편한지 보세요', pro: '고주사율 ProMotion 화면이에요. 스크롤이 얼마나 부드러운지 느껴 보세요' },
   { title: '포트', air: '자주 쓰는 주변기기를 연결할 수 있는지 확인해 보세요', pro: 'HDMI 포트나 SD 카드 슬롯이 필요한지 생각해 보세요' },

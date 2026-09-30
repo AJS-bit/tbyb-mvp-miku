@@ -371,3 +371,46 @@ export function GiftEnvelope({ className }: { className?: string }) {
     </svg>
   );
 }
+
+// ───────── 히어로 아래 신뢰 한 줄: 작은 아이콘 3개 (32 기준 선 1.6) ─────────
+
+export type TrustArt = "sameDay" | "experience" | "local";
+
+const tk = (fill = "none") => st(C.line, fill, 1.6);
+
+const TRUST_ART: Record<TrustArt, ReactNode> = {
+  // 두 대를 같은 하루에 — 해 하나 아래 나란히 놓인 Air(청록)·Pro(보라) 화면
+  sameDay: (
+    <>
+      <circle cx="16" cy="7" r="3.4" {...fl(C.amber)} />
+      <rect x="3" y="13" width="11.5" height="8.5" rx="1.6" {...tk(C.airSoft)} />
+      <path d="M1.6 24.5h14.3" {...tk()} />
+      <rect x="17.5" y="13" width="11.5" height="8.5" rx="1.6" {...tk(C.proSoft)} />
+      <path d="M16.1 24.5h14.3" {...tk()} />
+    </>
+  ),
+  // 스펙보다 내 경험 — 말풍선 속 작은 하트(느낀 대로)
+  experience: (
+    <>
+      <path d="M7 6h18a3.5 3.5 0 0 1 3.5 3.5v10A3.5 3.5 0 0 1 25 23h-9.5L10 27.5V23H7a3.5 3.5 0 0 1-3.5-3.5v-10A3.5 3.5 0 0 1 7 6Z" {...tk(C.coralSoft)} />
+      <path d="M16 19c-2.7-1.8-4-3.3-4-4.9a2.1 2.1 0 0 1 4-.7 2.1 2.1 0 0 1 4 .7c0 1.6-1.3 3.1-4 4.9Z" {...fl(C.coral)} />
+    </>
+  ),
+  // 기록은 이 기기에만 — 자물쇠
+  local: (
+    <>
+      <path d="M11 14.5V11a5 5 0 0 1 10 0v3.5" {...tk()} />
+      <rect x="7" y="14.5" width="18" height="13" rx="3" {...tk(C.warnSoft)} />
+      <circle cx="16" cy="20" r="1.7" {...fl(C.line)} />
+      <path d="M16 21v2.6" {...tk()} />
+    </>
+  ),
+};
+
+export function TrustIcon({ art, className }: { art: TrustArt; className?: string }) {
+  return (
+    <svg viewBox="0 0 32 32" fill="none" className={className} aria-hidden focusable="false">
+      {TRUST_ART[art]}
+    </svg>
+  );
+}

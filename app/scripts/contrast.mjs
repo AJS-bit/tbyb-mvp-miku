@@ -12,6 +12,7 @@
 process.removeAllListeners('warning');
 process.on('warning', (w) => w.code !== 'MODULE_TYPELESS_PACKAGE_JSON' && console.warn(w));
 const { PALETTES } = await import('../src/lib/palette.ts');
+const { BRAND } = await import('../src/lib/brand.ts');
 
 const MIN = { text: 4.5, large: 3, ui: 3, info: 0 };
 
@@ -57,6 +58,12 @@ const PAIRS = [
   ['text', 'sub', 'coralWash', '리워드 조건 칸 "아직"'],
   ['text', 'ink', 'coralSoft', '진행 단계 03 번호'],
   ['text', 'ink', 'warnBg', '판매 확인 칸 본문'],
+
+  // ── tbyb 로고 (라이트: forest·apricot / 다크: 크림 반전) ──
+  ['large', 'brandWord', 'bg', '워드마크 tbyb (34px Georgia 600) — 비교팩 맨 위 (라이트 forest · 다크 크림)'],
+  ['ui', 'brandMark', 'bg', '심볼 왼쪽 프레임 · 가운데 점 (라이트 forest · 다크 sage)'],
+  ['ui', 'brandMark', 'sunk', '첫 비교팩 요약 칸의 작은 심볼 (내 체험)'],
+  ['info', 'brandAccent', 'bg', '심볼 오른쪽 프레임 (apricot) — 로고라 대비 기준 예외, 모양은 왼쪽 프레임·점으로도 읽힘'],
 
   // ── 큰 제목 ──
   ['large', 'ink', 'bg', '탭 큰 제목 · 히어로 제목 (29px)'],
@@ -122,6 +129,20 @@ for (const [name, p] of Object.entries(PALETTES)) {
   }
 }
 
+// 팔레트의 브랜드 토큰은 lib/brand.ts 값 그대로여야 한다 (라이트 = MARK.svg forest·apricot, 다크 = MARK_DARK.svg sage·apricot + 크림 워드마크)
+const BRAND_TOKENS = {
+  light: { brandWord: BRAND.forest, brandMark: BRAND.forest, brandAccent: BRAND.apricot },
+  dark: { brandWord: BRAND.cream, brandMark: BRAND.sage, brandAccent: BRAND.apricot },
+};
+for (const [scheme, want] of Object.entries(BRAND_TOKENS)) {
+  for (const [k, v] of Object.entries(want)) {
+    if (PALETTES[scheme][k]?.toUpperCase() !== v.toUpperCase()) {
+      console.log(`FAIL ${scheme}.${k} = ${PALETTES[scheme][k]} — 브랜드 값 ${v} 과 다름`);
+      failed++;
+    }
+  }
+}
+
 const counts = { light: 0, dark: 0 };
 for (const scheme of ['light', 'dark']) {
   const p = PALETTES[scheme];
@@ -142,7 +163,27 @@ for (const scheme of ['light', 'dark']) {
     }
   }
 }
+// ── 앱 아이콘·스플래시 (테마와 상관없는 고정 그림 — scripts/brand-icons.mjs) ──
+const ASSET_PAIRS = [
+  ['ui', BRAND.forest, BRAND.cream, '아이콘·라이트 스플래시: 심볼 왼쪽 프레임·점 / 크림 바탕'],
+  ['info', BRAND.apricot, BRAND.cream, '아이콘·라이트 스플래시: 심볼 오른쪽 프레임 — 로고 예외'],
+  ['ui', BRAND.sage, BRAND.forest, '다크 스플래시: 심볼 왼쪽 프레임·점(sage) / forest 바탕'],
+  ['info', BRAND.apricot, BRAND.forest, '다크 스플래시: 심볼 오른쪽 프레임(apricot) — 로고 예외'],
+];
+console.log('\n── 브랜드 그림 (고정) ──');
+let assetEnforced = 0;
+for (const [kind, fg, bg, where] of ASSET_PAIRS) {
+  const r = ratio(fg, bg);
+  const ok = r >= MIN[kind];
+  if (kind !== 'info') assetEnforced++;
+  if (!ok) failed++;
+  if (!ok || all || kind === 'info') {
+    const tag = kind === 'info' ? 'INFO' : ok ? 'PASS' : 'FAIL';
+    console.log(`${tag} ${kind.padEnd(5)} ${r.toFixed(2).padStart(5)}:1  ${fg} / ${bg}  — ${where}`);
+  }
+}
+
 const enforced = PAIRS.filter(([k]) => k !== 'info').length;
-console.log(`\n검사한 쌍: 테마마다 ${enforced}개 (text ${PAIRS.filter(([k]) => k === 'text').length} · large ${PAIRS.filter(([k]) => k === 'large').length} · ui ${PAIRS.filter(([k]) => k === 'ui').length}) + 참고 ${PAIRS.length - enforced}개`);
+console.log(`\n검사한 쌍: 테마마다 ${enforced}개 (text ${PAIRS.filter(([k]) => k === 'text').length} · large ${PAIRS.filter(([k]) => k === 'large').length} · ui ${PAIRS.filter(([k]) => k === 'ui').length}) + 참고 ${PAIRS.length - enforced}개 · 브랜드 그림 ${assetEnforced}개 + 참고 ${ASSET_PAIRS.length - assetEnforced}개`);
 console.log(failed ? `기준 미달 ${failed}건` : '모두 기준 통과');
 process.exit(failed ? 1 : 0);

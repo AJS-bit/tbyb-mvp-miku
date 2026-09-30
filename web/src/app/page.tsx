@@ -1,32 +1,44 @@
-import {
-  CORE_MISSIONS,
-  MISSIONS,
-  PICK_LABEL,
-  REWARD_AMOUNT_LABEL,
-  REWARD_RULE,
-  type Pick,
-} from "@/lib/domain";
-import { Fragment } from "react";
-import { UNDECIDED } from "@/lib/copy";
+import Link from "next/link";
+import { Fragment, type ReactNode } from "react";
+import { MISSIONS, PICK_LABEL, REWARD_RULE, type Pick } from "@/lib/domain";
+import { DEALER_UNDECIDED } from "@/lib/copy";
 import { ButtonLink, Eyebrow, Tag, cx, delay } from "@/components/ui";
-import { GiftEnvelope, HeroIllustration, MissionIcon, StepIcon, type StepArt } from "@/components/illustrations";
+import { RewardAmount, RewardFlowIntro } from "@/components/mission";
+import {
+  GiftEnvelope,
+  HeroIllustration,
+  MissionIcon,
+  StepIcon,
+  TrustIcon,
+  type StepArt,
+  type TrustArt,
+} from "@/components/illustrations";
 
+// 히어로 바로 아래 신뢰 한 줄 — 짧은 가치 세 개 (TETO 사이트의 장점을 우리 모양으로)
+// 좁은 화면에서는 세 칸이 좁아서, 말의 호흡대로 두 줄로 나눈다
+const TRUST: { art: TrustArt; label: [string, string] }[] = [
+  { art: "sameDay", label: ["두 대를", "같은 하루에"] },
+  { art: "experience", label: ["스펙보다", "내 경험"] },
+  { art: "local", label: ["기록은", "이 기기에만"] },
+];
+
+// 실제 후기가 아니라 상상한 예시 — 이름표 앞에 '예:'를 붙인다 (SPEC 'tbyb 브랜드 적용' ④)
 const WORRIES = [
   {
     quote: "유튜브랑 과제 정도인데, Pro까지 필요할까?",
-    who: "맥은 처음인 새내기",
+    who: "예: 맥은 처음인 새내기",
     tone: "bg-air-soft",
     mark: "text-air-ink",
   },
   {
     quote: "가벼운 게 좋을까, 화면 큰 게 좋을까?",
-    who: "매일 가방을 드는 직장인",
+    who: "예: 매일 가방을 드는 직장인",
     tone: "bg-pro-soft",
     mark: "text-pro-ink",
   },
   {
     quote: "리뷰는 다 좋다는데, 나한테는?",
-    who: "리뷰 영상만 한참 본 사람",
+    who: "예: 리뷰 영상만 한참 본 사람",
     tone: "bg-coral-soft",
     mark: "text-coral-ink",
   },
@@ -64,6 +76,69 @@ const pickTone: Record<Pick, string> = {
   unsure: "bg-surface text-mute-ink ring-1 ring-inset ring-line-strong",
 };
 
+// 미리 알아두면 좋아요 — 예전 '아직 정해지지 않았어요' 상자는 첫 질문 답에 합쳤다 (같은 말을 두 번 하지 않게)
+const FAQ: { q: string; tag?: string; a: ReactNode }[] = [
+  {
+    q: "지금 예약·결제할 수 있나요?",
+    a: (
+      <>
+        <p>
+          아직은 시연용 데모라서 실제 예약이나 결제는 할 수 없어요. 일정 요청은 이 기기에만 저장되고, 운영자가 맡는 다음 단계는{" "}
+          <Link href="/ops/" className="font-semibold text-ink underline underline-offset-4">
+            운영 시뮬레이터
+          </Link>
+          에서 직접 넘겨 볼 수 있어요.
+        </p>
+        <p className="mt-3">요금과 조건도 아직 정하는 중이에요. 아래 항목은 딜러와 계약한 뒤에 정해지고, 그 전까지는 금액을 표시하지 않아요.</p>
+        <ul className="mt-3 flex flex-wrap gap-1.5" aria-label="딜러와 계약한 뒤 정해지는 것">
+          {DEALER_UNDECIDED.map((x) => (
+            <li key={x} className="rounded-full bg-warn-bg px-3 py-1 text-[13px] font-semibold text-warn ring-1 ring-warn-line">
+              {x}
+            </li>
+          ))}
+        </ul>
+      </>
+    ),
+  },
+  {
+    q: "맥이 처음인데 괜찮을까요?",
+    a: (
+      <p>
+        괜찮아요. 요청할 때 무엇에 쓸지 몰라도 돼요. &lsquo;잘 모르겠어요&rsquo;가 기본으로 골라져 있어요. 픽업하는 날에는 켜고 끄는 법이나
+        트랙패드 쓰는 법도 편하게 물어보세요.
+      </p>
+    ),
+  },
+  {
+    q: "한 대를 사면 반납은 어떻게 하나요?",
+    a: (
+      <>
+        <p>
+          사기로 한 한 대는 그대로 두고, 나머지 한 대와 구성품만 돌려주면 돼요. 돌려주기 전에 백업하고, 로그아웃과 &lsquo;나의 찾기&rsquo;
+          해제를 해 주세요. 초기화는 점검할 때 운영자가 확인해요.
+        </p>
+        <p className="mt-3">
+          딜러가 판매를 확인하지 못하면 고른 기기도 돌려주셔야 해요. 사는 선택지는 딜러의 판매 조건이 정해진 뒤에 고를 수 있어요.
+        </p>
+      </>
+    ),
+  },
+  {
+    q: "리워드는 어떻게 받나요?",
+    tag: "금액 미정",
+    a: <p>{REWARD_RULE}</p>,
+  },
+  {
+    q: "기록은 어디에 저장되나요?",
+    a: (
+      <p>
+        지금 쓰고 있는 이 브라우저에만 저장돼요. 서버로 보내지 않고, 분석 도구도 쓰지 않아요. 그래서 다른 기기나 브라우저에서는 보이지 않고,
+        브라우저 데이터를 지우면 함께 사라져요. 운영 시뮬레이터의 &lsquo;데모 데이터 초기화&rsquo;로 한 번에 지울 수도 있어요.
+      </p>
+    ),
+  },
+];
+
 function SectionHead({ eyebrow, title, children, className }: { eyebrow: string; title: React.ReactNode; children?: React.ReactNode; className?: string }) {
   return (
     <div className={className}>
@@ -77,45 +152,72 @@ function SectionHead({ eyebrow, title, children, className }: { eyebrow: string;
 export default function Home() {
   return (
     <div className="space-y-24 sm:space-y-32">
-      {/* 히어로 */}
-      <section className="grid items-center gap-8 pt-2 lg:grid-cols-[1fr_1.05fr] lg:gap-6">
-        <div>
-          <Eyebrow className="fade-up mb-5">
-            <span>
-              Try before you buy<span className="hidden sm:inline"> · MacBook Air &amp; Pro 14</span>
-            </span>
-          </Eyebrow>
-          <h1 className="fade-up text-[40px] font-extrabold leading-[1.2] text-ink sm:text-[58px]" style={delay(1)}>
-            사기 전에,
-            <br />
-            먼저 같이
-            <br className="sm:hidden" /> 지내 봐요
-          </h1>
-          <p className="fade-up mt-6 max-w-md text-[17px] leading-[1.8] text-sub sm:text-[18px]" style={delay(2)}>
-            맥은 처음이어도 괜찮아요. MacBook Air와 14형 Pro를 함께 빌려 평소처럼 써 보고, 마음이 가는 쪽을 천천히
-            고르세요.
-          </p>
-          <div className="fade-up mt-8 flex flex-col gap-3 sm:flex-row" style={delay(3)}>
-            <ButtonLink href="/request/" className="sm:px-7">
-              데모 일정 요청
-            </ButtonLink>
-            <ButtonLink href="/pack/" variant="secondary" className="sm:px-7">
-              비교팩 둘러보기
-            </ButtonLink>
+      <div>
+        {/* 히어로 — 플랫폼은 tbyb, 여기서 보여 주는 MacBook 두 대는 '첫 비교팩'이다 */}
+        <section className="grid items-center gap-8 pt-2 lg:grid-cols-[1fr_1.05fr] lg:gap-6">
+          <div>
+            <Eyebrow className="fade-up mb-5">
+              <span data-testid="hero-eyebrow" className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                <span className="rounded-full bg-coral-soft px-2.5 py-0.5 text-[12px] tracking-[0.02em] text-coral-ink">첫 비교팩</span>
+                <span>MacBook Air &amp; 14형 Pro</span>
+              </span>
+            </Eyebrow>
+            <h1 className="fade-up text-[40px] font-extrabold leading-[1.2] text-ink sm:text-[58px]" style={delay(1)}>
+              사기 전에,
+              <br />
+              먼저 같이
+              <br className="sm:hidden" /> 지내 봐요
+            </h1>
+            <p className="fade-up mt-6 max-w-md text-[17px] leading-[1.8] text-sub sm:text-[18px]" style={delay(2)}>
+              맥은 처음이어도 괜찮아요. MacBook Air와 14형 Pro를 함께 빌려 평소처럼 써 보고, 마음이 가는 쪽을 천천히
+              고르세요.
+            </p>
+            <div className="fade-up mt-8 flex flex-col gap-3 sm:flex-row" style={delay(3)}>
+              <ButtonLink href="/request/" className="sm:px-7">
+                데모 일정 요청
+              </ButtonLink>
+              <ButtonLink href="/pack/" variant="secondary" className="sm:px-7">
+                비교팩 둘러보기
+              </ButtonLink>
+            </div>
+            <p className="fade-up mt-5 text-sm text-sub" style={delay(4)}>
+              이름이나 전화번호 없이 요청할 수 있어요
+            </p>
           </div>
-          <p className="fade-up mt-5 text-sm text-sub" style={delay(4)}>
-            이름이나 전화번호 없이 요청할 수 있어요
-          </p>
-        </div>
-        <div className="fade-up -mx-2 sm:mx-0" style={delay(2)}>
-          <HeroIllustration className="mx-auto h-auto w-full max-w-[560px]" />
-        </div>
-      </section>
+          <div className="fade-up -mx-2 sm:mx-0" style={delay(2)}>
+            <HeroIllustration className="mx-auto h-auto w-full max-w-[560px]" />
+          </div>
+        </section>
+
+        {/* 신뢰 한 줄 — 히어로 바로 아래, 짧은 가치 세 개 */}
+        <ul
+          aria-label="tbyb로 고르는 방법"
+          data-testid="trust-line"
+          className="fade-up mt-10 grid grid-cols-3 divide-x divide-line rounded-[28px] border border-line bg-surface/70 py-4 sm:mt-14 sm:py-5"
+          style={delay(4)}
+        >
+          {TRUST.map((t) => (
+            <li key={t.art} className="flex flex-col items-center gap-2 px-1.5 text-center sm:flex-row sm:justify-center sm:gap-3 sm:px-4 sm:text-left">
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-mute-soft">
+                <TrustIcon art={t.art} className="h-7 w-7" />
+              </span>
+              <span className="text-[13px] font-bold leading-snug text-ink sm:text-[15px]">
+                {t.label[0]}
+                <br className="sm:hidden" /> {t.label[1]}
+              </span>
+            </li>
+          ))}
+        </ul>
+      </div>
 
       {/* 이런 고민 */}
       <section aria-labelledby="worry" className="grid gap-8 lg:grid-cols-[minmax(0,340px)_1fr] lg:gap-14">
         <SectionHead eyebrow="Sound familiar? · 01" title={<span id="worry">이런 고민 해 본 적 있죠?</span>}>
-          스펙표만 봐서는 답이 잘 나오지 않아요. 두 대를 내 일상에서 직접 써 보면, 답은 생각보다 쉽게 나와요.
+          <p>스펙표만 봐서는 답이 잘 나오지 않아요. 두 대를 내 일상에서 직접 써 보면, 답은 생각보다 쉽게 나와요.</p>
+          {/* 인용 카드가 실제 후기처럼 보이지 않게 — 상상한 예시라고 밝힌다 */}
+          <p data-testid="worry-note" className="mt-4 inline-flex rounded-full bg-cream px-3.5 py-1.5 text-[13px] font-semibold leading-snug text-sub">
+            이런 고민을 상상했어요. 실제 후기는 아니에요.
+          </p>
         </SectionHead>
         <ul className="grid gap-4 sm:grid-cols-3">
           {WORRIES.map((w, i) => (
@@ -200,42 +302,50 @@ export default function Home() {
         </ul>
       </section>
 
-      {/* 리워드 */}
+      {/* 리워드 — 금액은 미정이고, 미션 기록 → 반납 점검 → 운영자 확인을 거쳐 지급 여부를 정한다. 자세한 규칙(REWARD_RULE)은 FAQ 한 곳에 */}
       <section
         aria-labelledby="reward"
+        data-testid="reward-intro"
         className="grid items-center gap-8 rounded-[40px] bg-coral-soft px-6 py-12 sm:px-12 sm:py-14 lg:grid-cols-[auto_1fr] lg:gap-14"
       >
-        <GiftEnvelope className="mx-auto h-auto w-40 sm:w-52" />
-        <div>
+        <GiftEnvelope className="mx-auto h-auto w-36 sm:w-48" />
+        <div className="min-w-0">
           <Eyebrow tone="coral" className="mb-3">
             A small thank-you · 04
           </Eyebrow>
           <h2 id="reward" className="text-[28px] font-extrabold leading-[1.3] text-ink sm:text-[36px]">
-            미션 {CORE_MISSIONS.length}개를 마치면, 작은 리워드를 드려요
+            솔직한 기록에는 <br className="sm:hidden" />
+            작은 리워드를 드리려고 해요
           </h2>
-          <p className="mt-4 inline-flex rounded-full bg-surface px-4 py-2 text-[17px] font-extrabold text-coral-ink ring-1 ring-coral/30">
-            {REWARD_AMOUNT_LABEL}
-          </p>
-          <p className="mt-4 max-w-2xl text-[16px] leading-[1.75] text-ink/80">{REWARD_RULE}</p>
+          <RewardAmount pill className="mt-4 text-[17px]" />
+          <RewardFlowIntro className="mt-6" />
         </div>
       </section>
 
-      {/* 미확정 */}
-      <section aria-labelledby="tbd" className="rounded-[32px] border border-warn-line bg-warn-bg px-6 py-8 sm:px-10">
-        <p className="eyebrow text-warn">Not decided yet</p>
-        <h2 id="tbd" className="mt-2 text-[22px] font-extrabold text-warn">
-          아직 정해지지 않았어요
-        </h2>
-        <ul className="mt-4 flex flex-wrap gap-2">
-          {UNDECIDED.map((x) => (
-            <li key={x} className="rounded-full bg-surface/80 px-3 py-1 text-sm font-semibold text-warn ring-1 ring-warn-line">
-              {x}
-            </li>
+      {/* 미리 알아두면 좋아요 — 키보드로도 여닫히는 기본 details/summary */}
+      <section aria-labelledby="faq" className="grid gap-8 lg:grid-cols-[minmax(0,340px)_1fr] lg:gap-14">
+        <SectionHead eyebrow="Before you start · 05" title={<span id="faq">미리 알아두면 좋아요</span>}>
+          처음 써 보는 분들이 많이 궁금해할 것들을 모았어요.
+        </SectionHead>
+        <div className="space-y-3" data-testid="faq">
+          {FAQ.map((f) => (
+            <details key={f.q} className="group rounded-3xl border border-line bg-surface transition-shadow open:shadow-(--shadow-card)">
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-4 rounded-3xl px-5 py-4 text-[16px] font-bold leading-snug text-ink transition-colors hover:bg-cream/60 sm:px-6 sm:py-5 sm:text-[17px] [&::-webkit-details-marker]:hidden">
+                <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                  {f.q}
+                  {f.tag ? <Tag tone="coral">{f.tag}</Tag> : null}
+                </span>
+                <span aria-hidden className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-mute-soft text-ink">
+                  <svg viewBox="0 0 16 16" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+                    <path d="M3 8h10" />
+                    <path d="M8 3v10" className="origin-center transition-transform group-open:scale-y-0" />
+                  </svg>
+                </span>
+              </summary>
+              <div className="px-5 pb-5 text-[15px] leading-[1.75] text-sub sm:px-6 sm:pb-6">{f.a}</div>
+            </details>
           ))}
-        </ul>
-        <p className="mt-4 text-[15px] leading-relaxed text-warn">
-          모두 딜러와 계약한 뒤에 정해져요. 그 전까지는 금액을 표시하지 않아요.
-        </p>
+        </div>
       </section>
 
       {/* 마무리 CTA */}
@@ -253,7 +363,7 @@ export default function Home() {
             골라도 늦지 않아요
           </h2>
           <p className="mx-auto mt-4 max-w-md text-[15px] leading-relaxed text-on-feature/70">
-            요청을 보내 주시면, 두 대를 준비한 뒤 안내해 드릴게요.
+            요청은 이 기기에 저장돼요. 다음 단계는 &lsquo;내 체험&rsquo;과 운영 시뮬레이터에서 이어서 볼 수 있어요.
           </p>
           <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
             <ButtonLink href="/request/" variant="light" className="sm:px-8">

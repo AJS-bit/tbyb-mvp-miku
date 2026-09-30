@@ -254,6 +254,7 @@ export function Button({
   small,
   accessibilityHint,
   style,
+  testID,
 }: {
   label: string;
   onPress?: () => void;
@@ -263,6 +264,8 @@ export function Button({
   small?: boolean;
   accessibilityHint?: string;
   style?: StyleProp<ViewStyle>;
+  /** 기본값 button-<variant> — 웹 빌드 검증(verify-app-storage)이 화면의 주 버튼 수를 센다 */
+  testID?: string;
 }) {
   const s = useStyles();
   const buttons = useButtons();
@@ -278,6 +281,7 @@ export function Button({
       accessibilityHint={accessibilityHint}
       disabled={disabled}
       onPress={onPress}
+      testID={testID ?? `button-${variant}`}
       style={({ pressed }) => [
         s.button,
         small && s.buttonSmall,
