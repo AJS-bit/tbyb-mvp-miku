@@ -317,9 +317,9 @@ export const MISSIONS: MissionDef[] = [
 
 export const CORE_MISSIONS: MissionId[] = MISSIONS.filter((m) => !m.optional).map((m) => m.id);
 
-export const REWARD_AMOUNT_LABEL = '1,000원 (가정 · 금액 미정)';
+export const REWARD_AMOUNT_LABEL = '금액 미정 (검토 중인 예: 1,000원)';
 export const REWARD_RULE =
-  '체험 한 번에 한 번 신청할 수 있고, 반납 점검이 끝나면 운영자가 확인한 뒤 드려요. 데모라서 실제로 지급되지는 않아요. 비슷했거나 잘 모르겠다는 답도 솔직하면 충분해요.';
+  '체험 한 번에 한 번 신청할 수 있어요. 반납 점검이 끝나면 운영자가 기록을 확인하고, 리워드 금액과 지급 방식은 아직 정하는 중이에요. 데모라서 실제로 지급되지는 않아요. 비슷했거나 잘 모르겠다는 답도 솔직하면 충분해요.';
 export const REWARD_REJECT_NOTE_VISIBLE = '거절 사유는 고객에게 보여요. 승인 메모는 운영자만 봐요.';
 export const REWARD_STATUS_LABEL: Record<RewardStatus, string> = {
   none: '아직 신청 전',
