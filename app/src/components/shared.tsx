@@ -20,7 +20,7 @@ export function ReservationSwitcher({ list, currentId }: { list: Reservation[]; 
   return (
     <View style={{ gap: 8 }}>
       <T variant="footnote" weight="600">
-        요청 {list.length}건 — 볼 요청을 고르세요
+        요청이 {list.length}건 있어요. 볼 요청을 골라 주세요.
       </T>
       <ScrollView
         horizontal

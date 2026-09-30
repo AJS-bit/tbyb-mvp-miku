@@ -142,7 +142,7 @@ export function RewardCard({ r }: { r: Reservation }) {
         <>
           <View style={styles.reqBox}>
             <Requirement done={missionsDone} label={`핵심 미션 ${p.total}개`} detail={`${p.done}/${p.total}`} />
-            <Requirement done={codeDone} label="바탕화면 코드 두 개" detail={codeDone ? '적음' : '아직'} />
+            <Requirement done={codeDone} label="두 맥 바탕화면 코드" detail={codeDone ? '적었어요' : '아직'} />
           </View>
           <T variant="footnote">{REWARD_RULE}</T>
           <ErrorText message={error} />
@@ -158,28 +158,28 @@ export function RewardCard({ r }: { r: Reservation }) {
               />
               <T variant="caption" style={{ textAlign: 'center' }}>
                 {ready
-                  ? '신청하면 미션 답과 코드는 그대로 잠겨요.'
+                  ? '신청한 뒤에는 미션 답과 코드를 바꿀 수 없어요.'
                   : !missionsDone
                     ? `미션 ${p.total - p.done}개만 더 하면 신청할 수 있어요.`
                     : '바탕화면 코드를 적으면 신청할 수 있어요.'}
               </T>
             </>
           ) : (
-            <Notice tone="info">리워드 신청은 검수가 끝나기 전까지만 할 수 있어요.</Notice>
+            <Notice tone="info">점검이 끝나서 이번 체험의 리워드 신청은 닫혔어요.</Notice>
           )}
         </>
       ) : status === 'submitted' ? (
         <Notice tone="coral" title="신청했어요. 고마워요!">
-          {`${formatShortDateTime(r.reward.submittedAt)} 신청 · 반납 검수가 끝나면 운영자가 확인해요. 데모에서는 실제 지급이 없어요.`}
+          {`${formatShortDateTime(r.reward.submittedAt)}에 신청했어요. 반납한 기기 점검이 끝나면 운영자가 확인해요. 데모라서 실제로 지급되지는 않아요.`}
         </Notice>
       ) : status === 'approved' ? (
         // 승인 메모는 운영자 전용이라 보여 주지 않는다
         <Notice tone="done" title="확인이 끝났어요">
-          지급 예정으로 확인됐어요. 데모에서는 실제 지급이 없어요.
+          리워드를 드리기로 했어요. 데모라서 실제로 지급되지는 않아요.
         </Notice>
       ) : (
-        <Notice tone="info" title="이번에는 지급하지 않아요">
-          {r.reward.reviewNote ? `거절 사유: ${r.reward.reviewNote}` : '운영자가 확인한 결과 이번 체험에는 지급하지 않기로 했어요.'}
+        <Notice tone="info" title="이번에는 리워드를 드리지 못해요">
+          {r.reward.reviewNote ? `거절 사유: ${r.reward.reviewNote}` : '운영자가 확인한 뒤, 이번 체험에는 리워드를 드리지 않기로 했어요.'}
         </Notice>
       )}
     </View>
@@ -238,7 +238,7 @@ export function CodeCard({ r }: { r: Reservation }) {
         <Eyebrow>Wallpaper code</Eyebrow>
         <T variant="title3">바탕화면 코드</T>
         <T variant="callout" color={t.c.sub}>
-          픽업할 때 두 맥 바탕화면에 적힌 4자리 코드를 적어 주세요. 운영자가 리워드를 확인할 때 참고해요.
+          두 맥 바탕화면에 떠 있는 4자리 코드를 적어 주세요. 리워드를 확인할 때 참고해요.
         </T>
       </View>
       <Row gap={10} style={{ alignItems: 'flex-start' }}>
@@ -273,15 +273,15 @@ export function CodeCard({ r }: { r: Reservation }) {
         <Button
           variant={saved && !dirty ? 'secondary' : 'primary'}
           small
-          label={saving ? '저장 중…' : saved && !dirty ? '적어 두었어요' : saved ? '바뀐 코드 저장' : '코드 저장'}
+          label={saving ? '저장 중…' : saved && !dirty ? '적어 뒀어요' : saved ? '바뀐 코드 저장' : '코드 저장'}
           icon={saved && !dirty ? ['checkmark', 'check'] : undefined}
           onPress={save}
           disabled={saving || (!!saved && !dirty)}
         />
       ) : saved ? (
-        <T variant="footnote">리워드를 신청해서 적은 코드가 그대로 잠겼어요.</T>
+        <T variant="footnote">리워드를 신청한 뒤라 코드를 바꿀 수 없어요.</T>
       ) : null}
-      <T variant="caption">코드가 잘 안 보이면 맥을 켜고 바탕화면을 확인해 보세요. 헷갈리는 글자(0·O·1·I)는 쓰지 않아요.</T>
+      <T variant="caption">코드는 맥을 켜면 바탕화면에서 볼 수 있어요. 헷갈리기 쉬운 0·O·1·I는 코드에 쓰지 않아요.</T>
     </Card>
   );
 }
@@ -301,7 +301,7 @@ export function MissionList({ r, preview }: { r: Reservation; preview?: boolean 
             key={m.id}
             disabled={preview}
             accessibilityRole={preview ? undefined : 'button'}
-            accessibilityLabel={`미션 ${i + 1}. ${m.title}${optional ? ', 선택 미션' : ''}. ${a ? `내 답: ${PICK_LABEL[a.pick]}` : '아직 안 함'}`}
+            accessibilityLabel={`미션 ${i + 1}. ${m.title}${optional ? ', 선택 미션' : ''}. ${a ? `내 답: ${PICK_LABEL[a.pick]}` : '아직 안 했어요'}`}
             accessibilityHint={preview ? undefined : '미션 자세히 보기'}
             onPress={() => {
               haptic.select();
@@ -359,7 +359,7 @@ export function MissionProgressCard({ r }: { r: Reservation }) {
         <View style={{ flex: 1, gap: 4 }}>
           <Eyebrow color={c.coralInk}>Missions</Eyebrow>
           <T variant="headline">
-            {p.done === p.total ? '핵심 미션을 모두 했어요' : p.done === 0 ? '쉬운 미션부터 시작해 볼까요?' : `핵심 미션 ${p.done}개 했어요`}
+            {p.done === p.total ? '핵심 미션을 모두 했어요' : p.done === 0 ? '쉬운 미션부터 시작해 볼까요?' : `핵심 미션을 ${p.done}개 했어요`}
           </T>
           <Row gap={6} style={{ flexWrap: 'wrap' }}>
             <T variant="caption">리워드</T>
@@ -368,7 +368,7 @@ export function MissionProgressCard({ r }: { r: Reservation }) {
         </View>
       </Row>
       <View style={{ gap: 2 }}>
-        <T variant="footnote">{`핵심 미션 ${p.total}개와 바탕화면 코드를 채우면 리워드를 신청할 수 있어요.`}</T>
+        <T variant="footnote">{`핵심 미션 ${p.total}개를 하고 바탕화면 코드를 적으면 리워드를 신청할 수 있어요.`}</T>
         <T variant="footnote" weight="700" color={c.coralInk}>
           {REWARD_AMOUNT_LABEL}
         </T>
@@ -389,7 +389,7 @@ export function MissionDigest({ r }: { r: Reservation }) {
     return (
       <View style={{ gap: 10 }}>
         <T variant="callout" color={t.c.sub}>
-          아직 미션 답이 없어요. 미션 탭에서 쉬운 것부터 해 보면 여기에 모여요.
+          아직 미션 답이 없어요. 미션을 하나씩 하면 여기에 모여요.
         </T>
         {MISSION_OPEN.includes(r.status) ? (
           <Button small variant="secondary" label="미션 하러 가기" onPress={() => router.navigate('/missions')} />
@@ -434,7 +434,7 @@ export function MissionDigest({ r }: { r: Reservation }) {
           );
         })}
       </View>
-      <T variant="caption">{`미션 답 ${total}개 기준 · 비슷함·모르겠음도 그대로 셌어요`}</T>
+      <T variant="caption">{`답 ${total}개를 모았어요. '${PICK_LABEL.same}', '${PICK_LABEL.unsure}'도 그대로 셌어요.`}</T>
     </View>
   );
 }

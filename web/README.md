@@ -17,7 +17,8 @@ MacBook Air · 14형 Pro 비교팩 시연용 웹. Next.js(App Router) 정적 빌
 | `/my/record/?id=` | v1 주소 — `/my/missions/` 로 옮겨 준다 |
 
 규칙·문구·데모 데이터는 `src/lib/domain.ts`(= `../shared/domain.ts` 복사본)에서만 옵니다. 직접 고치지 말고 원본을 고친 뒤
-`../scripts/sync-domain.sh` 로 복사하세요. 화면 전용 문구는 `src/lib/copy.ts`.
+`../scripts/sync-domain.sh` 로 복사하세요. 화면 전용 문구는 `src/lib/copy.ts` 와 각 화면 파일.
+문구 다듬기(SPEC '다듬기 · 문장 원칙')로 바뀐 문장은 전·후를 `COPY_CHANGES.md` 에 모두 적어 두었습니다.
 
 ### 리워드·검토 표시를 다루는 방식
 
@@ -32,8 +33,18 @@ MacBook Air · 14형 Pro 비교팩 시연용 웹. Next.js(App Router) 정적 빌
 - 토큰: `src/app/globals.css` — 아이보리 바탕 `#FAF6EF`, 잉크 주 버튼, Air `#1E9E8A` · Pro `#6D4AFF` · 리워드 코랄 `#FF6B4A`.
   작은 글자용 `*-ink` 색은 흰 바탕·아이보리 바탕에서 4.5:1 이상으로 맞췄습니다.
 - 글: 큰 굵은 한글 제목(자간 -0.02em) + 작은 영문 대문자 아이브로우(`Eyebrow`), 본문 16–17px/행간 1.7, `word-break: keep-all`.
+- 명조(세리프): **고운바탕 Bold** (`font-serif`, `--font-serif`) — 노트북 화면 문구, "이런 고민 해 본 적 있죠?" 인용 카드 문장,
+  로고 워드마크에만 씁니다. 본문은 기존 산세리프 그대로입니다. 아래 '글꼴' 참고.
+- 로고: `src/components/Brand.tsx` — 겹쳐 선 노트북 두 대(앞 왼쪽 얇은 Air 청록 · 뒤 오른쪽 Pro 보라) + 코랄 반짝임, 워드마크
+  "Try Before You Buy"(고운바탕) + 태그라인 "써 보고 고르는 맥북". 원본 SVG·앱 아이콘·파비콘은 `../shared/brand/`(README 있음).
+  색은 `--brand-*` 변수라 라이트/다크를 따라가고(다크는 받침이 크림색), 겹친 틈은 마스크로 비워 어느 바탕에서도 보입니다.
+  헤더·푸터에 쓰고, 파비콘은 `src/app/icon.svg`(아이보리 타일 + 마크), apple-touch 는 `src/app/apple-icon.png`(180, 앱 아이콘과 같은 그림) —
+  Next 메타데이터 파일 규칙이라 basePath 가 자동으로 붙습니다.
 - 일러스트: `src/components/illustrations.tsx` — 히어로(기울어진 두 노트북·해), 미션 아이콘 6개, 흐름 아이콘 4개, 선물 봉투, 작은 노트북.
-  직접 그린 인라인 SVG이며 Apple 로고·제품 사진은 쓰지 않습니다.
+  직접 그린 인라인 SVG이며 Apple 로고·제품 사진은 쓰지 않습니다. **기울인 그림은 히어로 하나뿐**입니다(비교팩의 작은 노트북·미션 아이콘은 똑바로).
+  히어로 화면 문구(SPEC 확정): Air "오늘은 어디로 갈까?" · Pro "오늘은 어디까지 해 볼까?" — 작은 "오늘은" 위에 큰 두 줄을 얹어
+  대비되는 말(어디로 · 어디까지)이 두 화면의 같은 자리에 오게 했고, 화면 오른쪽 아래에 작은 AIR / PRO 표시가 있습니다.
+  Air 화면 청록(`--ill-air-screen*`)은 흰 글자가 읽히도록 브랜드 청록보다 한 단계 깊습니다(글자 자리 약 3.9:1, 큰 글자).
 - 움직임: `.fade-up` 페이드업 — `prefers-reduced-motion: reduce` 이면 움직이지 않습니다.
 
 ## 다크 모드 (SPEC.md '다크 모드')
@@ -53,7 +64,7 @@ MacBook Air · 14형 Pro 비교팩 시연용 웹. Next.js(App Router) 정적 빌
 - **색**: `globals.css` 의 `:root[data-theme="dark"]` 에서 같은 `--color-*` 변수를 덮어씁니다 — `bg-bg`·`text-ink` 등 유틸리티는 그대로.
   새 토큰: `field`(글자 입력칸 테두리, 3:1), `feature`/`on-feature`(마무리 CTA 판), `on-coral`(코랄 면 위 글자 — 흰 글자는 코랄 위에서 2.8:1).
   그림자는 `--shadow-card`·`--shadow-lift`, 일러스트 색은 `--ill-*` 변수(`illustrations.tsx` 는 `style` 로 받음 — SVG 속성 안 `var()` 는 브라우저마다 다름).
-  `dark:` 변형은 로고 겹침 섞기(곱하기 → 스크린)와 CTA 테두리처럼 변수로 못 바꾸는 곳에만 씁니다.
+  `dark:` 변형은 CTA 테두리처럼 변수로 못 바꾸는 곳에만 씁니다. 로고 색은 `--brand-*` 변수입니다.
 - **느낌**: 순검정·순백 없는 "밤에 켠 스탠드" — 갈색 기운 바탕 `#16130F`, 카드 `#221E19`, 크림 글자 `#F3ECE2`. 잉크 주 버튼은 크림 버튼 +
   어두운 글자로 뒤집히고, 마무리 CTA 는 코랄·청록 빛이 번지는 따뜻한 판이 됩니다. 일러스트는 선이 밝은 잉크, 해는 가장자리로 스러지는
   호박색 빛, 노트북 화면(청록·보라)은 채도를 낮췄습니다.
@@ -61,6 +72,16 @@ MacBook Air · 14형 Pro 비교팩 시연용 웹. Next.js(App Router) 정적 빌
   112개를 토큰 값으로 계산(겹친 반투명 바탕·투명 글자 합성 포함). 본문 4.5:1 · 큰 글자 3:1 · UI 경계·초점·상태 면 3:1 미달이면 종료 코드 1.
   비활성 컨트롤·그림 속 글자·장식 테두리는 WCAG 예외라 참고값만 보여 줍니다(`--all` 로 전체 표).
   E2E 의 `e2e/readability.ts` 는 브라우저에 실제로 그려진 모든 글자를 같은 기준으로 다시 잽니다.
+
+## 글꼴 · 라이선스
+
+- **고운바탕(Gowun Batang) Bold** — Copyright 2021 The Gowun Batang Project Authors (https://github.com/yangheeryu/Gowun-Batang).
+  **SIL Open Font License 1.1** 로 배포되는 글꼴입니다(전문: `node_modules/@fontsource/gowun-batang/LICENSE`, https://openfontlicense.org).
+  `@fontsource/gowun-batang`(npm) 로 **자체 호스팅**합니다 — `layout.tsx` 가 `@fontsource/gowun-batang/700.css` 를 불러오고, 글꼴 파일은
+  빌드 때 `out/_next/static/media/` 로 복사되어 상대 경로로 읽히므로 basePath(`/tbyb-mvp-miku`) 아래에서도 그대로 동작합니다. 외부 CDN 은 쓰지 않습니다.
+  한글은 unicode-range 조각으로 나뉘어 있어 화면에 쓰인 글자의 조각만 내려받습니다. 글꼴이 늦게 오면 `font-display: swap` 으로 명조 대체 글꼴이 먼저 보입니다.
+- 로고 워드마크(`../shared/brand/logo-lockup*.svg`)는 같은 글꼴을 윤곽선으로 바꾼 것입니다 — OFL 은 글꼴로 만든 결과물(로고·그림)에 제한을 두지 않습니다.
+  글꼴 파일 자체를 따로 팔거나 이름을 바꿔 다시 배포하지 않습니다.
 
 ## 실행
 
@@ -70,6 +91,7 @@ npm run dev          # http://localhost:3000
 npm run lint
 npx tsc --noEmit
 node scripts/contrast.mjs   # 두 테마 대비 확인
+node scripts/brand.mjs      # ../shared/brand/*.svg → 앱 아이콘·파비콘 PNG, src/app/icon.svg·apple-icon.png, 로고 시트 다시 만들기
 ```
 
 ## 정적 빌드

@@ -8,7 +8,7 @@ export type ScheduleResult =
   | { ok: false; error: string };
 
 export async function scheduleReminders(_items: ReminderItem[], _now: Date = new Date()): Promise<ScheduleResult> {
-  return { ok: false, error: '웹 미리보기에서는 알림을 예약하지 않습니다. 계획만 표시합니다.' };
+  return { ok: false, error: '웹 미리보기에서는 알림을 예약하지 않아요. 계획만 보여 드려요.' };
 }
 
 export async function cancelReminders(_ids: string[]): Promise<void> {}

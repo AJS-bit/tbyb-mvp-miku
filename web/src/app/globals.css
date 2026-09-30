@@ -20,6 +20,8 @@
   --font-sans: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Pretendard", system-ui, "Segoe UI",
     "Noto Sans KR", "Malgun Gothic", sans-serif;
   --font-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+  /* 고운바탕(SIL OFL 1.1) — @fontsource/gowun-batang 로 자체 호스팅(layout.tsx). 노트북 화면 문구 · "이런 고민" 인용 카드 · 로고 워드마크에만 쓴다 */
+  --font-serif: "Gowun Batang", "AppleMyungjo", "Nanum Myeongjo", "Noto Serif KR", serif;
 
   --color-bg: #faf6ef;
   --color-ivory: #faf6ef;
@@ -96,10 +98,11 @@
   --ill-pro-base: #4b443b;
   --ill-pro-hinge: #2a251f;
   --ill-screen-text: #ffffff;
-  --ill-air-screen: #1e9e8a;
+  /* Air 화면은 흰 글자(고운바탕)가 잘 읽히게 브랜드 청록보다 한 단계 깊게 — 글자 자리에서 약 3.9:1 이상 */
+  --ill-air-screen: #178a78;
   --ill-pro-screen: #6d4aff;
-  --ill-air-screen-a: #3dbba4;
-  --ill-air-screen-b: #1a8f7c;
+  --ill-air-screen-a: #2ca893;
+  --ill-air-screen-b: #148472;
   --ill-pro-screen-a: #8466ff;
   --ill-pro-screen-b: #5a36f0;
   /* 히어로 해 — 라이트는 꽉 찬 복숭아색 해 */
@@ -111,6 +114,15 @@
   --ill-sun-c-o: 1;
   --ill-orbit: #e7d8c4;
   --ill-shadow: rgb(31 27 22 / 0.075);
+
+  /* 로고 마크 (shared/brand/logo-mark.svg 와 같은 값) */
+  --brand-air-a: #3dbba4;
+  --brand-air-b: #1a8f7c;
+  --brand-pro-a: #8466ff;
+  --brand-pro-b: #5a36f0;
+  --brand-base: #1f1b16;
+  --brand-cam: #1f1b16;
+  --brand-spark: #ff6b4a;
 }
 
 /*
@@ -186,10 +198,10 @@
   --ill-pro-base: #3a332c;
   --ill-pro-hinge: #1b1814;
   --ill-screen-text: #f6efe4;
-  --ill-air-screen: #25897a;
+  --ill-air-screen: #1f7d6f;
   --ill-pro-screen: #5f4cc2;
-  --ill-air-screen-a: #35a592;
-  --ill-air-screen-b: #1b7668;
+  --ill-air-screen-a: #2b9281;
+  --ill-air-screen-b: #176a5d;
   --ill-pro-screen-a: #7864d8;
   --ill-pro-screen-b: #4f3bb3;
   /* 다크의 해 — 가장자리로 스러지는 은은한 호박색 빛 */
@@ -201,6 +213,15 @@
   --ill-sun-c-o: 0;
   --ill-orbit: #4a3f33;
   --ill-shadow: rgb(0 0 0 / 0.45);
+
+  /* 로고 마크 (shared/brand/logo-mark-dark.svg) — 받침은 크림, 화면은 눈부시지 않게 조금 낮춤 */
+  --brand-air-a: #3bb9a3;
+  --brand-air-b: #1e8d7b;
+  --brand-pro-a: #8a74f0;
+  --brand-pro-b: #5e44d8;
+  --brand-base: #ebe2d5;
+  --brand-cam: #16130f;
+  --brand-spark: #ff8a6b;
 }
 
 /* 테마를 바꾸는 순간에는 전환 효과를 끄고 한 번에 바꾼다 (theme.ts 가 잠깐 붙인다) */

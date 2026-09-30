@@ -44,11 +44,12 @@ const CHOICES: DecisionChoice[] = ["return_both", "buy_new", "buy_used", "undeci
 const KEYS: DeviceKey[] = ["air", "pro"];
 const isBuy = (c: DecisionChoice | "") => c === "buy_new" || c === "buy_used";
 
+// 구매 확정 조건은 아래 '반납 계획'에서 한 번만 말한다
 const CHOICE_HELP: Record<DecisionChoice, string> = {
   return_both: "두 기기 모두 돌려주고 체험을 마쳐요.",
-  buy_new: "체험한 두 대는 모두 반납하고, 고른 모델을 새 제품으로 사겠다고 알려요.",
-  buy_used: "쓰던 두 대 중 한 대를 그대로 사겠다고 고르고, 나머지 한 대만 반납해요. 딜러 판매가 확인돼야 구매로 확정돼요.",
-  undecided: "결정하지 못해도 괜찮아요. 두 기기는 모두 반납해요.",
+  buy_new: "고른 모델을 새 제품으로 사고 싶다고 알려요. 체험한 두 대는 모두 돌려줘요.",
+  buy_used: "써 본 두 대 중 한 대를 그대로 사고, 나머지 한 대만 돌려줘요.",
+  undecided: "못 정해도 괜찮아요. 두 기기는 모두 돌려주시면 돼요.",
 };
 
 /** 이유 빠른 선택 — 누르면 입력칸에 채워진다 (고쳐 써도 된다) */
@@ -84,7 +85,7 @@ function Decide({ r, state }: { r: Reservation; state: DemoState }) {
     <div className="mx-auto max-w-3xl">
       <BackLink href={myHref(r.id)}>{r.id} 내 체험</BackLink>
       <PageHeader eyebrow={`Last day · ${r.id}`} title="마지막 날, 어떻게 할까요?" aside={<StatusChip status={r.status} className="text-[13px]" />}>
-        미션에서 고른 답을 나란히 보고 정해요. 아직 모르겠어도 괜찮아요. 결정은 반납 접수 전까지 바꿀 수 있어요.
+        미션에서 고른 답을 나란히 보면서 정해 보세요. 아직 모르겠어도 괜찮아요. 결정은 반납하기 전까지 바꿀 수 있어요.
       </PageHeader>
 
       <div className="space-y-5">
@@ -114,8 +115,7 @@ function Decide({ r, state }: { r: Reservation; state: DemoState }) {
         {locked ? (
           <>
             <Notice tone="warn" title="지금은 결정을 남기거나 바꿀 수 없어요">
-              결정은 &lsquo;{STATUS_LABEL.in_trial}&rsquo; 단계(마지막 날)에 남겨요. 지금은 &lsquo;{STATUS_LABEL[r.status]}&rsquo;
-              단계예요.
+              결정은 &lsquo;{STATUS_LABEL.in_trial}&rsquo;일 때 남길 수 있어요. 지금은 &lsquo;{STATUS_LABEL[r.status]}&rsquo; 단계예요.
             </Notice>
             {r.decision ? <SavedDecision r={r} decision={r.decision} /> : null}
           </>
@@ -183,7 +183,7 @@ function DecisionForm({ r, dealerTermsConfirmed }: { r: Reservation; dealerTerms
     : undefined;
   const back = devicesToReturn(preview);
   const sale = saleDevice(preview);
-  const choiceText = choice ? decisionText(preview) : "아직 고르지 않음";
+  const choiceText = choice ? decisionText(preview) : "아직 고르지 않았어요";
 
   function addReason(text: string) {
     setSaved("");
@@ -199,11 +199,11 @@ function DecisionForm({ r, dealerTermsConfirmed }: { r: Reservation; dealerTerms
     e.preventDefault();
     setSaved("");
     if (!choice) return setError("결정을 하나 골라 주세요.");
-    if (confidence === null) return setError("체험 후 확신(1–5)을 골라 주세요.");
+    if (confidence === null) return setError("이 결정이 얼마나 확실한지 1–5 중에서 골라 주세요.");
     const res = apply((s, now) => setDecision(s, r.id, { choice, model: model || undefined, confidenceAfter: confidence, reason }, now));
     if (!res.ok) return setError(res.error);
     setError("");
-    setSaved("결정을 저장했어요. 반납 날 운영자가 확인해요. 반납 접수 전까지는 바꿀 수 있어요.");
+    setSaved("결정을 저장했어요. 반납하기 전까지는 언제든 바꿀 수 있어요.");
   }
 
   return (
@@ -213,10 +213,10 @@ function DecisionForm({ r, dealerTermsConfirmed }: { r: Reservation; dealerTerms
           <legend className="text-[19px] font-bold text-ink">어떻게 할까요?</legend>
           {!dealerTermsConfirmed ? (
             <p className="mt-1 mb-4 text-sm text-warn" id="dealer-tbd">
-              구매 선택지: {DEALER_TERMS_TBD}
+              사는 선택지는 아직 고를 수 없어요. {DEALER_TERMS_TBD}
             </p>
           ) : (
-            <p className="mt-1 mb-4 text-sm text-sub">딜러 판매 조건이 확정되어 구매 선택지가 열려 있어요(데모 설정).</p>
+            <p className="mt-1 mb-4 text-sm text-sub">딜러의 판매 조건이 정해져서, 사는 선택지도 고를 수 있어요. (데모 설정)</p>
           )}
           <div className="space-y-2">
             {CHOICES.map((c) => {
@@ -247,7 +247,7 @@ function DecisionForm({ r, dealerTermsConfirmed }: { r: Reservation; dealerTerms
                   />
                   <span>
                     <span className="block text-[16px] font-bold text-ink">{DECISION_LABEL[c]}</span>
-                    <span className="mt-0.5 block text-sm leading-relaxed text-sub">{disabled ? DEALER_TERMS_TBD : CHOICE_HELP[c]}</span>
+                    <span className="mt-0.5 block text-sm leading-relaxed text-sub">{disabled ? "딜러의 판매 조건이 정해지면 고를 수 있어요." : CHOICE_HELP[c]}</span>
                   </span>
                 </label>
               );
@@ -257,7 +257,7 @@ function DecisionForm({ r, dealerTermsConfirmed }: { r: Reservation; dealerTerms
 
         {isBuy(choice) ? (
           <fieldset className="mt-6">
-            <legend className="mb-2.5 text-[15px] font-bold text-ink">{choice === "buy_used" ? "쓰던 기기 중 구매할 쪽" : "새로 살 모델"}</legend>
+            <legend className="mb-2.5 text-[15px] font-bold text-ink">{choice === "buy_used" ? "그대로 살 기기" : "새로 살 모델"}</legend>
             <div className="grid grid-cols-2 gap-2">
               {KEYS.map((k) => (
                 <label
@@ -288,14 +288,14 @@ function DecisionForm({ r, dealerTermsConfirmed }: { r: Reservation; dealerTerms
         <div className="mt-6">
           <ScorePicker
             name="confidenceAfter"
-            legend="체험 후, 이 결정에 얼마나 확신하나요?"
+            legend="이 결정, 얼마나 확실해요?"
             value={confidence}
             onChange={(v) => {
               setConfidence(v);
               setSaved("");
             }}
-            lowLabel="전혀 모르겠음"
-            highLabel="아주 확실"
+            lowLabel="전혀 모르겠어요"
+            highLabel="아주 확실해요"
           />
         </div>
 
@@ -304,7 +304,7 @@ function DecisionForm({ r, dealerTermsConfirmed }: { r: Reservation; dealerTerms
             고른 이유 <span className="font-semibold text-coral-ink">(필수)</span>
           </label>
           <p id="reason-help" className="mt-0.5 text-sm text-sub">
-            한 줄이면 충분해요. 아래에서 눌러 채우고 고쳐 써도 돼요. 아직 모르겠다면 그 이유도 좋아요.
+            한 줄이면 충분해요. 아래 문장을 눌러 채운 뒤 고쳐 써도 돼요. 아직 모르겠다면 그 이유를 적어 주세요.
           </p>
           <ul className="mt-3 flex flex-wrap gap-2" aria-label="이유 빠른 선택">
             {REASON_CHIPS.map((c) => (
@@ -353,19 +353,19 @@ function DecisionForm({ r, dealerTermsConfirmed }: { r: Reservation; dealerTerms
                 <li key={k} className="flex flex-wrap items-center justify-between gap-2 rounded-2xl bg-bg px-4 py-3 text-[15px]">
                   <DeviceName kind={k} />
                   <span className={cx("font-semibold", back.includes(k) ? "text-ink" : "text-warn")}>
-                    {back.includes(k) ? "반납 · 검수" : k === sale ? "구매 선택 · 딜러 판매 확인 전" : "반납 · 검수"}
+                    {back.includes(k) ? "반납 · 점검" : k === sale ? "구매 · 딜러 확인 전" : "반납 · 점검"}
                   </span>
                 </li>
               ))}
             </ul>
             {choice === "buy_used" ? (
               <div className="mt-3 space-y-1 text-[15px] text-ink">
-                <p>{model ? "나머지 한 대와 부속품은 반납·검수해요." : "구매할 기기를 고르면, 나머지 한 대와 부속품은 반납·검수해요."}</p>
-                <p className="text-warn">고른 기기는 딜러 판매가 확인돼야 구매로 확정돼요. 확인되지 않으면 그 기기도 반납·검수해요.</p>
+                <p>{model ? "나머지 한 대와 구성품은 돌려주시면 돼요." : "살 기기를 고르면, 나머지 한 대와 구성품만 돌려주시면 돼요."}</p>
+                <p className="text-warn">고른 기기는 딜러가 판매를 확인하면 구매가 확정돼요. 확인되지 않으면 그 기기도 돌려주셔야 해요.</p>
               </div>
             ) : null}
             {choice === "buy_new" ? (
-              <p className="mt-3 text-[15px] text-ink">체험한 두 대와 부속품은 모두 반납해요. 새 제품은 딜러 판매 조건에 따라 안내해요.</p>
+              <p className="mt-3 text-[15px] text-ink">체험한 두 대와 구성품은 모두 돌려주시면 돼요. 새 제품은 딜러의 판매 조건에 맞춰 따로 안내해 드려요.</p>
             ) : null}
           </div>
         ) : (
@@ -373,7 +373,7 @@ function DecisionForm({ r, dealerTermsConfirmed }: { r: Reservation; dealerTerms
         )}
 
         <fieldset className="mt-6 rounded-2xl border border-line p-4 sm:p-5">
-          <legend className="px-1 text-[15px] font-bold text-ink">반납 전 개인정보 체크</legend>
+          <legend className="px-1 text-[15px] font-bold text-ink">돌려주기 전에 개인정보를 정리해 주세요</legend>
           <div className="space-y-2.5">
             {RETURN_PREP.map((p) => (
               <label key={p.key} className="flex cursor-pointer items-start gap-3 text-[15px] text-ink">
@@ -388,8 +388,8 @@ function DecisionForm({ r, dealerTermsConfirmed }: { r: Reservation; dealerTerms
             ))}
           </div>
           <p className="mt-3 text-xs leading-relaxed text-sub">
-            초기화(데이터 삭제)는 운영자가 반납 검수 때 기기에서 직접 확인해요. 이 체크는 준비 확인용이며, 체크했다고 데이터가
-            지워졌다는 뜻은 아니에요. (이 체크는 저장되지 않아요.)
+            초기화(데이터 삭제)는 반납 뒤 점검할 때 운영자가 기기에서 직접 확인해요. 여기 체크는 준비를 돕는 용도라 저장되지 않고,
+            체크했다고 데이터가 지워지는 것도 아니에요.
           </p>
         </fieldset>
       </Card>

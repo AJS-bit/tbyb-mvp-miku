@@ -1,9 +1,10 @@
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider as NavigationThemeProvider, type Theme as NavigationTheme } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import { CloseButton } from '@/components/header';
+import { SerifProvider, useAppFonts } from '@/lib/fonts';
 import { hydrate } from '@/lib/store';
 import { AppThemeProvider, useTheme } from '@/lib/theme-context';
 
@@ -13,17 +14,25 @@ SplashScreen.preventAutoHideAsync().catch(() => {});
 export const unstable_settings = { anchor: '(tabs)' };
 
 export default function RootLayout() {
+  const [hydrated, setHydrated] = useState(false);
+  // 고운바탕(노트북 화면 문구)은 앱을 막지 않는다 — 실패하거나 늦으면 시스템 글꼴로 먼저 보여 준다 (src/lib/fonts.tsx)
+  const fonts = useAppFonts();
+
   useEffect(() => {
-    // 저장본 복원(화면 모드 포함)이 끝날 때까지 스플래시를 유지한다
-    hydrate().finally(() => {
-      SplashScreen.hideAsync().catch(() => {});
-    });
+    hydrate().finally(() => setHydrated(true));
   }, []);
 
+  useEffect(() => {
+    // 저장본 복원(화면 모드 포함)과 글꼴 불러오기(최대 FONT_WAIT_MS)가 끝날 때까지 스플래시를 유지한다
+    if (hydrated && fonts.settled) SplashScreen.hideAsync().catch(() => {});
+  }, [hydrated, fonts.settled]);
+
   return (
-    <AppThemeProvider>
-      <RootStack />
-    </AppThemeProvider>
+    <SerifProvider ready={fonts.serifReady}>
+      <AppThemeProvider>
+        <RootStack />
+      </AppThemeProvider>
+    </SerifProvider>
   );
 }
 

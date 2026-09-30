@@ -2,11 +2,11 @@ import {
   CORE_MISSIONS,
   MISSIONS,
   PICK_LABEL,
-  PRICE_TBD,
   REWARD_AMOUNT_LABEL,
   REWARD_RULE,
   type Pick,
 } from "@/lib/domain";
+import { Fragment } from "react";
 import { UNDECIDED } from "@/lib/copy";
 import { ButtonLink, Eyebrow, Tag, cx, delay } from "@/components/ui";
 import { GiftEnvelope, HeroIllustration, MissionIcon, StepIcon, type StepArt } from "@/components/illustrations";
@@ -32,26 +32,27 @@ const WORRIES = [
   },
 ];
 
+// 문구는 SPEC.md '다듬기 · 소개 페이지 문구 (확정)' 그대로
 const STEPS: { art: StepArt; title: string; body: string }[] = [
   {
     art: "calendar",
     title: "일정 요청",
-    body: "희망 시작일과 픽업 매장만 골라요. 이름·전화번호는 받지 않고, 요청만으로는 아직 확정이 아니에요.",
+    body: "희망 날짜와 픽업 매장만 고르면 돼요. 이름이나 전화번호는 받지 않아요.",
   },
   {
     art: "check",
-    title: "운영자가 두 대 확인·결제",
-    body: "운영자가 Air와 Pro 두 대를 확보하면 결제 기한을 알려 드려요. 실제 거래내역을 확인한 뒤에만 확정되고, 결제 화면 캡처로는 확정되지 않아요.",
+    title: "두 대 준비와 결제",
+    body: "운영자가 Air와 Pro를 함께 준비하면 결제를 안내해 드려요. 결제가 확인되면 예약이 확정돼요.",
   },
   {
     art: "missions",
-    title: "평소처럼 쓰며 미션",
-    body: "가방에 넣고 나가고, 영상을 틀고, 메모를 써 보세요. 느낀 쪽을 고르기만 하면 돼요.",
+    title: "평소처럼 쓰면서 미션",
+    body: "가방에 넣고 나가 보고, 영상도 틀어 보고, 메모도 써 보세요. 더 마음에 든 쪽을 고르기만 하면 돼요.",
   },
   {
     art: "decide",
     title: "마지막 날 결정",
-    body: "둘 다 반납해도, 한 대를 사도, 아직 모르겠어도 괜찮아요. 한 대를 사면 나머지 한 대만 반납·검수해요. 구매는 딜러 판매 확인 후 확정돼요.",
+    body: "둘 다 돌려줘도, 한 대를 사도, 아직 못 정해도 괜찮아요. 한 대를 사기로 하면 나머지 한 대만 돌려주면 돼요. 구매는 딜러가 판매를 확인하면 확정돼요.",
   },
 ];
 
@@ -88,7 +89,7 @@ export default function Home() {
             사기 전에,
             <br />
             먼저 같이
-            <br className="sm:hidden" /> 지내 보기
+            <br className="sm:hidden" /> 지내 봐요
           </h1>
           <p className="fade-up mt-6 max-w-md text-[17px] leading-[1.8] text-sub sm:text-[18px]" style={delay(2)}>
             맥은 처음이어도 괜찮아요. MacBook Air와 14형 Pro를 함께 빌려 평소처럼 써 보고, 마음이 가는 쪽을 천천히
@@ -103,7 +104,7 @@ export default function Home() {
             </ButtonLink>
           </div>
           <p className="fade-up mt-5 text-sm text-sub" style={delay(4)}>
-            이름·전화번호 없이 요청해요 · 요청은 아직 확정이 아니에요
+            이름이나 전화번호 없이 요청할 수 있어요
           </p>
         </div>
         <div className="fade-up -mx-2 sm:mx-0" style={delay(2)}>
@@ -114,16 +115,28 @@ export default function Home() {
       {/* 이런 고민 */}
       <section aria-labelledby="worry" className="grid gap-8 lg:grid-cols-[minmax(0,340px)_1fr] lg:gap-14">
         <SectionHead eyebrow="Sound familiar? · 01" title={<span id="worry">이런 고민 해 본 적 있죠?</span>}>
-          스펙표로는 답이 잘 안 나와요. 내 하루에 두 대를 같이 넣어 보면, 생각보다 쉽게 알게 돼요.
+          스펙표만 봐서는 답이 잘 나오지 않아요. 두 대를 내 일상에서 직접 써 보면, 답은 생각보다 쉽게 나와요.
         </SectionHead>
         <ul className="grid gap-4 sm:grid-cols-3">
           {WORRIES.map((w, i) => (
             <li key={w.quote} className="fade-up flex flex-col" style={delay(i + 1)}>
               <div className={cx("relative flex-1 rounded-[28px] rounded-bl-md px-5 pt-5 pb-6", w.tone)}>
-                <span aria-hidden className={cx("block font-serif text-[44px] leading-none", w.mark)}>
+                <span aria-hidden className={cx("block h-7 font-serif text-[48px] font-bold leading-none", w.mark)}>
                   &ldquo;
                 </span>
-                <p className="mt-1 text-[19px] font-bold leading-[1.5] text-ink">{w.quote}</p>
+                {/* 쉼표에서 줄을 나눠 말의 호흡대로 읽히게 한다 (좁은 칸에서 '화면 큰 / 게'처럼 끊기지 않게) */}
+                <p className="mt-2 font-serif text-[20px] font-bold leading-[1.55] tracking-[-0.01em] text-balance text-ink">
+                  {w.quote.split(", ").map((part, i, all) => (
+                    <Fragment key={part}>
+                      {part}
+                      {i < all.length - 1 ? (
+                        <>
+                          ,<br />
+                        </>
+                      ) : null}
+                    </Fragment>
+                  ))}
+                </p>
               </div>
               <p className="mt-3 pl-2 text-sm font-medium text-sub">— {w.who}</p>
             </li>
@@ -134,7 +147,7 @@ export default function Home() {
       {/* 이용 흐름 */}
       <section aria-labelledby="how">
         <SectionHead eyebrow="How it works · 02" title={<span id="how">이렇게 진행돼요</span>} className="max-w-2xl">
-          요청부터 결정까지 네 걸음이에요. 확정되지 않은 건 확정됐다고 말하지 않아요.
+          요청부터 결정까지, 딱 네 단계예요.
         </SectionHead>
         <ol className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {STEPS.map((s, i) => (
@@ -153,16 +166,23 @@ export default function Home() {
       {/* 미션 미리보기 */}
       <section aria-labelledby="missions" className="-mx-5 bg-surface px-5 py-14 sm:mx-0 sm:rounded-[40px] sm:px-12 sm:py-16">
         <div className="grid gap-6 lg:grid-cols-[1fr_auto] lg:items-end">
-          <SectionHead eyebrow="Missions · 03" title={<span id="missions">맥이 처음이어도 할 수 있는 미션 6개</span>}>
-            숙제가 아니라 평소 하던 일이에요. 해 보고 나은 쪽을 고르면 끝. 비슷했다면 그것도 답이에요.
+          <SectionHead eyebrow="Missions · 03" title={
+              <span id="missions">
+                맥이 처음이어도 <br className="sm:hidden" />할 수 있는 미션 6개
+              </span>
+            }>
+            숙제처럼 할 필요 없어요. 평소 하던 대로 써 보고 더 나았던 쪽을 고르면 끝이에요. 비슷했다면, 그것도 좋은 답이에요.
           </SectionHead>
-          <ul className="flex flex-wrap gap-2 lg:max-w-[300px] lg:justify-end" aria-label="답은 이렇게 골라요">
-            {PICKS.map((p) => (
-              <li key={p} className={cx("rounded-full px-3 py-1.5 text-[13px] font-bold", pickTone[p])}>
-                {PICK_LABEL[p]}
-              </li>
-            ))}
-          </ul>
+          <div className="lg:max-w-[300px]">
+            <ul className="flex flex-wrap gap-2 lg:justify-end" aria-label="답은 이 네 가지 중에서 골라요">
+              {PICKS.map((p) => (
+                <li key={p} className={cx("rounded-full px-3 py-1.5 text-[13px] font-bold", pickTone[p])}>
+                  {PICK_LABEL[p]}
+                </li>
+              ))}
+            </ul>
+            <p className="mt-3 text-sm text-sub lg:text-right">길게 쓸 필요 없어요. 느낀 대로 고르기만 하면 돼요.</p>
+          </div>
         </div>
         <ul className="mt-10 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {MISSIONS.map((m, i) => (
@@ -191,13 +211,12 @@ export default function Home() {
             A small thank-you · 04
           </Eyebrow>
           <h2 id="reward" className="text-[28px] font-extrabold leading-[1.3] text-ink sm:text-[36px]">
-            미션 {CORE_MISSIONS.length}개를 마치면, 작은 고마움
+            미션 {CORE_MISSIONS.length}개를 마치면, 작은 리워드를 드려요
           </h2>
           <p className="mt-4 inline-flex rounded-full bg-surface px-4 py-2 text-[17px] font-extrabold text-coral-ink ring-1 ring-coral/30">
             {REWARD_AMOUNT_LABEL}
           </p>
           <p className="mt-4 max-w-2xl text-[16px] leading-[1.75] text-ink/80">{REWARD_RULE}</p>
-          <p className="mt-2 text-sm text-sub">몇 자 이상 쓰라고 하지 않아요. 해 본 대로 고르기만 하면 돼요.</p>
         </div>
       </section>
 
@@ -205,7 +224,7 @@ export default function Home() {
       <section aria-labelledby="tbd" className="rounded-[32px] border border-warn-line bg-warn-bg px-6 py-8 sm:px-10">
         <p className="eyebrow text-warn">Not decided yet</p>
         <h2 id="tbd" className="mt-2 text-[22px] font-extrabold text-warn">
-          아직 정해지지 않은 것
+          아직 정해지지 않았어요
         </h2>
         <ul className="mt-4 flex flex-wrap gap-2">
           {UNDECIDED.map((x) => (
@@ -214,7 +233,9 @@ export default function Home() {
             </li>
           ))}
         </ul>
-        <p className="mt-4 text-[15px] leading-relaxed text-warn">{PRICE_TBD} 위 항목은 모두 딜러 계약 후 정해져요.</p>
+        <p className="mt-4 text-[15px] leading-relaxed text-warn">
+          모두 딜러와 계약한 뒤에 정해져요. 그 전까지는 금액을 표시하지 않아요.
+        </p>
       </section>
 
       {/* 마무리 CTA */}
@@ -232,7 +253,7 @@ export default function Home() {
             골라도 늦지 않아요
           </h2>
           <p className="mx-auto mt-4 max-w-md text-[15px] leading-relaxed text-on-feature/70">
-            요청은 확정이 아니에요. 운영자가 두 기기를 확인한 뒤 안내해 드려요.
+            요청을 보내 주시면, 두 대를 준비한 뒤 안내해 드릴게요.
           </p>
           <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
             <ButtonLink href="/request/" variant="light" className="sm:px-8">

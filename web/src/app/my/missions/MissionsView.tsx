@@ -68,7 +68,7 @@ function Missions({ r }: { r: Reservation }) {
     <div className="mx-auto max-w-3xl">
       <BackLink href={myHref(r.id)}>{r.id} 내 체험</BackLink>
       <PageHeader eyebrow={`Missions · ${r.id}`} title="오늘은 어떤 걸 해 볼까요?" aside={<StatusChip status={r.status} className="text-[13px]" />}>
-        맥이 처음이어도 괜찮아요. 해 본 미션부터 편하게 골라 주세요. 비슷했거나 모르겠어도 그대로 골라 주세요 — 그것도 답이에요.
+        맥이 처음이어도 괜찮아요. 해 본 미션부터 편하게 답해 주세요.
       </PageHeader>
 
       <div className="space-y-5">
@@ -76,7 +76,7 @@ function Missions({ r }: { r: Reservation }) {
           <Notice tone="warn" title={beforePickup ? "미션은 픽업한 뒤부터 열려요" : "미션 기간이 끝났어요"}>
             {beforePickup
               ? "미리 둘러보세요. 두 맥을 받으면 여기서 답을 고를 수 있어요."
-              : "미션과 리워드 신청은 픽업한 뒤부터 반납 검수가 끝나기 전까지 할 수 있어요."}
+              : "미션과 리워드 신청은 픽업한 뒤부터, 돌려주신 기기의 점검이 끝나기 전까지 할 수 있어요."}
           </Notice>
         ) : null}
 
@@ -174,7 +174,7 @@ function RewardCard({ r, open }: { r: Reservation; open: boolean }) {
             {!open
               ? "미션을 할 수 있는 기간에만 신청할 수 있어요."
               : ready
-                ? "신청하면 답과 코드는 더 바꿀 수 없어요."
+                ? "신청하면 답과 코드를 더는 바꿀 수 없어요."
                 : `남은 것: ${[p.missing.length ? `미션 ${p.missing.length}개` : "", hasCode ? "" : "바탕화면 코드"].filter(Boolean).join(" · ")}`}
           </p>
           <ErrorText>{error}</ErrorText>
@@ -183,12 +183,12 @@ function RewardCard({ r, open }: { r: Reservation; open: boolean }) {
         <div className="mt-5 rounded-2xl bg-surface/85 p-4 text-[15px] leading-relaxed text-ink" data-testid="reward-locked">
           {status === "submitted" ? (
             <p>
-              <strong className="font-bold">신청했어요</strong> ({fmtDateTime(r.reward.submittedAt)}). 반납 검수 뒤 운영자가 확인해요.
-              이제 답과 코드는 바꿀 수 없어요.
+              <strong className="font-bold">신청했어요</strong> ({fmtDateTime(r.reward.submittedAt)}). 돌려주신 기기를 점검한 뒤
+              운영자가 확인해요. 이제 답과 코드는 바꿀 수 없어요.
             </p>
           ) : status === "approved" ? (
             <p>
-              <strong className="font-bold">확인이 끝났어요.</strong> 지급 예정이에요. (데모에서는 실제 지급이 없어요.)
+              <strong className="font-bold">확인이 끝났어요.</strong> 지급 예정이에요.
             </p>
           ) : (
             <>
@@ -245,7 +245,7 @@ function CodeCard({ r, editable }: { r: Reservation; editable: boolean }) {
       <CardTitle
         id="code-title"
         eyebrow="Wallpaper code"
-        sub="픽업할 때 두 맥 바탕화면에 적힌 4자리 코드를 적어 주세요. 대소문자·띄어쓰기는 신경 쓰지 않아도 돼요."
+        sub="두 맥의 바탕화면에 떠 있는 4자리 코드를 적어 주세요. 대소문자나 띄어쓰기는 신경 쓰지 않아도 돼요."
       >
         바탕화면 코드
       </CardTitle>
@@ -462,7 +462,7 @@ function MissionForm({
 
       <fieldset className="mt-6">
         <legend className="text-[15px] font-bold text-ink">
-          조금 더 말해 준다면 <span className="font-medium text-sub">(선택 · 하나만)</span>
+          조금 더 말해 준다면 <span className="font-medium text-sub">(선택, 하나만)</span>
         </legend>
         <div className="mt-2.5 flex flex-wrap gap-2">
           {def.followUps.map((f) => (

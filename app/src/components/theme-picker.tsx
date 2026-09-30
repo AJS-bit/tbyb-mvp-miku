@@ -10,7 +10,7 @@ import { themed, useTheme, useThemeControl } from '@/lib/theme-context';
 import { Card, Icon, Notice, Row, Section, T, type IconPair } from './ui';
 
 const OPTIONS: Record<ThemePref, { label: string; a11y: string; icon: IconPair }> = {
-  system: { label: '시스템', a11y: '시스템 설정 따라가기', icon: ['circle.lefthalf.filled', 'contrast'] },
+  system: { label: '기기 설정', a11y: '기기 설정 따라가기', icon: ['circle.lefthalf.filled', 'contrast'] },
   light: { label: '라이트', a11y: '라이트', icon: ['sun.max', 'light_mode'] },
   dark: { label: '다크', a11y: '다크', icon: ['moon', 'dark_mode'] },
 };
@@ -23,7 +23,7 @@ export function ThemePicker() {
   const s = useStyles();
 
   return (
-    <Section eyebrow="Appearance" title="화면 모드" caption="밤에는 따뜻한 다크로 볼 수 있어요. 고른 값은 이 기기에만 저장돼요.">
+    <Section eyebrow="Appearance" title="화면 모드" caption="밤에는 따뜻한 어두운 화면으로 볼 수 있어요. 고른 모드는 이 기기에만 저장돼요.">
       <Card style={{ gap: 14 }}>
         <View style={s.row} accessibilityRole="radiogroup" accessibilityLabel="화면 모드">
           {THEME_PREFS.map((p) => {
@@ -55,7 +55,7 @@ export function ThemePicker() {
         </View>
         <T variant="footnote">
           {pref === 'system'
-            ? `기기 설정을 따라가요 · 지금 ${SCHEME_LABEL[system]}`
+            ? `기기 설정을 따라가요. 지금은 ${SCHEME_LABEL[system]}예요.`
             : `기기 설정과 상관없이 늘 ${SCHEME_LABEL[pref]}로 보여요`}
         </T>
         {sessionOnly ? (

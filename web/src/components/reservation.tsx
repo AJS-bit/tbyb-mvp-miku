@@ -26,8 +26,9 @@ export function useIdParam(): string | null {
 export const ACTOR_LABEL = { customer: "고객", operator: "운영자" } as const;
 
 export function decisionText(d: Decision | undefined): string {
-  if (!d) return "아직 남기지 않음";
-  const model = d.model ? ` — ${DEVICE_LABEL[d.model]}` : "";
+  if (!d) return "아직 남기지 않았어요";
+  // DECISION_LABEL 은 문장('…살게요')이라 모델은 괄호로 덧붙인다
+  const model = d.model ? ` (${DEVICE_LABEL[d.model]})` : "";
   return `${DECISION_LABEL[d.choice]}${model}`;
 }
 
@@ -44,7 +45,7 @@ export function RequestSummary({ r }: { r: Reservation }) {
           label: "체험 전 마음",
           value: `${LEANING_LABEL[r.request.leaningBefore]} · 확신 ${r.request.confidenceBefore}/5`,
         },
-        { label: "궁금한 점", value: r.request.question || <span className="text-sub">적지 않음</span> },
+        { label: "궁금한 점", value: r.request.question || <span className="text-sub">적지 않았어요</span> },
         { label: "요청 시각", value: fmtDateTime(r.createdAt) },
       ]}
     />
@@ -65,7 +66,7 @@ export function Timeline({ r }: { r: Reservation }) {
   return (
     <div>
       {cancelled ? (
-        <Notice tone="info" className="mb-5" title="취소된 요청이에요">
+        <Notice tone="info" className="mb-5" title="취소한 때와 이유">
           {fmtDateTime(cancelItem?.at)} · {cancelItem ? ACTOR_LABEL[cancelItem.actor] : ""} · 사유: {cancelItem?.reason}
         </Notice>
       ) : null}
@@ -136,7 +137,7 @@ export function HistoryList({ history }: { history: HistoryItem[] }) {
 export function NotFound({ id }: { id: string }) {
   return (
     <Notice tone="warn" title={`${id} 예약을 이 기기에서 찾을 수 없어요`}>
-      <p>데모 데이터는 이 브라우저 안에만 저장돼요. 다른 기기·브라우저에서 만든 요청은 보이지 않아요.</p>
+      <p>데모 데이터는 이 브라우저에만 저장돼요. 다른 기기나 브라우저에서 만든 요청은 여기서 보이지 않아요.</p>
       <p className="mt-2">
         <Link href="/my/" className="font-bold underline underline-offset-2">
           내 체험 목록

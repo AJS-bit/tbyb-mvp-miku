@@ -40,7 +40,7 @@ import {
   type Result,
 } from "@/lib/domain";
 import { apply, demoNow, resetDemo, setClockOffsetHours, useDemo, type DemoSnapshot } from "@/lib/store";
-import { fmtDateKey, fmtDateTime, fmtRemaining } from "@/lib/format";
+import { fmtDateKey, fmtDateTime, fmtRemaining, josa } from "@/lib/format";
 import { ACTOR_LABEL, RequestSummary, decisionText } from "@/components/reservation";
 import { MissionAnswerTable, RewardStatusChip } from "@/components/mission";
 import {
@@ -245,7 +245,7 @@ function ReservationPanel({ r, state }: { r: Reservation; state: DemoState }) {
   }
 
   function move(to: Reservation["status"]) {
-    const res = act((s, n) => transition(s, r.id, to, "operator", reason, n), `'${STATUS_LABEL[to]}'(으)로 변경했습니다.`);
+    const res = act((s, n) => transition(s, r.id, to, "operator", reason, n), `'${STATUS_LABEL[to]}'${josa(STATUS_LABEL[to], "으로", "로")} 변경했습니다.`);
     if (res.ok) setReason("");
   }
 
@@ -396,8 +396,8 @@ function StageTools({ r, state, now, act }: { r: Reservation; state: DemoState; 
     case "requested":
       return (
         <Notice tone="info" title="다음 할 일">
-          딜러에게 Air·Pro 두 대와 반납 후 검수 여유 시간을 확인하고, &lsquo;{STATUS_LABEL.operator_check}&rsquo;으로 바꾼 뒤 기기를
-          확보합니다.
+          Air·Pro 두 대가 함께 준비되는지, 반납 뒤 검수할 시간이 있는지 딜러에게 확인합니다. 그다음{" "}
+          &lsquo;{STATUS_LABEL.operator_check}&rsquo;으로 바꾸고 기기를 확보합니다.
         </Notice>
       );
     case "operator_check":
@@ -482,7 +482,9 @@ function DeviceAssign({ r, state, act }: { r: Reservation; state: DemoState; act
                 </div>
               ) : null}
               {!current && avail.length === 0 ? (
-                <p className="mt-2 text-sm font-medium text-danger-ink">배정할 수 있는 {DEVICE_LABEL[k]}가 없습니다. 대체 일정이나 취소를 안내하세요.</p>
+                <p className="mt-2 text-sm font-medium text-danger-ink">
+                  {`배정할 수 있는 ${DEVICE_LABEL[k]}${josa(DEVICE_LABEL[k], "이", "가")} 없습니다. 대체 일정이나 취소를 안내하세요.`}
+                </p>
               ) : null}
             </div>
           );
@@ -850,7 +852,7 @@ function RewardReview({ r, state }: { r: Reservation; state: DemoState }) {
       setMessage("");
     } else {
       setError("");
-      setMessage(`리워드를 '${REWARD_STATUS_LABEL[result]}'(으)로 기록했습니다.`);
+      setMessage(`리워드를 '${REWARD_STATUS_LABEL[result]}'${josa(REWARD_STATUS_LABEL[result], "으로", "로")} 기록했습니다.`);
     }
   }
 

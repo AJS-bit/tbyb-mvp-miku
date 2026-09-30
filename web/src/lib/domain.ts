@@ -153,13 +153,13 @@ export const SERVICE_NAME = 'Try Before You Buy';
 export const PACK_NAME = 'MacBook Air · 14형 Pro 비교팩';
 
 export const DEMO_NOTICE =
-  '시연용 데모입니다. 실제 예약·결제·연락이 일어나지 않고, 입력한 내용은 이 기기 안에만 저장됩니다.';
+  '시연용 데모예요. 실제로 예약·결제·연락이 이뤄지지 않고, 입력한 내용은 이 기기에만 저장돼요.';
 export const PRICE_TBD =
-  '체험료·기간·보증 조건은 딜러 계약 후 정해져요. 정해지기 전에는 금액을 보여 드리지 않아요.';
-export const RESPONSE_TARGET = '운영 목표: 영업일 1일 내 확인 (대표자 확인 전 제안값)';
+  '체험료와 기간, 보증 조건은 딜러와 계약한 뒤에 정해져요. 그 전까지는 금액을 표시하지 않아요.';
+export const RESPONSE_TARGET = '영업일 기준 하루 안에 확인해 드리려고 해요. 아직 정해지지 않은 목표예요.';
 export const PAYMENT_RULE =
-  '예약은 운영자가 결제 서비스의 실제 거래내역을 확인한 뒤에만 확정돼요. 결제 화면 캡처로는 확정되지 않아요.';
-export const DEALER_TERMS_TBD = '딜러 판매 조건이 정해지면 열려요. 구매·할인을 약속하지는 않아요.';
+  '결제 서비스에서 실제 결제 내역을 확인한 뒤에 예약이 확정돼요. 결제 화면 캡처만으로는 확정되지 않아요.';
+export const DEALER_TERMS_TBD = '딜러의 판매 조건이 정해지면 고를 수 있어요. 구매나 할인을 약속드리는 건 아니에요.';
 
 export const DEVICE_LABEL: Record<DeviceKey, string> = {
   air: 'MacBook Air',
@@ -173,20 +173,20 @@ export const STATUS_LABEL: Record<ReservationStatus, string> = {
   confirmed: '예약 확정',
   in_trial: '체험 중',
   return_received: '반납 접수',
-  inspecting: '검수 중',
+  inspecting: '점검 중',
   completed: '완료',
   cancelled: '취소',
 };
 
 export const STATUS_HELP: Record<ReservationStatus, string> = {
-  requested: '아직 확정 전이에요. 운영자가 두 기기와 픽업 일정을 확인해요.',
-  operator_check: '딜러에게 Air와 Pro 두 대, 반납 뒤 검수 여유 시간까지 확인하고 있어요.',
-  payment_pending: '두 기기를 잡아 뒀어요. 기한 안에 결제해 주세요. 운영자가 거래내역을 확인하면 확정돼요.',
-  confirmed: '예약이 확정됐어요. 픽업 때 두 기기의 상태와 부속품을 함께 확인해요.',
-  in_trial: '평소처럼 써 보면서 미션을 하나씩 해 보세요. 마지막 날 미션 답을 보고 결정해요.',
-  return_received: '반납을 받았어요. 운영자가 기기별로 검수해요.',
-  inspecting: '상태·부속품·로그아웃·초기화를 확인하고 있어요.',
-  completed: '체험이 끝났어요. 7일·30일 뒤 짧은 후속 설문을 보내 드려요.',
+  requested: '요청을 받았어요. 아직 확정 전이라, 운영자가 두 기기와 픽업 일정을 먼저 확인할게요.',
+  operator_check: '딜러에게 Air와 Pro가 함께 준비되는지, 반납 뒤 점검할 시간까지 확인하고 있어요.',
+  payment_pending: '두 기기를 잡아 뒀어요. 기한 안에 결제해 주세요. 결제가 확인되면 예약이 확정돼요.',
+  confirmed: '예약이 확정됐어요. 픽업할 때 두 기기의 상태와 구성품을 함께 확인해요.',
+  in_trial: '평소처럼 써 보면서 미션을 하나씩 해 보세요. 마지막 날에는 미션 답을 보며 결정하면 돼요.',
+  return_received: '반납을 받았어요. 기기마다 상태를 점검할게요.',
+  inspecting: '기기 상태와 구성품, 로그아웃과 초기화 여부를 점검하고 있어요.',
+  completed: '체험이 끝났어요. 7일 뒤와 30일 뒤에 짧은 설문을 보내 드릴게요.',
   cancelled: '취소된 요청이에요.',
 };
 
@@ -214,20 +214,20 @@ export const DEVICE_STATE_LABEL: Record<DeviceState, string> = {
 export const SALE_LABEL: Record<SaleStatus, string> = {
   none: '딜러 판매 확인 전 (구매 의향만 있음)',
   confirmed: '딜러 판매 확인 완료',
-  failed: '판매 불성립 · 반납·검수 대상',
+  failed: '판매가 성사되지 않아 반납·점검 대상',
 };
 
 export const DECISION_LABEL: Record<DecisionChoice, string> = {
-  return_both: '두 대 모두 반납',
-  buy_new: '새 제품 구매',
-  buy_used: '체험한 기기 그대로 구매',
-  undecided: '아직 결정 못 함',
+  return_both: '두 대 모두 반납할게요',
+  buy_new: '새 제품으로 살게요',
+  buy_used: '써 본 기기를 그대로 살게요',
+  undecided: '아직 못 정했어요',
 };
 
 export const LEANING_LABEL: Record<Leaning, string> = {
-  air: 'Air 쪽',
-  pro: 'Pro 쪽',
-  unsure: '모르겠음',
+  air: 'Air 쪽이에요',
+  pro: 'Pro 쪽이에요',
+  unsure: '아직 모르겠어요',
 };
 
 export const INSPECTION_LABEL: Record<keyof Inspection, string> = {
@@ -243,7 +243,7 @@ export const USAGE_LABEL: Record<Usage, string> = {
   unsure: '잘 모르겠어요',
   watch: '유튜브·넷플릭스·웹서핑',
   school: '과제·문서',
-  photo: '사진·영상 조금',
+  photo: '사진·영상 편집 조금',
   dev: '코딩',
   other: '기타',
 };
@@ -320,7 +320,7 @@ export const CORE_MISSIONS: MissionId[] = MISSIONS.filter((m) => !m.optional).ma
 
 export const REWARD_AMOUNT_LABEL = '1,000원 (가정 · 금액 미정)';
 export const REWARD_RULE =
-  '체험 건당 한 번, 반납 검수 뒤 운영자가 확인하고 드려요. 데모에서는 실제 지급이 없어요. 비슷함·모르겠음도 정직한 답이면 괜찮아요.';
+  '체험 한 번에 한 번 신청할 수 있고, 반납 점검이 끝나면 운영자가 확인한 뒤 드려요. 데모라서 실제로 지급되지는 않아요. 비슷했거나 잘 모르겠다는 답도 솔직하면 충분해요.';
 export const REWARD_REJECT_NOTE_VISIBLE = '거절 사유는 고객에게 보여요. 승인 메모는 운영자만 봐요.';
 export const REWARD_STATUS_LABEL: Record<RewardStatus, string> = {
   none: '아직 신청 전',
@@ -343,12 +343,12 @@ export const RUSHED_MINUTES = 10;
 
 // 기기를 고를 때 같은 기준으로 확인할 점 — 수치 없이 확인 포인트만 제시
 export const COMPARE_POINTS: { title: string; air: string; pro: string }[] = [
-  { title: '칩·메모리·저장공간', air: '딜러 재고 확정 후 기기별 표시', pro: '딜러 재고 확정 후 기기별 표시' },
-  { title: '긴 작업 중 발열·소음', air: '팬이 없는 설계 — 무거운 작업을 오래 돌려 확인', pro: '팬이 있는 설계 — 같은 작업으로 속도 유지 비교' },
-  { title: '화면', air: '같은 문서·영상으로 가독성 확인', pro: '고주사율(ProMotion) 화면 — 스크롤 체감 비교' },
-  { title: '포트', air: '필요한 주변기기 연결 방식 확인', pro: 'HDMI·SD 카드 슬롯 필요 여부 확인' },
-  { title: '휴대성', air: '하루 들고 다녀 보기', pro: '같은 가방·동선으로 비교' },
-  { title: '배터리 상태·외관', air: '픽업 때 기기별로 기록', pro: '픽업 때 기기별로 기록' },
+  { title: '칩·메모리·저장공간', air: '딜러 재고가 정해지면 기기마다 알려 드려요', pro: '딜러 재고가 정해지면 기기마다 알려 드려요' },
+  { title: '오래 쓸 때 발열·소음', air: '팬이 없어요. 무거운 작업을 오래 돌려 보세요', pro: '팬이 있어요. 같은 작업에서 속도가 유지되는지 보세요' },
+  { title: '화면', air: '같은 문서와 영상으로 읽기 편한지 보세요', pro: '고주사율 ProMotion 화면이에요. 스크롤이 얼마나 부드러운지 느껴 보세요' },
+  { title: '포트', air: '자주 쓰는 주변기기를 연결할 수 있는지 확인해 보세요', pro: 'HDMI 포트나 SD 카드 슬롯이 필요한지 생각해 보세요' },
+  { title: '휴대성', air: '하루 들고 다녀 보세요', pro: '같은 가방, 같은 동선으로 비교해 보세요' },
+  { title: '배터리 상태·외관', air: '픽업할 때 기기마다 기록해 둬요', pro: '픽업할 때 기기마다 기록해 둬요' },
 ];
 
 // ───────────────────────── 초기 데이터 ─────────────────────────

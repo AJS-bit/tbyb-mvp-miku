@@ -146,7 +146,7 @@ function MissionForm({ r, def }: { r: Reservation; def: MissionDef }) {
     if (def.input === 'battery') {
       const vals = [battery.air.before, battery.air.after, battery.pro.before, battery.pro.after];
       const filled = vals.filter((v) => v.trim() !== '').length;
-      if (filled > 0 && filled < 4) return '배터리를 적으려면 두 맥의 시작·끝을 모두 적어 주세요. 안 적어도 괜찮아요 — 모두 비워 두면 돼요.';
+      if (filled > 0 && filled < 4) return '배터리는 두 맥의 시작과 끝을 모두 적어 주세요. 적지 않으려면 네 칸을 모두 비워 두면 돼요.';
       if (filled === 4) {
         const n = vals.map(num);
         if (n.some((x) => x === null || !Number.isFinite(x))) return '배터리는 숫자(%)로 적어 주세요.';
@@ -199,7 +199,7 @@ function MissionForm({ r, def }: { r: Reservation; def: MissionDef }) {
         ? '취소된 요청이에요.'
         : '미션은 픽업한 날부터 답할 수 있어요. 어떤 미션인지 먼저 둘러보세요.'
     : r.reward.status !== 'none'
-      ? '리워드를 신청해서 답이 그대로 잠겼어요.'
+      ? '리워드를 신청한 뒤라 답을 더 바꿀 수 없어요.'
       : null;
 
   return (
@@ -208,7 +208,7 @@ function MissionForm({ r, def }: { r: Reservation; def: MissionDef }) {
         <View style={{ gap: 4 }}>
           <T variant="title3">{def.question}</T>
           <T variant="callout" color={t.c.sub}>
-            비슷했거나 모르겠어도 그대로 골라 주세요. 그것도 좋은 답이에요.
+            비슷했거나 잘 모르겠다면, 그것도 좋은 답이에요.
           </T>
         </View>
         <View style={styles.grid} accessibilityRole="radiogroup" accessibilityLabel={def.question}>
@@ -227,7 +227,7 @@ function MissionForm({ r, def }: { r: Reservation; def: MissionDef }) {
         </View>
       </View>
 
-      <Field label="한 가지 더 고른다면" optional hint="딱 맞는 게 없으면 넘어가도 돼요. 다시 누르면 풀려요.">
+      <Field label="하나 더 고른다면" optional hint="딱 맞는 게 없으면 건너뛰어도 돼요. 다시 누르면 선택이 풀려요.">
         <View style={styles.chips}>
           {def.followUps.map((f) => (
             <ChoiceChip
@@ -246,7 +246,7 @@ function MissionForm({ r, def }: { r: Reservation; def: MissionDef }) {
 
       {def.input === 'battery' ? (
         <View style={styles.optBox}>
-          <Field label="배터리 % 적기" optional hint="30분쯤 틀어 두고 시작·끝 배터리를 적어 주면 더 정확해요. 안 적어도 괜찮아요.">
+          <Field label="배터리 % 적기" optional hint="영상을 틀기 전과 끝낸 뒤, 두 맥의 배터리 %를 적어 주세요.">
             <View style={{ flexDirection: 'row', gap: 10 }}>
               {(['air', 'pro'] as DeviceKey[]).map((k) => (
                 <View key={k} style={[styles.devCol, { backgroundColor: t.device[k].soft }]}>
@@ -279,7 +279,7 @@ function MissionForm({ r, def }: { r: Reservation; def: MissionDef }) {
       ) : null}
 
       {def.input === 'daily' ? (
-        <Field label="무엇을 해 봤나요?" required hint="평소 폰으로 오래 하는 일 중 맥으로 해 본 것 하나를 골라 주세요.">
+        <Field label="무엇을 해 봤나요?" required hint="맥으로 해 본 일을 하나 골라 주세요.">
           <View style={styles.chips} accessibilityRole="radiogroup" accessibilityLabel="무엇을 해 봤나요">
             {DAILY_OPTIONS.map((o) => (
               <ChoiceChip
@@ -298,7 +298,7 @@ function MissionForm({ r, def }: { r: Reservation; def: MissionDef }) {
       ) : null}
 
       {def.input === 'minutes' ? (
-        <Field label="같은 작업에 걸린 시간" required hint="두 맥에서 같은 사진·영상 작업을 했을 때 걸린 시간(분)이에요. 대충이어도 괜찮아요.">
+        <Field label="같은 작업, 몇 분 걸렸나요?" required hint="두 맥에서 같은 사진·영상 작업을 했을 때 걸린 시간을 분으로 적어 주세요. 대충이어도 괜찮아요.">
           <View style={{ flexDirection: 'row', gap: 10 }}>
             {(['air', 'pro'] as DeviceKey[]).map((k) => (
               <View key={k} style={[styles.devCol, { backgroundColor: t.device[k].soft }]}>

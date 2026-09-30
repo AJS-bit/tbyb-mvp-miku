@@ -35,7 +35,7 @@ function ReadErrorCard({ items }: { items: { key: string; raw: string }[] }) {
           {STORAGE_READ_ERROR}
         </T>
       </Row>
-      <T variant="footnote">복원하지 못한 동안에는 변경 사항을 저장하지 않습니다.</T>
+      <T variant="footnote">원본을 지키려고, 복원하기 전까지는 새 변경을 저장하지 않아요.</T>
       <Row gap={8} style={{ flexWrap: 'wrap' }}>
         <Button small variant="secondary" label={showRaw ? '원본 숨기기' : '원본 보기'} onPress={() => setShowRaw((v) => !v)} />
         <Button
@@ -45,10 +45,10 @@ function ReadErrorCard({ items }: { items: { key: string; raw: string }[] }) {
           onPress={async () => {
             try {
               await Clipboard.setStringAsync(rawText);
-              setCopied('원본을 클립보드에 복사했습니다.');
+              setCopied('원본을 클립보드에 복사했어요.');
             } catch {
               setShowRaw(true);
-              setCopied('복사하지 못했습니다. 아래 원본을 길게 눌러 직접 선택해 주세요.');
+              setCopied('복사하지 못했어요. 아래 원본을 길게 눌러 직접 복사해 주세요.');
             }
           }}
         />
@@ -65,7 +65,7 @@ function ReadErrorCard({ items }: { items: { key: string; raw: string }[] }) {
       {confirming ? (
         <View style={{ gap: 8 }}>
           <T variant="callout" weight="700">
-            원본을 지우고 초기 상태로 시작할까요? 되돌릴 수 없습니다.
+            원본을 지우고 처음부터 시작할까요? 되돌릴 수 없어요.
           </T>
           <Row gap={8}>
             <Button
@@ -101,7 +101,7 @@ function WriteErrorCard() {
         </T>
       </Row>
       <T variant="footnote">
-        저장하지 못한 변경은 화면에도 반영하지 않았어요. 입력한 내용은 그대로 있으니 저장 공간을 확인한 뒤 다시 시도해 주세요.
+        방금 바꾼 내용은 화면에도 반영하지 않았어요. 입력한 내용은 그대로 있으니, 저장 공간을 확인하고 다시 눌러 주세요.
       </T>
       <Button small variant="secondary" label="확인" onPress={dismissWriteError} />
     </View>

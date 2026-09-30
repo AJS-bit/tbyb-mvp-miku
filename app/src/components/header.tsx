@@ -13,7 +13,7 @@ export function SimulatorButton() {
     <Pressable
       accessibilityRole="button"
       accessibilityLabel="운영 시뮬레이터 열기"
-      accessibilityHint="데모 진행용 화면입니다. 실제 운영자 기능이 아닙니다."
+      accessibilityHint="데모를 진행하는 화면이에요. 실제 운영자 기능은 아니에요."
       hitSlop={8}
       onPress={() => router.push('/simulator')}
       style={({ pressed }) => [styles.btn, pressed && { opacity: 0.6 }]}>
@@ -44,13 +44,13 @@ export function CloseButton() {
 // 네이티브에서는 fontFamily 를 아예 넘기지 않는다 (undefined 를 넘기면 큰 제목이 그려지지 않았다)
 const FONT = FONT_FAMILY ? { fontFamily: FONT_FAMILY } : {};
 
-/** 탭마다 하나씩: 큰 제목 헤더 + 시뮬레이터 버튼 */
-export function TabStack({ title }: { title: string }) {
+/** 탭마다 하나씩: 큰 제목 헤더 + 시뮬레이터 버튼. 비교팩(첫 화면)은 본문 맨 위 브랜드 로고가 제목 역할이라 큰 제목을 끈다. */
+export function TabStack({ title, largeTitle = true }: { title: string; largeTitle?: boolean }) {
   const { c } = useTheme();
   return (
     <Stack
       screenOptions={{
-        headerLargeTitleEnabled: true,
+        headerLargeTitleEnabled: largeTitle,
         headerShadowVisible: false,
         headerLargeTitleShadowVisible: false,
         headerLargeTitleStyle: { ...FONT, fontWeight: '800', color: c.ink },

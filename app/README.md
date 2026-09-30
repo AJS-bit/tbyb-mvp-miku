@@ -3,13 +3,14 @@
 MacBook Air · 14형 Pro 비교팩 **시연용 데모 앱**입니다. v2 는 맥을 처음 쓰는 손님을 기준으로 다시 만들었습니다 — 작업 유형별 기록 대신 **쉬운 일상 미션 6개**와 **미션 리워드(1,000원 가정 · 금액 미정)**, 따뜻한 아이보리·잉크·코랄 톤(SPEC.md v2 「감성 디자인 방향」)과 직접 그린 SVG 일러스트를 씁니다. 데모 진행용 **운영 시뮬레이터**(실제 운영자 기능 아님)가 들어 있습니다. 서버·실제 결제·지급·연락·개인정보 수집이 없고, 데이터는 기기 안(AsyncStorage / 웹은 localStorage)에만 저장됩니다.
 
 - 도메인 규칙: `src/domain.ts` 는 `shared/domain.ts` 의 **자동 복사본**입니다. 직접 고치지 말고 루트에서 `sh scripts/sync-domain.sh` 를 실행하세요 (`--check` 로 일치 여부만 확인). 저장 키는 `tbyb-miku-demo-v2` (v1 데이터와 분리).
-- Expo SDK 57 · expo-router · TypeScript · `react-native-svg`(일러스트, Expo Go 포함 모듈).
+- Expo SDK 57 · expo-router · TypeScript · `react-native-svg`(일러스트, Expo Go 포함 모듈) · `@expo-google-fonts/gowun-batang`(감성 서체, 아래 「글꼴」).
+- 문구: SPEC.md 「다듬기 (2026-09-30)」 문장 원칙으로 앱 문장을 모두 다시 봤습니다 — 바뀐 문장 목록은 [`COPY_CHANGES.md`](COPY_CHANGES.md).
 
 ## 화면
 
 | 탭 / 화면 | 경로 | 내용 |
 |---|---|---|
-| 비교팩 | `src/app/(tabs)/(pack)` | 히어로(기울어진 두 노트북 「가볍게」·「끝까지」) · "맥은 처음이어도 괜찮아요" · 진행 4단계 · 비교 포인트 · 요금 미정 안내 · 데모 일정 요청(날짜·픽업 필수, "주로 뭘 할 것 같아요?" 선택·기본 '잘 모르겠어요', 궁금한 점 선택, 지금 마음 + 확신). 이름·전화번호 없음 |
+| 비교팩 | `src/app/(tabs)/(pack)` | 맨 위 브랜드 로고(마크 + "Try Before You Buy" + "써 보고 고르는 맥북") · 히어로(기울어진 두 노트북 — Air 화면 「오늘은 / 어디로 갈까?」 · Pro 화면 「오늘은 / 어디까지 해 볼까?」, 고운바탕) · "맥은 처음이어도 괜찮아요" · 진행 4단계 · 비교 포인트 · 요금 미정 안내 · 데모 일정 요청(날짜·픽업 필수, "주로 뭘 할 것 같아요?" 선택·기본 '잘 모르겠어요', 궁금한 점 선택, 지금 마음 + 확신). 이름·전화번호 없음 |
 | 내 체험 | `src/app/(tabs)/my` | 상태 카드 · (체험 중~검수 중) 코랄 진행 고리 n/5 + 리워드 상태 + 미션 탭 버튼 · 다음 할 일 · 반납 결과 · 타임라인 · 요청 내용 · 출고 전 취소 · 맨 아래 **화면 모드**(시스템/라이트/다크) |
 | 미션 | `src/app/(tabs)/missions` | 체험 중·반납 접수·검수 중에만 열림(그 전엔 "픽업한 날부터 열려요" 잠금 화면). 리워드 카드(진행 고리·금액·규칙·상태·신청) · 바탕화면 코드 카드(두 맥 4자리 입력) · 미션 카드 6개 · 미션 알림(체험 중) |
 | 미션 시트 | `src/app/mission/[id].tsx` | iOS 페이지 시트. 큰 선택 버튼 4개(`PICK_LABEL`) · 후속 칩 · 미션별 입력(영상: 배터리 % 선택 / 폰으로 하는 일: `DAILY_OPTIONS` / 무거운 작업: 두 맥 분). 리워드 신청 전까지 수정 가능 |
@@ -17,6 +18,36 @@ MacBook Air · 14형 Pro 비교팩 **시연용 데모 앱**입니다. v2 는 맥
 | 운영 시뮬레이터 | `src/app/simulator.tsx` | 단계 진행(사유 필수) · 기기 확보·거래 대조·출고·검수·판매 확인 · **출고 때 바탕화면에 띄울 코드** · **리워드 확인**(답·고객 코드 vs 출고 코드·검토 표시·메모·승인/거절) · 이력(운영 메모 포함) · 기기 보드 · 데모 설정 · 초기화 |
 
 고객 화면에는 리워드 검토 표시(flag)·출고 코드·승인 메모를 보여 주지 않습니다(상태만). 거절 사유만 미션 탭 리워드 카드에 보입니다.
+
+### 화면 중간으로 바로 가기 (`?section=`)
+
+`Screen` 은 `?section=<이름>` 으로 열리면 같은 이름의 `<ScrollTarget>` 까지 내려갑니다(`src/components/screen.tsx`). 알림·안내에서 화면 중간으로 보낼 때 씁니다.
+
+| 경로 | 가는 곳 |
+|---|---|
+| `/missions?section=list` · `?section=nudge` | 미션 목록 · 미션 알림 |
+| `/decide?section=choice` | 결정 고르기 |
+| `/my?section=appearance` | 화면 모드 |
+| `/simulator?section=codes` | 출고 때 바탕화면에 띄울 코드 |
+| `/?section=form` · `/simulator?section=reward` | (예전부터) 데모 일정 요청 폼 · 리워드 확인 |
+
+## 글꼴 (고운바탕)
+
+- **고운바탕(Gowun Batang) Bold** — 노트북 화면 두 줄, 브랜드 워드마크 "Try Before You Buy", 미션 탭 인용 한 줄("비슷했다면, 그것도 좋은 답이에요.")에만 씁니다. 제목·본문은 시스템 산세리프 그대로입니다.
+- `@expo-google-fonts/gowun-batang/700Bold` 한 벌만 가져와 루트 레이아웃에서 `useFonts` 로 불러옵니다(`src/lib/fonts.tsx`). 앱을 막지 않습니다: 스플래시는 저장본 복원과 글꼴(최대 2.5초)을 기다린 뒤 내리고, 글꼴이 실패하거나 늦으면 시스템 글꼴(굵게)로 먼저 보여 준 뒤 불러오면 바꿉니다.
+- 네이티브는 불러온 뒤에만 `fontFamily` 를 넘깁니다(없는 이름을 넘기면 iOS 가 오류를 냅니다). 웹은 처음부터 `GowunBatang_700Bold, "Gowun Batang", AppleMyungjo, "Nanum Myeongjo", serif` 를 넘기고 `font-display: swap` 으로 둡니다 — 정적 HTML·하이드레이션이 같은 값이고, 글꼴이 오기 전에도 글자가 숨지 않습니다. 글꼴 파일은 `dist/assets/…/GowunBatang_700Bold.*.ttf` 로 같은 사이트에서 받습니다(외부 CDN 없음).
+- `react-native-svg` 의 `<Text>` 도 같은 `fontFamily` 로 그립니다(iOS 는 expo-font 가 등록한 별칭을 RCTFont 로 찾음). 고운바탕은 이미 굵은 글꼴 한 벌이라 `fontWeight` 를 따로 주지 않습니다(웹에서 가짜 굵게가 겹치지 않게).
+- **라이선스**: 고운바탕은 SIL Open Font License 1.1 글꼴입니다 — Copyright 2021 The Gowun Batang Project Authors (https://github.com/yangheeryu/Gowun-Batang). 라이선스 전문은 `node_modules/@expo-google-fonts/gowun-batang/LICENSE_FONT` 에 함께 배포되며, 글꼴 파일은 수정하지 않고 그대로 번들합니다. 글꼴 파일 자체를 따로 판매할 수 없고, 앱에 넣어 배포하는 것은 허용됩니다.
+
+## 브랜드 로고 · 앱 아이콘
+
+- 원본은 `shared/brand/`(SVG 원본 · PNG · README). 앱은 빌드가 `shared/` 를 참조하지 않도록 PNG 를 `assets/images/` 로 복사해 씁니다.
+  - `icon.png` ← `app-icon-1024.png` (1024 · 아이보리 꽉 찬 정사각형 · 투명도 없음) — `icon`. 예전 Icon Composer 폴더(`assets/expo.icon`)와 `ios.icon` 설정은 지웠습니다.
+  - `android-icon-foreground.png` ← `adaptive-foreground-1024.png` + `backgroundColor: '#FAF6EF'` — `android.adaptiveIcon`. `android-icon-monochrome.png`(테마 아이콘)은 같은 배치의 마크를 한 색으로 새로 그렸습니다(해 없음).
+  - `favicon.png` ← `favicon-32.png` — `web.favicon`.
+  - `splash-icon.png` / `splash-icon-dark.png` ← `logo-mark.svg` / `logo-mark-dark.svg` 를 512px 로 그린 것 — 스플래시(라이트 잉크 받침 · 다크 크림 받침), `imageWidth: 120`.
+- 앱 안의 마크는 `src/components/brand.tsx` 의 `BrandMark`(react-native-svg, 다크에서는 받침 `#EBE2D5`·낮춘 화면 색)와 `BrandLockup`(마크 + 고운바탕 워드마크 + 태그라인)입니다. 비교팩 첫 화면 맨 위에 두고, 그 탭만 큰 제목을 끕니다.
+- Expo Go 는 자기 아이콘·로딩 화면을 보여 주므로 앱 아이콘·스플래시는 설정과 PNG 로만 확인했습니다(개발/스토어 빌드에서 적용).
 
 ## 준비
 
@@ -69,6 +100,7 @@ SPEC.md 「다크 모드」 — "밤에 켠 스탠드" 같은 따뜻한 다크(�
 - **일러스트**: 모든 색이 `art*`·`tile*` 토큰. 다크는 밝은 잉크 선, 호박색 해 + 은은한 빛(방사형 그라데이션), 채도를 낮춘 청록/보라 화면.
 - **대비 검사**: `node scripts/contrast.mjs`(app/ 에서) — 화면에서 실제로 함께 쓰는 글자/바탕·상태 그래픽 쌍을 두 테마 모두 계산한다. 작은 글자 4.5:1 · 큰 제목 3:1 · 상태 그래픽(체크·채운 선택·체크박스/라디오 테두리) 3:1 미만이면 실패. 장식 선·입력칸 테두리·비활성, 옆 글자가 같은 뜻을 전하는 보조 그래픽은 `INFO` 로 값만 보여 준다. `--all` 이면 통과한 쌍도 출력.
 - 화면: `docs/screenshots/app-dark-*.png` (iPhone 17 · Expo Go).
+- 그림 기울기: 기울인 그림은 히어로(두 노트북) 하나뿐입니다. 로고·미션 아이콘·리워드 봉투는 똑바로 둡니다. 미션 아이콘 타일은 미션마다 색이 다릅니다(폰으로 하는 일 = 맑은 하늘색 `tileDaily`).
 
 ## 저장 보장 (`src/lib/store.ts`)
 
@@ -88,7 +120,7 @@ node --test shared/domain.test.ts
 node scripts/verify-app-storage.mjs      # app/dist 를 먼저 내보낸 뒤. VERIFY_DEBUG=1 이면 실패 상세 출력
 ```
 
-`verify-app-storage.mjs` (Playwright, 웹 빌드): 결정·미션 답·리워드 신청·시뮬레이터 설정·리워드 승인 저장 실패 → 반영 안 됨·입력 유지·재시도 성공, 키 하나만 실패하는 부분 실패, 초기화 부분 실패, 리워드 승인 메모·검토 표시가 고객 화면(내 체험·미션·결정·반납)에 나오지 않는지(거절 사유는 미션 탭에만). 화면 모드: 다크 선택이 새로고침·다른 페이지·데모 초기화 뒤에도 남는지, 저장 실패 시 이번 실행에만 적용 + 저장 오류 표시 + 다른 탭 저장은 정상 + 새로고침하면 이전 모드, 기기 설정 다크(`colorScheme: 'dark'`)에서 첫 HTML 부터 다크·화면 바탕·글자색.
+`verify-app-storage.mjs` (Playwright, 웹 빌드): 노트북 화면 문구·워드마크가 고운바탕(같은 사이트 ttf)으로 그려지는지, 결정·미션 답·리워드 신청·시뮬레이터 설정·리워드 승인 저장 실패 → 반영 안 됨·입력 유지·재시도 성공, 키 하나만 실패하는 부분 실패, 초기화 부분 실패, 리워드 승인 메모·검토 표시가 고객 화면(내 체험·미션·결정·반납)에 나오지 않는지(거절 사유는 미션 탭에만). 화면 모드: 다크 선택이 새로고침·다른 페이지·데모 초기화 뒤에도 남는지, 저장 실패 시 이번 실행에만 적용 + 저장 오류 표시 + 다른 탭 저장은 정상 + 새로고침하면 이전 모드, 기기 설정 다크(`colorScheme: 'dark'`)에서 첫 HTML 부터 다크·화면 바탕·글자색.
 
 ## 데모 진행 순서 (운영 시뮬레이터)
 
@@ -100,3 +132,4 @@ node scripts/verify-app-storage.mjs      # app/dist 를 먼저 내보낸 뒤. VE
 - Expo Go(iOS 시뮬레이터)와 웹 빌드에서 확인했습니다. 스토어 배포·실기기 설치 파일은 없습니다.
 - 다크 모드: 스플래시 다크 바탕은 개발/스토어 빌드에서만 적용됩니다(Expo Go 는 자체 로딩 화면). 입력칸 테두리·카드 머리카락 선은 부드러운 인상을 위해 3:1 미만이며(대비 검사에서 `INFO`), 입력칸은 보이는 라벨로 구분합니다.
 - 바탕화면 코드는 참고 단서일 뿐이고, 검토 표시는 자동 거절이 아닌 운영자 확인 신호입니다.
+- 고운바탕 Bold 원본은 약 8.2MB라, 필요한 글자만 남긴 서브셋(`assets/fonts/GowunBatang-Bold-subset.ttf`, 약 1.4MB)을 씁니다. KS X 1001 완성형 한글 2,350자 + 앱 소스·공통 규칙에 쓰인 한글 전부 + 영문·문장부호라 문구를 바꿔도 흔한 한글은 그대로 나옵니다. 드문 글자를 새로 쓰면 `node scripts/subset-font.mjs`(app/ 에서)로 다시 만드세요. 웹은 `swap` 이라 받는 동안 대신 글꼴로 보입니다.

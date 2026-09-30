@@ -4,6 +4,7 @@ import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import Svg, { Circle, Defs, Ellipse, G, Line, Path, RadialGradient, Rect, Stop, Text as SvgText } from 'react-native-svg';
 
 import type { MissionId } from '@/domain';
+import { useSerifFamily } from '@/lib/fonts';
 import { useTheme } from '@/lib/theme-context';
 import type { Palette } from '@/lib/theme';
 
@@ -20,6 +21,26 @@ function Sparkle({ x, y, r, fill }: { x: number; y: number; r: number; fill: str
   return <Path d={`M${x} ${y - r} Q${x + k} ${y - k} ${x + r} ${y} Q${x + k} ${y + k} ${x} ${y + r} Q${x - k} ${y + k} ${x - r} ${y} Q${x - k} ${y - k} ${x} ${y - r} Z`} fill={fill} />;
 }
 
+/** 노트북 화면 속 한 줄 — 고운바탕 굵게 (불러오기 전·실패 시 시스템 글꼴 굵게) */
+function ScreenLine({ x, y, text }: { x: number; y: number; text: string }) {
+  const { c } = useTheme();
+  const serif = useSerifFamily();
+  return (
+    <SvgText
+      x={x}
+      y={y}
+      fontSize={15.5}
+      // 고운바탕은 이미 굵은 글꼴 하나라 굵기를 따로 주지 않는다 (웹에서 가짜 굵게가 겹치지 않게)
+      fontFamily={serif}
+      fontWeight={serif ? undefined : '700'}
+      fill={c.artScreenText}
+      textAnchor="middle"
+      letterSpacing={-0.4}>
+      {text}
+    </SvgText>
+  );
+}
+
 export function HeroIllustration({ style }: { style?: StyleProp<ViewStyle> }) {
   const t = useTheme();
   const c = t.c;
@@ -33,9 +54,10 @@ export function HeroIllustration({ style }: { style?: StyleProp<ViewStyle> }) {
           // 밤: 해 둘레로 번지는 호박색 빛 (스탠드 불빛처럼)
           <Defs>
             <RadialGradient id="sunGlow" cx="176" cy="92" r="130" gradientUnits="userSpaceOnUse">
+              {/* 해 중심에서 그림 위 끝(92)까지 사라지게 — 위쪽에서 빛이 잘린 직선이 보이지 않도록 (92 / 130 ≈ 0.7) */}
               <Stop offset="0" stopColor={c.artSunGlow} stopOpacity={0.55} />
-              <Stop offset="0.6" stopColor={c.artSunGlow} stopOpacity={0.14} />
-              <Stop offset="1" stopColor={c.artSunGlow} stopOpacity={0} />
+              <Stop offset="0.45" stopColor={c.artSunGlow} stopOpacity={0.2} />
+              <Stop offset="0.7" stopColor={c.artSunGlow} stopOpacity={0} />
             </RadialGradient>
           </Defs>
         ) : null}
@@ -52,33 +74,32 @@ export function HeroIllustration({ style }: { style?: StyleProp<ViewStyle> }) {
         <Ellipse cx={108} cy={198} rx={84} ry={7} fill={c.artShadow} />
         <Ellipse cx={240} cy={200} rx={92} ry={8} fill={c.artShadow} />
 
-        {/* Air — 얇고 가볍게 */}
+        {/* Air — 얇고 가볍게: "오늘은 어디로 갈까?" (들고 나가는 가벼움) */}
         <G transform="rotate(-7 110 150)">
           <Rect x={38} y={66} width={142} height={94} rx={9} fill={c.artBody} stroke={INK} strokeWidth={sw} />
           <Rect x={46} y={74} width={126} height={78} rx={4} fill={c.artAirScreen} />
-          <Circle cx={150} cy={88} r={5} fill={c.artAirHi} opacity={0.7} />
-          <Circle cx={160} cy={98} r={2.5} fill={c.artAirHi} opacity={0.7} />
-          <SvgText x={109} y={124} fontSize={24} fontWeight="800" fill={c.artScreenText} textAnchor="middle" letterSpacing={-0.5}>
-            가볍게
-          </SvgText>
-          <SvgText x={54} y={145} fontSize={9} fontWeight="700" fill={c.artAirHi} letterSpacing={1.5}>
+          <Circle cx={152} cy={86} r={4.5} fill={c.artAirHi} opacity={0.7} />
+          <Circle cx={161} cy={95} r={2.2} fill={c.artAirHi} opacity={0.7} />
+          {/* 오른쪽 끝은 Pro 에 가려지므로 보이는 화면(46–160)의 가운데에 둔다 */}
+          <ScreenLine x={103} y={104} text="오늘은" />
+          <ScreenLine x={103} y={127} text="어디로 갈까?" />
+          <SvgText x={54} y={145} fontSize={8.5} fontWeight="700" fill={c.artAirHi} letterSpacing={1.6}>
             AIR
           </SvgText>
           <Path d="M24 160 H194 L188 166 H30 Z" fill={c.artBase} stroke={INK} strokeWidth={sw} strokeLinejoin="round" />
         </G>
 
-        {/* Pro — 두툼하게 끝까지 */}
+        {/* Pro — 두툼하게: "오늘은 어디까지 해 볼까?" (끝까지 해내는 힘) */}
         <G transform="rotate(6 236 150)">
           <Rect x={160} y={56} width={154} height={104} rx={10} fill={c.artBody} stroke={INK} strokeWidth={sw} />
           <Rect x={169} y={65} width={136} height={86} rx={4} fill={c.artProScreen} />
           <Rect x={230} y={65} width={14} height={5} rx={2.5} fill={c.artNotch} />
-          <Path d="M232 140 L250 131 L262 136 L290 121" stroke={c.artProHi} strokeWidth={2.2} fill="none" strokeLinecap="round" strokeLinejoin="round" />
-          <SvgText x={238} y={115} fontSize={24} fontWeight="800" fill={c.artScreenText} textAnchor="middle" letterSpacing={-0.5}>
-            끝까지
-          </SvgText>
-          <SvgText x={177} y={145} fontSize={9} fontWeight="700" fill={c.artProHi} letterSpacing={1.5}>
+          <ScreenLine x={237} y={99} text="오늘은" />
+          <ScreenLine x={237} y={122} text="어디까지 해 볼까?" />
+          <SvgText x={177} y={143} fontSize={8.5} fontWeight="700" fill={c.artProHi} letterSpacing={1.6}>
             PRO
           </SvgText>
+          <Path d="M262 143 L271 138 L279 141 L295 132" stroke={c.artProHi} strokeWidth={1.8} fill="none" strokeLinecap="round" strokeLinejoin="round" />
           <Path d="M146 160 H328 L320 172 H154 Z" fill={c.artBase} stroke={INK} strokeWidth={sw} strokeLinejoin="round" />
           <Line x1={226} y1={166} x2={248} y2={166} stroke={INK} strokeWidth={1.6} strokeLinecap="round" />
         </G>
@@ -200,7 +221,7 @@ const MISSION_ART: Record<MissionId, { tile: keyof Palette; Art: (p: ArtProps) =
   video: { tile: 'tileVideo', Art: Video },
   screen: { tile: 'tileScreen', Art: SunMoon },
   typing: { tile: 'tileTyping', Art: Keyboard },
-  daily: { tile: 'tileCarry', Art: PhoneToLaptop },
+  daily: { tile: 'tileDaily', Art: PhoneToLaptop },
   heavy: { tile: 'tileHeavy', Art: Gauge },
 };
 
@@ -261,7 +282,7 @@ export function ProgressRing({
     <View
       style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}
       accessible
-      accessibilityLabel={`핵심 미션 ${total}개 중 ${done}개 완료`}>
+      accessibilityLabel={`핵심 미션 ${total}개 중 ${done}개를 했어요`}>
       <Svg width={size} height={size} style={StyleSheet.absoluteFill}>
         <Circle cx={size / 2} cy={size / 2} r={r} stroke={c.coralSoft} strokeWidth={stroke} fill="none" />
         {frac > 0 ? (

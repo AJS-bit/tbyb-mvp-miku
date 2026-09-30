@@ -140,7 +140,7 @@ export function MissionSummary({ r }: { r: Reservation }) {
           {PICKS.map((p) => (sum[p] ? <span key={p} className={bar[p]} style={{ width: `${(sum[p] / total) * 100}%` }} /> : null))}
         </div>
       ) : null}
-      <p className="mt-2 text-xs text-sub">답한 미션 {total}개 기준 · 비슷함·모르겠음도 그대로 셌어요</p>
+      <p className="mt-2 text-xs text-sub">답한 미션 {total}개 기준이에요. 비슷했다는 답, 모르겠다는 답도 그대로 셌어요.</p>
     </div>
   );
 }
@@ -157,7 +157,7 @@ export function MissionPickList({ r }: { r: Reservation }) {
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
                 <p className="text-[15px] font-semibold text-ink">{missionTitle(m)}</p>
-                {a ? <PickChip pick={a.pick} /> : <span className="text-xs font-semibold text-sub">{m.optional ? "선택 · 안 함" : "아직 안 함"}</span>}
+                {a ? <PickChip pick={a.pick} /> : <span className="text-xs font-semibold text-sub">{m.optional ? "선택 · 안 했어요" : "아직 안 했어요"}</span>}
               </div>
               {a ? <AnswerDetails a={a} className="mt-0.5" /> : null}
             </div>

@@ -2,6 +2,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
+import { BrandLockup } from '@/components/brand';
 import { HeroIllustration } from '@/components/illustrations';
 import { Screen } from '@/components/screen';
 import {
@@ -28,6 +29,7 @@ import {
   COMPARE_POINTS,
   DAY_STATUS_LABEL,
   DEMO_NOTICE,
+  LEANING_LABEL,
   PICKUP_STORES,
   PRICE_TBD,
   RESPONSE_TARGET,
@@ -64,9 +66,7 @@ export default function PackScreen() {
         <Story />
       </FadeUp>
       <ComparePoints />
-      <Notice tone="warn" title="요금·기간·보증은 아직 정해지지 않았어요">
-        {PRICE_TBD}
-      </Notice>
+      <Notice tone="warn">{PRICE_TBD}</Notice>
       <View onLayout={(e) => setFormY(e.nativeEvent.layout.y)}>
         <RequestForm />
       </View>
@@ -81,38 +81,52 @@ function Hero({ onRequest }: { onRequest: () => void }) {
   const styles = useStyles();
   return (
     <View style={styles.hero}>
+      <BrandLockup />
       <HeroIllustration style={{ marginHorizontal: -6 }} />
       <View style={{ gap: 10 }}>
-        <Eyebrow color={c.coralInk}>Try before you buy · 01</Eyebrow>
+        <Eyebrow color={c.coralInk}>Two Macs · 01</Eyebrow>
         <T variant="display" accessibilityRole="header">
           {'맥은 처음이어도\n괜찮아요'}
         </T>
         <T variant="body" color={c.sub}>
-          가볍게 들고 다니는 Air, 끝까지 힘 있는 Pro. 두 대를 함께 빌려 평소처럼 써 보고 내 생활에 맞는 쪽을 고르세요. 어려운 기록 대신 쉬운
-          미션 몇 개면 충분해요.
+          가볍게 들고 다니는 Air, 무거운 작업도 끝까지 해내는 Pro. 두 대를 함께 빌려 평소처럼 써 보고, 내 생활에 맞는 쪽을 골라 보세요. 어려운
+          기록 대신 쉬운 미션 몇 개면 충분해요.
         </T>
       </View>
       <Row gap={6}>
         <DeviceTag kind="air" full />
         <DeviceTag kind="pro" full />
       </Row>
-      <Button label="데모 일정 요청하기" icon={['calendar', 'event']} onPress={onRequest} />
+      <View style={{ gap: 10 }}>
+        <Button label="데모 일정 요청하기" icon={['calendar', 'event']} onPress={onRequest} />
+        <T variant="footnote" style={{ textAlign: 'center' }}>
+          이름이나 전화번호 없이 요청할 수 있어요
+        </T>
+      </View>
     </View>
   );
 }
 
-const STEPS: { title: string; body: string }[] = [
-  { title: '일정만 골라요', body: '이름·전화번호 없이 희망 날짜와 픽업 매장만 남겨요.' },
-  { title: '두 대를 함께 받아요', body: '운영자가 Air·Pro 두 대를 확보하고 결제를 확인하면 예약이 확정돼요.' },
-  { title: '쉬운 미션을 해 봐요', body: `가방에 넣고 나가 보기, 같은 영상 틀어 보기처럼 평소 하던 일이에요. 다 하면 리워드 ${REWARD_AMOUNT_LABEL}.` },
-  { title: '마지막 날 골라요', body: '한 대를 사기로 하면 나머지 한 대만 반납해요. 둘 다 반납해도 괜찮아요.' },
+// 소개 페이지 확정 문구(SPEC.md 「다듬기 · 소개 페이지 문구」)와 같은 내용 — 제목만 앱에 맞게 해요체로
+const STEPS: { title: string; body: string; extra?: string }[] = [
+  { title: '일정만 골라요', body: '희망 날짜와 픽업 매장만 고르면 돼요. 이름이나 전화번호는 받지 않아요.' },
+  { title: '두 대가 준비되면 결제해요', body: '운영자가 Air와 Pro를 함께 준비하면 결제를 안내해 드려요. 결제가 확인되면 예약이 확정돼요.' },
+  {
+    title: '평소처럼 쓰면서 미션을 해요',
+    body: '가방에 넣고 나가 보고, 영상도 틀어 보고, 메모도 써 보세요. 더 마음에 든 쪽을 고르기만 하면 돼요.',
+    extra: `미션 리워드 ${REWARD_AMOUNT_LABEL}`,
+  },
+  {
+    title: '마지막 날 정해요',
+    body: '둘 다 돌려줘도, 한 대를 사도, 아직 못 정해도 괜찮아요. 한 대를 사기로 하면 나머지 한 대만 돌려주면 돼요. 구매는 딜러가 판매를 확인하면 확정돼요.',
+  },
 ];
 
 function Story() {
   const { c } = useTheme();
   const styles = useStyles();
   return (
-    <Section eyebrow="How it works · 02" title="이렇게 진행돼요">
+    <Section eyebrow="How it works · 02" title="이렇게 진행돼요" caption="요청부터 결정까지, 딱 네 단계예요.">
       <Card style={{ gap: 0, paddingVertical: 8 }}>
         {STEPS.map((st, i) => (
           <Row key={st.title} gap={14} style={[styles.step, i > 0 && styles.stepLine]}>
@@ -124,6 +138,11 @@ function Story() {
             <View style={{ flex: 1, gap: 2 }}>
               <T variant="headline">{st.title}</T>
               <T variant="footnote">{st.body}</T>
+              {st.extra ? (
+                <T variant="footnote" weight="700" color={c.coralInk} style={{ marginTop: 2 }}>
+                  {st.extra}
+                </T>
+              ) : null}
             </View>
           </Row>
         ))}
@@ -138,7 +157,7 @@ function ComparePoints() {
   const t = useTheme();
   const styles = useStyles();
   return (
-    <Section eyebrow="Compare · 03" title="두 맥, 이렇게 비교해요" caption="숫자 대신 직접 느껴 볼 점이에요">
+    <Section eyebrow="Compare · 03" title="두 맥, 이렇게 비교해 보세요" caption="스펙 숫자보다 직접 써 보면 알게 되는 차이예요">
       <Card style={{ paddingHorizontal: 0, paddingVertical: 6, gap: 0 }}>
         {COMPARE_POINTS.map((p, i) => (
           <View key={p.title} style={[styles.cmpRow, i > 0 && styles.stepLine]}>
@@ -237,9 +256,9 @@ function RequestForm() {
   };
 
   return (
-    <Section eyebrow="Request · 04" title="데모 일정 요청" caption="요청은 예약 확정이 아니에요. 운영자가 두 기기를 확인한 뒤에만 확정돼요.">
+    <Section eyebrow="Request · 04" title="언제부터 써 볼까요?" caption="요청을 보내 주시면, 두 대를 준비한 뒤 안내해 드릴게요. 결제가 확인되면 예약이 확정돼요.">
       <Card style={{ gap: 26, paddingVertical: 22 }}>
-        <Field label="희망 시작일" required hint="운영자가 손으로 갱신하는 안내값이라 확정 재고는 아니에요.">
+        <Field label="희망 시작일" required hint="운영자가 직접 고쳐 두는 달력이라 실제 재고와 다를 수 있어요.">
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -289,12 +308,12 @@ function RequestForm() {
           <Row style={{ justifyContent: 'space-between', flexWrap: 'wrap' }}>
             <Row gap={6}>
               <Icon ios="clock" web="schedule" size={13} color={c.sub} />
-              <T variant="caption">마지막 갱신 {formatDateTime(demo.calendarUpdatedAt)}</T>
+              <T variant="caption">{formatDateTime(demo.calendarUpdatedAt)} 기준</T>
             </Row>
-            <T variant="caption">일요일 픽업 없음 (데모 가정)</T>
+            <T variant="caption">일요일에는 픽업이 없어요 (데모 가정)</T>
           </Row>
           {selectedDay?.status === 'check' ? (
-            <Notice tone="warn">확인이 필요한 날짜예요. 운영자가 매장·기기를 확인한 뒤 가능 여부를 알려 드려요.</Notice>
+            <Notice tone="warn">확인이 필요한 날짜예요. 매장과 기기를 확인한 뒤 가능한지 알려 드릴게요.</Notice>
           ) : null}
         </Field>
 
@@ -324,31 +343,29 @@ function RequestForm() {
           />
         </Field>
 
-        <Field label="지금 마음" required hint="지금은 어느 쪽에 마음이 가나요? 체험이 끝나면 그때 마음과 나란히 볼게요.">
+        <Field label="지금은 어느 쪽에 마음이 가나요?" required hint="체험이 끝나면 그때 마음과 나란히 놓고 볼게요.">
           <Segmented<Leaning>
-            accessibilityLabel="지금 마음"
+            accessibilityLabel="지금은 어느 쪽에 마음이 가나요"
             value={leaning}
             onChange={(v) => v && setLeaning(v)}
             options={[
-              { value: 'air', label: 'Air 쪽', color: c.air, fg: c.onAir },
-              { value: 'pro', label: 'Pro 쪽', color: c.pro, fg: c.onPro },
-              { value: 'unsure', label: '모르겠음' },
+              { value: 'air', label: 'Air 쪽', color: c.air, fg: c.onAir, a11y: LEANING_LABEL.air },
+              { value: 'pro', label: 'Pro 쪽', color: c.pro, fg: c.onPro, a11y: LEANING_LABEL.pro },
+              { value: 'unsure', label: '모르겠어요', a11y: LEANING_LABEL.unsure },
             ]}
           />
-          <ScorePicker label="얼마나 확신해요? (1 전혀 모르겠음 · 5 확실함)" value={confidence} onChange={(v) => setConfidence(v)} a11yPrefix="체험 전 " />
+          <ScorePicker label="얼마나 확실해요? (1 전혀 모르겠어요 · 5 아주 확실해요)" value={confidence} onChange={(v) => setConfidence(v)} a11yPrefix="체험 전 " />
         </Field>
 
-        <Notice tone="info" title="이름·전화번호를 받지 않아요">
-          {DEMO_NOTICE}
-        </Notice>
+        <Notice tone="info">{DEMO_NOTICE}</Notice>
 
         <View style={{ gap: 10 }}>
           <ErrorText message={error} />
           <Button
-            label={saving ? '저장 중…' : '데모 일정 요청'}
+            label={saving ? '저장 중…' : '이대로 요청하기'}
             onPress={submit}
             disabled={saving}
-            accessibilityHint="요청을 이 기기에 저장하고 내 체험 탭으로 이동합니다"
+            accessibilityHint="요청을 이 기기에 저장하고 내 체험 탭으로 이동해요"
           />
           <Row gap={6} style={{ justifyContent: 'center' }}>
             <Icon ios="clock" web="schedule" size={13} color={c.sub} />

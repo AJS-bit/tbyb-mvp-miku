@@ -12,34 +12,35 @@ import {
 import { ButtonLink, Card, CardTitle, DeviceName, Notice, PageHeader, cx, delay, deviceTone } from "@/components/ui";
 import { LaptopMini } from "@/components/illustrations";
 
-export const metadata: Metadata = { title: "비교팩 상세" };
+export const metadata: Metadata = { title: "비교팩" };
 
 const KEYS: DeviceKey[] = ["air", "pro"];
+// 히어로 화면 문구(어디로 · 어디까지)와 짝을 맞춘 한 줄
 const MOOD: Record<DeviceKey, string> = {
-  air: "가볍게 들고 다니는 쪽",
-  pro: "무거운 작업도 끝까지 가는 쪽",
+  air: "가볍게 들고 어디든 가고 싶다면",
+  pro: "무거운 작업도 끝까지 해내고 싶다면",
 };
 
 const RULES = [
   {
     dot: "bg-success",
-    title: "출고 전에는 직접 취소할 수 있어요.",
-    body: `${CANCELLABLE.map((s) => STATUS_LABEL[s]).join(" · ")} 단계, 내 체험 화면에서`,
+    title: "픽업 전이라면 직접 취소할 수 있어요.",
+    body: `${STATUS_LABEL[CANCELLABLE[0]]}부터 ${STATUS_LABEL[CANCELLABLE[CANCELLABLE.length - 1]]}까지, ‘내 체험’ 화면에서 바로 취소하면 돼요.`,
   },
   {
     dot: "bg-warn",
-    title: "출고 후 환불·파손·분실은 딜러 계약 기준으로 처리해요.",
-    body: "이 데모의 범위 밖이에요.",
+    title: "픽업한 뒤의 환불, 파손, 분실은 딜러와의 계약을 따라요.",
+    body: "이 데모에서는 다루지 않아요.",
   },
   {
     dot: "bg-ink",
-    title: "한 대를 사기로 하면 나머지 한 대와 부속품만 반납·검수해요.",
-    body: "고른 기기는 딜러 판매가 확인돼야 구매로 확정되고, 확인되지 않으면 그 기기도 반납·검수해요.",
+    title: "한 대를 사기로 하면, 나머지 한 대와 구성품만 돌려주면 돼요.",
+    body: "고른 기기는 딜러가 판매를 확인하면 구매가 확정돼요. 확인되지 않으면 그 기기도 돌려주셔야 해요.",
   },
   {
     dot: "bg-pro",
-    title: "반납 전에 백업·로그아웃·나의 찾기 해제를 해 주세요.",
-    body: "운영자가 검수에서 초기화까지 확인하고, 검수가 끝나기 전에는 다른 사람에게 빌려주지 않아요.",
+    title: "돌려주기 전에 백업하고, 로그아웃과 ‘나의 찾기’ 해제를 해 주세요.",
+    body: "점검할 때 운영자가 초기화까지 확인해요. 점검이 끝나기 전에는 다른 분께 빌려 드리지 않아요.",
   },
 ];
 
@@ -47,7 +48,7 @@ export default function PackPage() {
   return (
     <div className="space-y-6 sm:space-y-8">
       <PageHeader eyebrow="The pack · MacBook Air & Pro 14" title={PACK_NAME}>
-        두 대를 함께 빌려 같은 하루를 보내 보는 팩이에요. 숫자 대신, 직접 해 보고 느낄 수 있는 점을 안내해요.
+        두 대를 함께 빌려 똑같은 하루를 보내 보는 구성이에요. 맥이 처음이어도 차이를 느낄 수 있게 비교할 점을 골라 뒀어요.
       </PageHeader>
 
       {/* 두 기기 머리 */}
@@ -58,15 +59,14 @@ export default function PackPage() {
             <p className="eyebrow mt-4 text-sub">Device 0{i + 1}</p>
             <p className={cx("mt-1 text-[17px] font-extrabold leading-snug sm:text-[22px]", deviceTone[k].text)}>{DEVICE_LABEL[k]}</p>
             <p className="mt-1 text-sm leading-relaxed text-ink/80">{MOOD[k]}</p>
-            <p className="mt-2 text-xs text-sub">사양은 딜러 재고 확정 후 기기별 표시</p>
           </div>
         ))}
       </div>
 
       {/* 같은 기준 비교 포인트 */}
       <Card aria-labelledby="points">
-        <CardTitle id="points" eyebrow="Same yardstick" sub="두 기기를 같은 기준으로 확인할 점이에요. 숫자 대신 직접 해 볼 방법을 적었어요.">
-          같은 기준으로 확인할 점
+        <CardTitle id="points" eyebrow="Same yardstick" sub="스펙 숫자 대신, 직접 해 보면 알 수 있는 방법을 적었어요.">
+          같은 기준으로 비교해 보세요
         </CardTitle>
         <ul className="divide-y divide-line">
           {COMPARE_POINTS.map((p) => (
@@ -86,25 +86,24 @@ export default function PackPage() {
       <div className="grid gap-6 lg:grid-cols-2">
         <Card aria-labelledby="contents">
           <CardTitle id="contents" eyebrow="In the box">
-            팩 구성
+            팩에 들어 있는 것
           </CardTitle>
           <ul className="space-y-2">
             {KEYS.map((k) => (
               <li key={k} className="rounded-2xl bg-bg px-4 py-3">
                 <DeviceName kind={k} />
-                <p className="mt-0.5 pl-4 text-[15px] text-sub">1대 + 부속품(충전기·케이블 등)</p>
+                <p className="mt-0.5 pl-4 text-[15px] text-sub">1대와 구성품(충전기, 케이블 등)</p>
               </li>
             ))}
           </ul>
           <p className="mt-4 text-[15px] leading-relaxed text-sub">
-            기기별 칩·메모리·저장공간과 부속품 구성은 딜러 재고 확정 후 표시해요. 픽업 때 두 기기의 상태·부속품을 함께 확인하고
-            기록해요.
+            정확한 구성품은 딜러 재고가 정해지면 알려 드려요. 픽업할 때 두 기기의 상태와 구성품을 함께 확인하고 기록해 둬요.
           </p>
         </Card>
 
         <Card aria-labelledby="pickup">
           <CardTitle id="pickup" eyebrow="Pick up">
-            픽업
+            픽업 매장
           </CardTitle>
           <ul className="space-y-2">
             {PICKUP_STORES.map((s) => (
@@ -113,13 +112,13 @@ export default function PackPage() {
               </li>
             ))}
           </ul>
-          <p className="mt-4 text-[15px] leading-relaxed text-sub">제휴 매장과 위치는 딜러 계약 후 확정해요.</p>
+          <p className="mt-4 text-[15px] leading-relaxed text-sub">매장 위치는 딜러와 계약한 뒤에 알려 드려요.</p>
         </Card>
       </div>
 
       <Card aria-labelledby="rules">
         <CardTitle id="rules" eyebrow="Good to know">
-          취소·반납 규칙
+          취소와 반납은 이렇게 해요
         </CardTitle>
         <ul className="grid gap-5 md:grid-cols-2">
           {RULES.map((r) => (
@@ -137,12 +136,12 @@ export default function PackPage() {
       <div className="grid gap-6 lg:grid-cols-2">
         <Card aria-labelledby="party">
           <CardTitle id="party" eyebrow="Who">
-            계약 주체
+            누가 빌려주고 파나요?
           </CardTitle>
-          <p className="text-[15px] font-bold text-warn">딜러 계약 후 표시</p>
-          <p className="mt-1 text-[15px] leading-relaxed text-sub">대여·판매를 누가 맡는지는 계약이 끝나면 여기에 적어요.</p>
+          <p className="text-[15px] font-bold text-warn">아직 정해지지 않았어요</p>
+          <p className="mt-1 text-[15px] leading-relaxed text-sub">대여와 판매를 맡을 곳은 딜러와 계약한 뒤 여기에 적어 둘게요.</p>
         </Card>
-        <Notice tone="warn" title="체험료·기간·보증" className="self-start rounded-3xl p-6! sm:p-7!">
+        <Notice tone="warn" title="요금과 기간도 아직 정해지지 않았어요" className="self-start rounded-3xl p-6! sm:p-7!">
           {PRICE_TBD}
         </Notice>
       </div>

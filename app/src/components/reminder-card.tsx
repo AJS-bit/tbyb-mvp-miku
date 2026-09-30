@@ -43,7 +43,7 @@ export function ReminderCard({ r }: { r: Reservation }) {
 
   const schedule = async () => {
     if (!draftLast) {
-      setError('운영자가 안내한 마지막 날(반납일)을 골라 주세요.');
+      setError('운영자가 안내한 마지막 날을 골라 주세요.');
       return;
     }
     setBusy(true);
@@ -65,13 +65,13 @@ export function ReminderCard({ r }: { r: Reservation }) {
   };
 
   return (
-    <Section eyebrow="Nudge" title="미션 알림" caption={`체험 시작 ${formatDateKey(toDateKey(start))} · 둘째 날과 마지막 날 전날`}>
+    <Section eyebrow="Nudge" title="미션 알림" caption={`${formatDateKey(toDateKey(start))}에 체험을 시작했어요`}>
       <Card style={{ gap: 16 }}>
         <T variant="callout">
-          잊지 않게 살짝 알려 드릴게요. 둘째 날엔 쉬운 미션 하나, 마지막 날 전날엔 남은 미션과 리워드 신청을 챙겨요. 두 날이 겹치면 한 번만
-          보내요.
+          잊지 않게 살짝 알려 드릴게요. 둘째 날에는 쉬운 미션 하나를, 마지막 날 전날에는 남은 미션과 리워드 신청을 챙겨 드려요. 두 날이 겹치면
+          한 번만 보내요.
         </T>
-        <Field label="마지막 날 (반납일)" hint="체험 기간은 딜러 계약 후 확정돼요. 운영자가 안내한 날짜를 골라 주세요.">
+        <Field label="마지막 날 (반납하는 날)" hint="운영자가 안내한 반납 날짜를 골라 주세요. 체험 기간은 딜러와 계약한 뒤에 정해져요.">
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -103,7 +103,7 @@ export function ReminderCard({ r }: { r: Reservation }) {
         {plan.length ? (
           <View style={styles.plan}>
             <T variant="footnote" weight="700" color={c.sub}>
-              {plan.length === 1 ? '알림 1번 (두 날이 겹쳐 하나로 합쳤어요)' : '알림 2번'}
+              {plan.length === 1 ? '두 날이 겹쳐서 한 번만 알려 드려요' : '두 번 알려 드려요'}
             </T>
             {plan.map((p) => (
               <Row key={p.key} gap={10} style={{ alignItems: 'flex-start' }}>
@@ -122,17 +122,17 @@ export function ReminderCard({ r }: { r: Reservation }) {
         ) : null}
 
         {scheduled ? (
-          <Notice tone="done" title={`이 기기에 알림 ${rec.notificationIds.length}건 예약됨`}>
+          <Notice tone="done" title={`이 기기에 알림 ${rec.notificationIds.length}건을 예약했어요`}>
             <T variant="footnote" color={c.doneText}>
               {rec.mode === 'provisional'
-                ? '조용한 알림으로 예약했어요 — 알림 센터로 전달돼요. 배너로 받으려면 설정 앱에서 알림을 켜 주세요.'
+                ? '조용한 알림으로 예약했어요. 알림 센터에서 볼 수 있고, 배너로 받으려면 설정 앱에서 알림을 켜 주세요.'
                 : '배너 알림으로 예약했어요.'}
               {rec.note ? ` ${rec.note}` : ''}
               {rec.lastDay !== draftLast ? ' 날짜를 바꿨다면 다시 예약해 주세요.' : ''}
             </T>
             {osList !== undefined ? (
               <T variant="caption" color={c.doneText}>
-                {osList === null ? '기기 알림 목록은 이 환경에서 확인하지 못했어요.' : `기기 확인: iOS에 예약된 이 앱의 알림 ${osList.length}건`}
+                {osList === null ? '이 기기의 알림 목록은 확인하지 못했어요.' : `iOS에 실제로 예약된 알림: ${osList.length}건`}
               </T>
             ) : null}
           </Notice>
@@ -146,16 +146,16 @@ export function ReminderCard({ r }: { r: Reservation }) {
         {REMINDERS_SUPPORTED ? (
           <Row gap={8}>
             <Button
-              label={scheduled ? '다시 예약' : '알림 받기'}
+              label={scheduled ? '다시 예약하기' : '알림 받기'}
               icon={['bell.badge', 'notifications_active']}
               onPress={schedule}
               disabled={busy}
               style={{ flex: 1 }}
             />
-            {scheduled ? <Button variant="secondary" label="끄기" onPress={off} disabled={busy} /> : null}
+            {scheduled ? <Button variant="secondary" label="알림 끄기" onPress={off} disabled={busy} /> : null}
           </Row>
         ) : (
-          <Button variant="secondary" label="계획 저장 (웹: 알림 없음)" onPress={schedule} disabled={busy} />
+          <Button variant="secondary" label="계획만 저장하기 (웹은 알림 없음)" onPress={schedule} disabled={busy} />
         )}
       </Card>
     </Section>

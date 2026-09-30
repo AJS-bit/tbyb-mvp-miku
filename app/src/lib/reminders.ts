@@ -41,7 +41,7 @@ export async function scheduleReminders(items: ReminderItem[], now: Date = new D
   try {
     const mode = await ensurePermission();
     if (!mode) {
-      return { ok: false, error: '알림 권한이 꺼져 있어 예약하지 못했습니다. 설정 앱에서 알림을 켜 주세요.' };
+      return { ok: false, error: '알림이 꺼져 있어서 예약하지 못했어요. 설정 앱에서 알림을 켜 주세요.' };
     }
     const ids: string[] = [];
     let skipped = 0;
@@ -59,7 +59,7 @@ export async function scheduleReminders(items: ReminderItem[], now: Date = new D
     }
     return { ok: true, ids, mode, skipped };
   } catch (e) {
-    return { ok: false, error: `알림을 예약하지 못했습니다: ${e instanceof Error ? e.message : String(e)}` };
+    return { ok: false, error: `알림을 예약하지 못했어요. (${e instanceof Error ? e.message : String(e)})` };
   }
 }
 

@@ -126,7 +126,7 @@ for (const { scheme, prefix } of THEMES) {
         await page.goto("request/");
         await page.locator('[data-testid="calendar-day"][data-status="open"]').nth(1).click();
         await page.getByRole("radio", { name: PICKUP_STORES[0] }).check();
-        await page.locator("label", { has: page.getByRole("radio", { name: "Air 쪽" }) }).click();
+        await page.locator("label", { has: page.getByRole("radio", { name: "Air 쪽이에요" }) }).click();
         await page.locator("label", { has: page.getByRole("radio", { name: "그 마음, 얼마나 확실해요? 2점" }) }).click();
         await page.locator("#question").fill("유튜브랑 과제 정도인데 Pro까지 필요할까요?");
         await shot(page, `${prefix}request`, scheme);
@@ -161,9 +161,9 @@ for (const { scheme, prefix } of THEMES) {
         await seed(page, s);
         await page.goto("my/decide/?id=TB-0001");
         await expect(page.getByTestId("mission-summary")).toBeVisible();
-        await page.locator("label", { has: page.getByRole("radio", { name: /체험한 기기 그대로 구매/ }) }).click();
+        await page.locator("label", { has: page.getByRole("radio", { name: /써 본 기기를 그대로 살게요/ }) }).click();
         await page.locator("label", { has: page.getByRole("radio", { name: "MacBook Air", exact: true }) }).click();
-        await page.locator("label", { has: page.getByRole("radio", { name: "체험 후, 이 결정에 얼마나 확신하나요? 4점" }) }).click();
+        await page.locator("label", { has: page.getByRole("radio", { name: "이 결정, 얼마나 확실해요? 4점" }) }).click();
         await page.getByRole("button", { name: "+ 가벼워서 들고 다니기 편했어요" }).click();
         await page.getByRole("button", { name: "+ 영상·과제엔 Air로 충분했어요" }).click();
         await expect(page.getByTestId("return-plan")).toContainText("반납할 기기: MacBook Pro 14형");

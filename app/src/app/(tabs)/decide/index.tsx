@@ -3,7 +3,7 @@ import { View } from 'react-native';
 
 import { MissionDigest } from '@/components/mission';
 import { FollowUpNotice, ReturnOutcome, ReturnPlan } from '@/components/outcome';
-import { Screen } from '@/components/screen';
+import { Screen, ScrollTarget } from '@/components/screen';
 import { EmptyState, LeaningTag, ReservationSwitcher } from '@/components/shared';
 import {
   Button,
@@ -45,10 +45,10 @@ import { useTheme } from '@/lib/theme-context';
 
 const CHOICES: DecisionChoice[] = ['return_both', 'buy_used', 'buy_new', 'undecided'];
 const CHOICE_SUB: Record<DecisionChoice, string> = {
-  return_both: '두 대와 부속품을 모두 반납합니다',
-  buy_used: '쓰던 두 대 중 한 대를 사고, 나머지 한 대만 반납합니다',
-  buy_new: '고른 모델을 새 제품으로 사고, 체험한 두 대는 반납합니다',
-  undecided: '두 대 모두 반납하고 나중에 결정합니다',
+  return_both: 'Air와 Pro를 구성품까지 모두 반납해요',
+  buy_used: '써 본 두 대 중 한 대를 사고, 나머지 한 대만 반납해요',
+  buy_new: '고른 모델을 새 제품으로 사고, 써 본 두 대는 모두 반납해요',
+  undecided: '두 대 모두 반납하고, 결정은 천천히 해도 돼요',
 };
 
 // 이유를 쓰기 어려운 사람을 위한 빠른 이유 — 눌러서 넣고 다시 누르면 뺀다 (직접 고쳐 써도 된다)
@@ -72,7 +72,7 @@ export default function DecideScreen() {
         <EmptyState
           eyebrow="Decide"
           title="체험 마지막 날 여기서 골라요"
-          body="미션 답을 모아 보고 반납·구매를 고르는 화면이에요. 먼저 비교팩 탭에서 데모 일정을 요청해 주세요."
+          body="미션 답을 모아 보고, 반납할지 살지 고르는 곳이에요. 먼저 비교팩 탭에서 데모 일정을 요청해 주세요."
           cta={{ label: '데모 일정 요청하러 가기', href: '/' }}
         />
       </Screen>
@@ -103,12 +103,12 @@ export default function DecideScreen() {
             <StatusChip status={current.status} />
           </Row>
           <T variant="body" color={c.sub}>
-            체험 마지막 날, 미션 답을 모아 보고 반납·구매를 골라요. 구매 선택지는 딜러 판매 조건이 확정된 경우에만 열려요.
+            체험 마지막 날, 미션 답을 모아 보며 반납할지 살지 골라요.
           </T>
         </Card>
       ) : current.status === 'cancelled' ? (
         <Notice tone="info" title="취소된 요청이에요">
-          취소된 요청에는 결정을 남기지 않아요.
+          새 일정을 요청하면 체험 마지막 날 여기서 고를 수 있어요.
         </Notice>
       ) : (
         <AfterReturn r={current} />
@@ -155,7 +155,7 @@ function DecisionForm({ r, dealerTermsConfirmed }: { r: Reservation; dealerTerms
       !choice
         ? { ok: false, error: '결정을 하나 골라 주세요.' }
         : !confidence
-          ? { ok: false, error: '체험 후 확신(1–5)을 골라 주세요.' }
+          ? { ok: false, error: '이 결정이 얼마나 확실한지 1–5 중에서 골라 주세요.' }
           : setDecision(s, r.id, { choice, model: isBuy ? (model ?? undefined) : undefined, confidenceAfter: confidence, reason }),
     );
     setSaving(false);
@@ -170,52 +170,54 @@ function DecisionForm({ r, dealerTermsConfirmed }: { r: Reservation; dealerTerms
 
   return (
     <>
-      <Section eyebrow="Your picks" title="미션 답 모아 보기" caption="어느 쪽이 나았는지 고른 답이에요">
+      <Section eyebrow="Your picks" title="미션 답 모아 보기" caption="미션마다 더 나았던 쪽을 모았어요">
         <Card>
           <MissionDigest r={r} />
         </Card>
       </Section>
 
-      <Section eyebrow="Decide" title="결정" caption="마지막 날, 미션 답을 보고 골라요. 체험 중에는 다시 바꿀 수 있어요.">
-        {buyLocked ? (
-          <Notice tone="warn" title="구매 선택지는 아직 닫혀 있어요">
-            {DEALER_TERMS_TBD}
-          </Notice>
-        ) : null}
-        <View style={{ gap: 8 }}>
-          {CHOICES.map((c) => {
-            const locked = (c === 'buy_new' || c === 'buy_used') && buyLocked;
-            return (
-              <RadioRow
-                key={c}
-                selected={choice === c}
-                disabled={locked}
-                label={DECISION_LABEL[c]}
-                sub={locked ? `${CHOICE_SUB[c]} · 딜러 조건 확정 후 열림` : CHOICE_SUB[c]}
-                onPress={() => {
-                  setChoice(c);
-                  setError(null);
-                }}
-              />
-            );
-          })}
-        </View>
-        {isBuy ? (
-          <Card style={{ gap: 10 }}>
-            <Field label={choice === 'buy_used' ? '구매할 기기 (쓰던 두 대 중)' : '새로 살 모델'}>
-              <Segmented<DeviceKey>
-                accessibilityLabel="모델 선택"
-                value={model}
-                onChange={(v) => v && setModel(v)}
-                options={[
-                  { value: 'air', label: DEVICE_LABEL.air, color: c.air, fg: c.onAir },
-                  { value: 'pro', label: DEVICE_LABEL.pro, color: c.pro, fg: c.onPro },
-                ]}
-              />
-            </Field>
-          </Card>
-        ) : null}
-      </Section>
+      <ScrollTarget name="choice">
+        <Section eyebrow="Decide" title="어떻게 할까요?" caption="체험하는 동안에는 몇 번이든 바꿀 수 있어요.">
+          {buyLocked ? (
+            <Notice tone="warn" title="구매 선택지는 아직 닫혀 있어요">
+              {DEALER_TERMS_TBD}
+            </Notice>
+          ) : null}
+          <View style={{ gap: 8 }}>
+            {CHOICES.map((c) => {
+              const locked = (c === 'buy_new' || c === 'buy_used') && buyLocked;
+              return (
+                <RadioRow
+                  key={c}
+                  selected={choice === c}
+                  disabled={locked}
+                  label={DECISION_LABEL[c]}
+                  sub={CHOICE_SUB[c]} // 닫힌 이유는 위 안내 한 곳에서만 말한다
+                  onPress={() => {
+                    setChoice(c);
+                    setError(null);
+                  }}
+                />
+              );
+            })}
+          </View>
+          {isBuy ? (
+            <Card style={{ gap: 10 }}>
+              <Field label={choice === 'buy_used' ? '써 본 두 대 중 어느 쪽을 살까요?' : '어느 모델을 새로 살까요?'}>
+                <Segmented<DeviceKey>
+                  accessibilityLabel="모델 선택"
+                  value={model}
+                  onChange={(v) => v && setModel(v)}
+                  options={[
+                    { value: 'air', label: DEVICE_LABEL.air, color: c.air, fg: c.onAir },
+                    { value: 'pro', label: DEVICE_LABEL.pro, color: c.pro, fg: c.onPro },
+                  ]}
+                />
+              </Field>
+            </Card>
+          ) : null}
+        </Section>
+      </ScrollTarget>
 
       <Section eyebrow="Before → after" title="마음이 얼마나 정해졌나요?">
         <Card style={{ gap: 16 }}>
@@ -240,13 +242,13 @@ function DecisionForm({ r, dealerTermsConfirmed }: { r: Reservation; dealerTerms
             {confidence ? (
               <T variant="footnote" weight="700" color={c.coralInk} style={{ marginTop: 28 }}>
                 {confidence - r.request.confidenceBefore === 0
-                  ? '변화 없음'
+                  ? '그대로예요'
                   : `${confidence - r.request.confidenceBefore > 0 ? '+' : ''}${confidence - r.request.confidenceBefore}`}
               </T>
             ) : null}
           </Row>
-          <ScorePicker label="체험 후 확신 (1 전혀 모르겠음 · 5 확실함)" value={confidence} onChange={setConfidence} a11yPrefix="체험 후 " />
-          <Field label="이유" required hint="한 줄이면 충분해요. 아래에서 골라 넣어도 되고, 아직 결정 못 했다면 그 이유도 좋아요.">
+          <ScorePicker label="이 결정, 얼마나 확실해요? (1 전혀 모르겠어요 · 5 아주 확실해요)" value={confidence} onChange={setConfidence} a11yPrefix="체험 후 " />
+          <Field label="그렇게 고른 이유" required hint="한 줄이면 충분해요. 아래 칩을 눌러 넣어도 되고, 아직 못 정했다면 그 이유를 적어도 좋아요.">
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
               {QUICK_REASONS.map((q) => (
                 <ChoiceChip key={q} small role="checkbox" label={q} selected={reasonParts.includes(q)} onPress={() => toggleReason(q)} a11y={`빠른 이유: ${q}`} />
@@ -266,13 +268,13 @@ function DecisionForm({ r, dealerTermsConfirmed }: { r: Reservation; dealerTerms
         </Card>
       </Section>
 
-      <Section eyebrow="Return plan" title="반납 계획" caption="지금 고른 결정 기준으로 계산했어요">
+      <Section eyebrow="Return plan" title="반납할 기기" caption="지금 고른 결정에 맞춰 보여 드려요">
         <Card>
           {choice ? (
             <ReturnPlan decision={{ choice, model: isBuy ? (model ?? undefined) : undefined }} />
           ) : (
             <T variant="callout" color={c.sub}>
-              결정을 고르면 반납할 기기가 여기에 표시돼요.
+              결정을 고르면 반납할 기기를 보여 드릴게요.
             </T>
           )}
         </Card>
@@ -281,8 +283,8 @@ function DecisionForm({ r, dealerTermsConfirmed }: { r: Reservation; dealerTerms
       <View style={{ gap: 10 }}>
         <ErrorText message={error} />
         {saved && !dirty ? (
-          <Notice tone="done" title="결정이 저장됐습니다">
-            {`${formatDateTime(saved.decidedAt)} · 반납 접수 때 운영자가 이 결정을 기준으로 처리해요.`}
+          <Notice tone="done" title="결정을 저장했어요">
+            {`${formatDateTime(saved.decidedAt)} · 반납할 때 이 결정대로 처리해 드릴게요.`}
           </Notice>
         ) : null}
         <Button
@@ -300,9 +302,9 @@ function DecisionForm({ r, dealerTermsConfirmed }: { r: Reservation; dealerTerms
 // ───────── 반납 준비 체크리스트 ─────────
 
 const RETURN_ITEMS = [
-  { key: 'backup', label: '내 데이터 백업' },
-  { key: 'signout', label: '계정 로그아웃' },
-  { key: 'findmy', label: '나의 찾기 해제' },
+  { key: 'backup', label: '내 파일 백업하기' },
+  { key: 'signout', label: '내 계정에서 로그아웃하기' },
+  { key: 'findmy', label: "'나의 찾기' 끄기" },
 ] as const;
 
 function ReturnChecklist({ r, devices }: { r: Reservation; devices: DeviceKey[] }) {
@@ -316,7 +318,7 @@ function ReturnChecklist({ r, devices }: { r: Reservation; devices: DeviceKey[] 
       return { ...u, returnChecklist: { ...u.returnChecklist, [r.id]: next } };
     });
   return (
-    <Section eyebrow="Before return" title="반납 준비" caption={r.decision ? '반납할 기기마다 확인해 주세요' : '결정을 저장하면 반납할 기기에 맞춰져요'}>
+    <Section eyebrow="Before return" title="반납 준비" caption={r.decision ? '반납할 기기마다 확인해 주세요' : '결정을 저장하면 반납할 기기에 맞춰 바뀌어요'}>
       {devices.map((k) => (
         <Card key={k} style={{ gap: 2, paddingVertical: 12, borderLeftWidth: 5, borderLeftColor: t.device[k].main }}>
           <DeviceTag kind={k} full style={{ marginBottom: 4 }} />
@@ -326,8 +328,8 @@ function ReturnChecklist({ r, devices }: { r: Reservation; devices: DeviceKey[] 
           })}
         </Card>
       ))}
-      <Notice tone="info" title="체크는 기억용이에요">
-        데이터 삭제(초기화)는 운영자가 검수 때 직접 확인해요. 여기서 체크해도 삭제된 것으로 처리되지는 않아요.
+      <Notice tone="info" title="잊지 않게 체크해 두는 곳이에요">
+        기기 초기화는 반납 뒤 점검할 때 운영자가 직접 확인해요.
       </Notice>
     </Section>
   );
@@ -339,7 +341,7 @@ function AfterReturn({ r }: { r: Reservation }) {
   const d = r.decision;
   return (
     <>
-      <Section eyebrow="Return" title="반납·구매 결과">
+      <Section eyebrow="Return" title="기기별 결과">
         <Card>
           <ReturnOutcome r={r} />
         </Card>
@@ -357,7 +359,7 @@ function AfterReturn({ r }: { r: Reservation }) {
               </Row>
             </KeyValue>
             {d.reason ? <KeyValue k="이유" v={d.reason} /> : null}
-            <KeyValue k="결정 시각" v={formatDateTime(d.decidedAt)} />
+            <KeyValue k="결정한 때" v={formatDateTime(d.decidedAt)} />
           </Card>
         </Section>
       ) : null}

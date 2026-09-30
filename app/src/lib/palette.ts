@@ -90,6 +90,7 @@ export const light = {
   tileVideo: '#E9F6F2',
   tileScreen: '#FFF6DE',
   tileTyping: '#F2EEFF',
+  tileDaily: '#E8F1FB', // 폰으로 하는 일 — 맑은 하늘색 (들고 나가기 타일과 겹치지 않게)
   tileHeavy: '#FFEFEA',
 };
 
@@ -174,6 +175,7 @@ export const dark: Palette = {
   tileVideo: '#172A26',
   tileScreen: '#2C2515',
   tileTyping: '#211D35',
+  tileDaily: '#172330',
   tileHeavy: '#301F1A',
 };
 

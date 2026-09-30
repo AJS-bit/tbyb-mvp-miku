@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { useState, type FormEvent, type ReactNode } from "react";
 import {
   DAY_STATUS_LABEL,
-  DEMO_NOTICE,
   LEANING_LABEL,
   PICKUP_STORES,
   RESPONSE_TARGET,
@@ -39,6 +38,17 @@ const USAGES = Object.keys(USAGE_LABEL) as Usage[];
 
 const radioCard =
   "flex cursor-pointer items-center gap-3 rounded-2xl border border-line-strong bg-surface px-4 py-3.5 text-[15px] text-ink transition-colors hover:bg-cream has-[:checked]:border-ink has-[:checked]:bg-cream has-[:checked]:font-semibold has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-ink";
+
+function LeaningText({ label }: { label: string }) {
+  const cut = label.indexOf(" ");
+  if (cut < 0) return <span className="text-[16px] font-extrabold">{label}</span>;
+  return (
+    <>
+      <span className="block text-[17px] font-extrabold leading-tight">{label.slice(0, cut)}</span>{" "}
+      <span className="mt-0.5 block text-[13px] font-semibold leading-tight">{label.slice(cut + 1)}</span>
+    </>
+  );
+}
 
 function Step({ n, title, tag, sub, children, id }: { n: number; title: string; tag: "필수" | "선택"; sub?: ReactNode; children: ReactNode; id?: string }) {
   return (
@@ -115,8 +125,8 @@ export function RequestForm() {
         tag="필수"
         sub={
           <>
-            마지막 갱신 <span className="tabular font-semibold text-ink">{fmtDateTime(snap.state.calendarUpdatedAt)}</span> · 확정
-            재고가 아니에요. 운영자가 두 기기를 확인한 뒤에 확정돼요.
+            마지막 갱신 <span className="tabular font-semibold text-ink">{fmtDateTime(snap.state.calendarUpdatedAt)}</span>. 날짜는
+            운영자가 두 기기를 확인한 뒤에 확정돼요.
           </>
         }
       >
@@ -127,11 +137,11 @@ export function RequestForm() {
           </li>
           <li className="flex items-center gap-1.5">
             <span aria-hidden className="h-2.5 w-2.5 rounded-full bg-warn-bg ring-1 ring-warn-line" />
-            {DAY_STATUS_LABEL.check} — 요청은 되지만 매장·재고 확인이 더 필요
+            {DAY_STATUS_LABEL.check} — 요청은 되지만, 재고를 한 번 더 확인해요
           </li>
           <li className="flex items-center gap-1.5">
             <span aria-hidden className="h-2.5 w-2.5 rounded-full bg-mute-soft" />
-            {DAY_STATUS_LABEL.closed} — 고를 수 없음
+            {DAY_STATUS_LABEL.closed} — 고를 수 없어요
           </li>
         </ul>
         <div className="grid grid-cols-7 gap-1.5 sm:gap-2" role="group" aria-label="희망 시작일 (앞으로 14일)">
@@ -252,7 +262,7 @@ export function RequestForm() {
         id="mind-title"
         title="지금 마음은 어느 쪽이에요?"
         tag="필수"
-        sub="체험이 끝난 뒤 마음이 어떻게 바뀌었는지 함께 봐요. 모르겠음도 좋아요."
+        sub="체험이 끝나면 마음이 어떻게 바뀌었는지 같이 볼 거예요. 아직 모르겠어도 괜찮아요."
       >
         <fieldset>
           <legend className="mb-2.5 text-[15px] font-bold text-ink">지금 끌리는 쪽</legend>
@@ -261,14 +271,15 @@ export function RequestForm() {
               <label
                 key={l}
                 className={cx(
-                  "flex min-h-12 cursor-pointer items-center justify-center rounded-2xl border border-line-strong bg-surface px-2 text-center text-[15px] font-bold text-ink transition-colors hover:bg-cream has-[:checked]:text-ivory has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-ink",
+                  "flex min-h-16 cursor-pointer flex-col items-center justify-center rounded-2xl border border-line-strong bg-surface px-2 py-2.5 text-center text-ink transition-colors hover:bg-cream has-[:checked]:text-ivory has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-ink",
                   l === "air" && "has-[:checked]:border-air-ink has-[:checked]:bg-air-ink",
                   l === "pro" && "has-[:checked]:border-pro has-[:checked]:bg-pro",
                   l === "unsure" && "has-[:checked]:border-ink has-[:checked]:bg-ink",
                 )}
               >
                 <input type="radio" name="leaning" value={l} checked={leaning === l} onChange={() => setLeaning(l)} className="sr-only" />
-                {LEANING_LABEL[l]}
+                {/* 'Air 쪽이에요' → 큰 'Air' + 작은 '쪽이에요' 두 줄 — 좁은 화면에서도 세 칸이 같은 모양으로 줄바꿈된다 */}
+                <LeaningText label={LEANING_LABEL[l]} />
               </label>
             ))}
           </div>
@@ -279,19 +290,17 @@ export function RequestForm() {
             legend="그 마음, 얼마나 확실해요?"
             value={confidence}
             onChange={setConfidence}
-            lowLabel="전혀 모르겠음"
-            highLabel="아주 확실"
+            lowLabel="전혀 모르겠어요"
+            highLabel="아주 확실해요"
           />
         </div>
       </Step>
 
-      <Notice title="이름·전화번호를 받지 않아요">
-        날짜·픽업 매장과 고른 답만 이 기기에 저장해요. {DEMO_NOTICE}
-      </Notice>
+      <Notice title="이름이나 전화번호는 받지 않아요">고른 날짜와 매장, 답만 이 기기에 저장해요.</Notice>
 
       <div className="rounded-3xl bg-cream/70 p-5 sm:p-7">
-        <p className="text-sm text-sub">{RESPONSE_TARGET}</p>
-        <p className="mt-1 text-sm text-sub">요청을 보내도 아직 확정이 아니에요. 운영자가 두 기기를 확보하면 결제 기한을 알려 드려요.</p>
+        <p className="text-sm text-sub">요청을 보내면 운영자가 Air와 Pro를 함께 준비한 뒤 결제를 안내해 드려요. 결제가 확인되면 예약이 확정돼요.</p>
+        <p className="mt-1 text-sm text-sub">{RESPONSE_TARGET}</p>
         <ErrorText>{error}</ErrorText>
         <button type="submit" disabled={!!savedId} className={cx(btn.primary, "mt-5 w-full sm:w-auto sm:px-10")}>
           데모 일정 요청 보내기
@@ -299,7 +308,7 @@ export function RequestForm() {
         {savedId && (
           // 요청은 이미 저장됨 — 화면 이동이 늦어지면 직접 열 수 있게 한다
           <p role="status" className="mt-3 text-sm text-sub">
-            {savedId} 요청을 이 기기에 저장했어요. 내 체험으로 이동 중…{" "}
+            {savedId} 요청을 이 기기에 저장했어요. ‘내 체험’으로 넘어가는 중이에요…{" "}
             <Link href={`/my/?id=${encodeURIComponent(savedId)}`} className="font-bold text-ink underline underline-offset-2">
               바로 열기
             </Link>

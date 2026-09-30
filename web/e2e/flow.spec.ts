@@ -2,6 +2,7 @@ import { expect, test, type Locator, type Page } from "@playwright/test";
 import {
   DEALER_TERMS_TBD,
   INSPECTION_LABEL,
+  PAYMENT_RULE,
   PICKUP_STORES,
   REWARD_FLAG_LABEL,
   STORAGE_KEY,
@@ -23,6 +24,7 @@ import {
   type MissionAnswer,
   type Result,
 } from "../src/lib/domain";
+import { josa } from "../src/lib/format";
 import { expectReadable } from "./readability";
 
 // 고객 화면은 모바일, 운영 시뮬레이터는 데스크톱 폭으로 같은 페이지(같은 localStorage)에서 오간다.
@@ -44,7 +46,7 @@ async function requestDemo(page: Page, expectedId: string) {
   await page.setViewportSize(MOBILE);
   await page.goto("request/");
   await expect(page.getByRole("heading", { name: "데모 일정 요청", level: 1 })).toBeVisible();
-  await expect(page.getByText("이름·전화번호를 받지 않아요")).toBeVisible();
+  await expect(page.getByText("이름이나 전화번호는 받지 않아요")).toBeVisible();
   await expect(page.getByText(/마지막 갱신/)).toBeVisible();
 
   // 마감일은 고를 수 없다
@@ -55,7 +57,7 @@ async function requestDemo(page: Page, expectedId: string) {
   await expect(page.getByRole("radio", { name: "잘 모르겠어요" })).toBeChecked();
   await expect(page.getByRole("textbox")).toHaveCount(1); // 궁금한 점 하나뿐
   await page.locator("#question").fill("유튜브랑 과제 정도인데 Pro까지 필요할까요?");
-  await pickRadio(page, "Air 쪽");
+  await pickRadio(page, "Air 쪽이에요");
 
   // domain 의 오류 문구가 순서대로 그대로 보인다
   const submit = page.getByRole("button", { name: "데모 일정 요청 보내기" });
@@ -94,7 +96,8 @@ function panelStatus(page: Page) {
 async function move(page: Page, to: string, reason: string) {
   await page.getByLabel(/변경 사유/).fill(reason);
   await page.getByRole("button", { name: `다음 단계: ${to}` }).click();
-  await expect(page.getByText(`'${to}'(으)로 변경했습니다.`)).toBeVisible();
+  // 조사는 받침에 맞춰 붙는다 — '운영 확인 중'으로 · '결제 대기'로 · '반납 접수'로
+  await expect(page.getByText(`'${to}'${josa(to, "으로", "로")} 변경했습니다.`)).toBeVisible();
   await expect(panelStatus(page)).toHaveText(to);
 }
 
@@ -176,7 +179,7 @@ test("요청 → 운영 확인 → 결제 대조 → 체험 → 미션·코드·
   await openOps(page, "TB-0001");
   const panel = page.getByTestId("ops-panel");
   await expect(panel.getByRole("button", { name: /^다음 단계:/ })).toHaveCount(1);
-  for (const skip of ["결제 대기", "예약 확정", "체험 중", "반납 접수", "검수 중", "완료"]) {
+  for (const skip of ["결제 대기", "예약 확정", "체험 중", "반납 접수", "점검 중", "완료"]) {
     await expect(panel.getByRole("button", { name: `다음 단계: ${skip}` })).toHaveCount(0);
   }
   await panel.getByRole("button", { name: "다음 단계: 운영 확인 중" }).click();
@@ -206,8 +209,9 @@ test("요청 → 운영 확인 → 결제 대조 → 체험 → 미션·코드·
   await page.goto("my/?id=TB-0001");
   await expect(page.getByTestId("status-chip").first()).toHaveText("결제 대기");
   await expect(page.getByTestId("payment-deadline")).toBeVisible();
-  await expect(page.getByRole("button", { name: "결제 링크 (데모 — 실제 결제 없음)" })).toBeDisabled();
-  await expect(page.getByText(/결제 화면 캡처로는 확정되지 않아요/)).toBeVisible();
+  await expect(page.getByRole("button", { name: "결제하기 (데모라서 실제 결제는 없어요)" })).toBeDisabled();
+  await expect(page.getByText(PAYMENT_RULE)).toBeVisible(); // 캡처로는 확정되지 않는다는 규칙은 결제 대기 화면에 한 번
+
   await expectReadable(page, "5. 고객 — 결제 대기");
 
   // ── 6. 운영: 거래 대조 없이는 확정 불가 → 확정 → 출고 기록 → 체험 중
@@ -245,8 +249,8 @@ test("요청 → 운영 확인 → 결제 대조 → 체험 → 미션·코드·
   await expectNoFlagsOnCustomerPage(page, [airCode, proCode]);
   await page.getByRole("link", { name: "미션 하러 가기" }).click();
   await expect(page.getByRole("heading", { name: "오늘은 어떤 걸 해 볼까요?", level: 1 })).toBeVisible();
-  await expect(page.getByText("픽업할 때 두 맥 바탕화면에 적힌 4자리 코드를 적어 주세요", { exact: false })).toBeVisible();
-  await expect(page.getByText("비슷했거나 모르겠어도 그대로 골라 주세요", { exact: false }).first()).toBeVisible();
+  await expect(page.getByText("두 맥의 바탕화면에 떠 있는 4자리 코드를 적어 주세요", { exact: false })).toBeVisible();
+  await expect(page.getByText("해 본 미션부터 편하게 답해 주세요", { exact: false }).first()).toBeVisible();
   const submitReward = page.getByRole("button", { name: "리워드 신청하기" });
   await expect(submitReward).toBeDisabled();
   await expectNoFlagsOnCustomerPage(page, [airCode, proCode]);
@@ -376,7 +380,7 @@ test("요청 → 운영 확인 → 결제 대조 → 체험 → 미션·코드·
   await expect(summary.getByTestId("summary-pro")).toContainText("0");
   await expect(summary.getByTestId("summary-unsure")).toContainText("1");
   await expect(page.getByTestId("mission-pick-list")).toContainText("해 본 일: 쇼핑·검색");
-  await expect(page.getByRole("radio", { name: /체험한 기기 그대로 구매/ })).toBeDisabled();
+  await expect(page.getByRole("radio", { name: /써 본 기기를 그대로 살게요/ })).toBeDisabled();
   await expect(page.getByText(DEALER_TERMS_TBD).first()).toBeVisible();
   await expectReadable(page, "18. 결정 — 구매 선택 막힘");
   await expectNoFlagsOnCustomerPage(page, [airCode]);
@@ -386,9 +390,9 @@ test("요청 → 운영 확인 → 결제 대조 → 체험 → 미션·코드·
 
   await page.setViewportSize(MOBILE);
   await page.goto("my/decide/?id=TB-0001");
-  await pickRadio(page, /체험한 기기 그대로 구매/);
+  await pickRadio(page, /써 본 기기를 그대로 살게요/);
   await pickRadio(page, "MacBook Pro 14형");
-  await pickRadio(page, "체험 후, 이 결정에 얼마나 확신하나요? 4점");
+  await pickRadio(page, "이 결정, 얼마나 확실해요? 4점");
   await page.getByRole("button", { name: "결정 저장" }).click();
   await expect(page.locator("main").getByRole("alert")).toContainText("선택한 이유를 한 줄 남겨 주세요");
   // 빠른 이유 칩은 입력칸을 채운다
@@ -397,7 +401,7 @@ test("요청 → 운영 확인 → 결제 대조 → 체험 → 미션·코드·
   await expect(page.getByLabel(/고른 이유/)).toHaveValue("무거운 작업에서 Pro가 빨랐어요. 화면이 커서 오래 봐도 편했어요");
   const plan = page.getByTestId("return-plan");
   await expect(plan).toContainText("반납할 기기: MacBook Air");
-  await expect(plan).toContainText("딜러 판매가 확인돼야 구매로 확정돼요");
+  await expect(plan).toContainText("딜러가 판매를 확인하면 구매가 확정돼요");
   await expect(page.getByTestId("before-after")).toContainText("Air 쪽");
   await expect(page.getByTestId("before-after")).toContainText("(+2)");
   await expectReadable(page, "18. 결정 — 이유·반납 계획");
@@ -422,7 +426,7 @@ test("요청 → 운영 확인 → 결제 대조 → 체험 → 미션·코드·
 
   // ── 21. TB-0001 검수 중 → 리워드 확인: 표시가 있으면 메모 필수 → 승인
   await selectRes(page, "TB-0001");
-  await move(page, "검수 중", "반납 기기 검수 시작");
+  await move(page, "점검 중", "반납 기기 검수 시작");
   await expect(review.getByRole("button", { name: "리워드 승인" })).toBeEnabled();
   await review.getByRole("button", { name: "리워드 승인" }).click();
   await expect(review.getByRole("alert")).toHaveText("거절하거나 표시가 있는 건을 승인할 때는 확인 메모가 필요합니다.");
@@ -462,7 +466,7 @@ test("요청 → 운영 확인 → 결제 대조 → 체험 → 미션·코드·
   await page.setViewportSize(MOBILE);
   await page.goto("my/?id=TB-0001");
   await expect(page.getByTestId("status-chip").first()).toHaveText("완료");
-  await expect(page.getByTestId("return-air")).toContainText("반납 · 검수");
+  await expect(page.getByTestId("return-air")).toContainText("반납 · 점검");
   await expect(page.getByTestId("return-pro")).toContainText("딜러 판매 확인 완료");
   await expect(page.getByTestId("reward-mini").getByTestId("reward-status")).toHaveText("확인 완료 · 지급 예정");
   await expect(page.getByRole("button", { name: "요청 취소" })).toHaveCount(0);
@@ -587,9 +591,9 @@ test("결제 기한 만료는 자동 확정하지 않고 취소로 처리, 고�
   // 고객 직접 취소 (요청 접수 단계)
   await requestDemo(page, "TB-0002");
   await page.getByRole("button", { name: "요청 취소" }).click();
-  await page.getByRole("button", { name: "네, 취소합니다" }).click();
+  await page.getByRole("button", { name: "네, 취소할게요" }).click();
   await expect(page.getByTestId("status-chip").first()).toHaveText("취소");
-  await expect(page.getByText("취소된 요청이에요").first()).toBeVisible();
+  await expect(page.getByRole("heading", { name: "요청이 취소됐어요", level: 1 })).toBeVisible();
   await expect(page.getByRole("button", { name: "요청 취소" })).toHaveCount(0);
 
   // 데모 데이터 초기화

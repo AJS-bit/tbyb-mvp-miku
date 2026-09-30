@@ -33,8 +33,8 @@ export function planReminders(start: Date, lastDay: string): ReminderItem[] {
         key: 'combined',
         date: day1,
         at: at(day1),
-        title: '체험 둘째 날 · 내일이 마지막 날이에요',
-        body: '남은 미션을 마치고 리워드를 신청해 두세요. 결정·반납 탭에서 반납 준비도 함께 확인해요.',
+        title: '내일이 벌써 마지막 날이에요',
+        body: '남은 미션을 마치고 리워드를 신청해 두세요. 반납 준비는 결정·반납 탭에서 확인할 수 있어요.',
       },
     ];
   }
@@ -43,15 +43,15 @@ export function planReminders(start: Date, lastDay: string): ReminderItem[] {
       key: 'day1',
       date: day1,
       at: at(day1),
-      title: '체험 둘째 날이에요 · 미션 하나 해 볼까요?',
-      body: '두 맥에 같은 영상 틀어 보기처럼 쉬운 미션부터요. 비슷했거나 모르겠어도 그대로 골라 주세요.',
+      title: '오늘은 미션 하나 해 볼까요?',
+      body: '두 맥으로 같은 영상을 틀어 보는 것처럼 쉬운 것부터 해 보세요. 비슷했다면 그것도 좋은 답이에요.',
     },
     {
       key: 'dayBeforeLast',
       date: beforeLast,
       at: at(beforeLast),
       title: '내일이 체험 마지막 날이에요',
-      body: '남은 미션을 마치고 리워드를 신청해 두세요. 결정·반납 탭에서 백업·로그아웃·나의 찾기 해제도 확인해요.',
+      body: "남은 미션을 마치고 리워드를 신청해 두세요. 반납 전에 파일 백업, 로그아웃, '나의 찾기' 끄기도 잊지 마세요.",
     },
   ];
 }

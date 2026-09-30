@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { SERVICE_NAME } from "@/lib/domain";
+import { BrandLockup } from "./Brand";
 import { ThemeSwitcher } from "./ThemeSwitcher";
 import { cx } from "./ui";
 
@@ -25,17 +26,6 @@ function isActive(pathname: string, href: string): boolean {
   return p === h || p.startsWith(`${h}/`);
 }
 
-export function BrandMark({ className }: { className?: string }) {
-  return (
-    <span aria-hidden className={cx("relative flex h-6 w-9 shrink-0 items-center", className)}>
-      <span className="absolute left-0 h-5 w-5 rounded-full bg-air" />
-      {/* 라이트는 곱하기로 겹친 부분이 짙어지고, 다크는 스크린으로 겹친 부분이 밝아진다 (어두운 바탕에 곱하면 사라짐) */}
-      <span className="absolute left-3.5 h-5 w-5 rounded-full bg-pro/90 mix-blend-multiply dark:mix-blend-screen" />
-      <span className="absolute -top-0.5 right-0 h-2 w-2 rounded-full bg-coral" />
-    </span>
-  );
-}
-
 export function SiteHeader() {
   const pathname = usePathname() || "/";
   return (
@@ -48,9 +38,7 @@ export function SiteHeader() {
           className="col-start-1 row-start-1 flex min-w-0 items-center gap-2.5 justify-self-start rounded-lg lg:mr-auto"
           aria-label={`${SERVICE_NAME} 소개로`}
         >
-          <BrandMark />
-          <span className="text-[16px] font-extrabold tracking-[-0.02em] text-ink">{SERVICE_NAME}</span>
-          <span className="hidden text-xs font-semibold text-sub md:inline lg:hidden xl:inline">MacBook 비교 체험</span>
+          <BrandLockup uid="brand-header" />
         </Link>
         <nav aria-label="주 메뉴" className="col-span-2 row-start-2 -mx-5 overflow-x-auto px-5 sm:-mx-8 sm:px-8 lg:mx-0 lg:min-w-0 lg:px-0">
           <ul className="flex min-w-max items-center gap-1">

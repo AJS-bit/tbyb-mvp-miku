@@ -43,17 +43,17 @@ import {
 
 const KEYS: DeviceKey[] = ["air", "pro"];
 
-/** 상태별 한 줄 인사 — 제목으로 쓴다 */
+/** 상태별 한 줄 인사 — 제목으로 쓴다. 바로 아래 STATUS_HELP(domain) 첫 문장과 겹치지 않게 쓴다. */
 const GREETING: Record<ReservationStatus, string> = {
-  requested: "요청을 받았어요",
+  requested: "요청이 잘 도착했어요",
   operator_check: "두 대를 알아보고 있어요",
   payment_pending: "결제만 남았어요",
-  confirmed: "예약이 확정됐어요",
+  confirmed: "이제 픽업만 하면 돼요",
   in_trial: "두 맥과 지내는 중이에요",
-  return_received: "반납을 받았어요",
-  inspecting: "꼼꼼히 확인하고 있어요",
-  completed: "함께해 줘서 고마워요",
-  cancelled: "취소된 요청이에요",
+  return_received: "돌려주셔서 고마워요",
+  inspecting: "마무리하고 있어요",
+  completed: "함께해 주셔서 고마워요",
+  cancelled: "요청이 취소됐어요",
 };
 
 export function MyView() {
@@ -71,7 +71,7 @@ function List({ reservations }: { reservations: Reservation[] }) {
   return (
     <div className="mx-auto max-w-3xl">
       <PageHeader eyebrow="My trial" title="내 체험">
-        이 기기에서 보낸 데모 요청이에요. 다른 기기·브라우저와 공유되지 않아요.
+        이 기기에서 보낸 요청이에요. 다른 기기나 브라우저에서는 보이지 않아요.
       </PageHeader>
       {reservations.length === 0 ? (
         <Card className="flex flex-col items-center py-12 text-center">
@@ -167,7 +167,7 @@ function Detail({ r }: { r: Reservation }) {
 
         {canCancel ? (
           <Card aria-labelledby="cancel">
-            <CardTitle id="cancel" sub="출고 전(예약 확정까지)에는 직접 취소할 수 있어요. 출고 후 환불·파손은 딜러 계약 기준이며 데모 범위 밖이에요.">
+            <CardTitle id="cancel" sub="픽업 전(예약 확정까지)에는 여기서 바로 취소할 수 있어요.">
               요청 취소
             </CardTitle>
             {confirming ? (
@@ -175,10 +175,10 @@ function Detail({ r }: { r: Reservation }) {
                 <p className="text-[15px] font-semibold text-danger-ink">이 요청을 취소할까요? 되돌릴 수 없어요.</p>
                 <div className="mt-3 flex flex-col gap-2 sm:flex-row">
                   <button type="button" onClick={cancel} className={btn.danger}>
-                    네, 취소합니다
+                    네, 취소할게요
                   </button>
                   <button type="button" onClick={() => setConfirming(false)} className={btn.secondary}>
-                    아니요
+                    아니요, 그대로 둘게요
                   </button>
                 </div>
               </div>
@@ -214,11 +214,15 @@ function MissionProgressCard({ r }: { r: Reservation }) {
         eyebrow="Missions"
         sub={
           done
-            ? "핵심 미션을 모두 마쳤어요. 리워드를 신청할 수 있어요."
+            ? r.codeCheck
+              ? "핵심 미션을 모두 마쳤어요. 이제 리워드를 신청할 수 있어요."
+              : "핵심 미션을 모두 마쳤어요. 바탕화면 코드까지 적으면 리워드를 신청할 수 있어요."
             : "맥이 처음이어도 괜찮아요. 평소처럼 쓰다가 생각날 때 골라 주세요."
         }
       >
-        미션<span className="tabular">{p.done}/{p.total}</span>
+        <span>
+          미션 <span className="tabular">{p.done}/{p.total}</span>
+        </span>
       </CardTitle>
       <ProgressBar done={p.done} total={p.total} label="핵심 미션 진행" />
       <div className="mt-5">
@@ -226,7 +230,7 @@ function MissionProgressCard({ r }: { r: Reservation }) {
       </div>
       <div className="mt-6 flex flex-col gap-2 sm:flex-row">
         <ButtonLink href={myHref(r.id, "missions/")} className="sm:px-7">
-          {p.done ? "미션 이어 하기" : "미션 하러 가기"}
+          {p.done ? "미션 이어서 하기" : "미션 하러 가기"}
         </ButtonLink>
       </div>
     </Card>
@@ -257,18 +261,18 @@ function RewardMini({ r }: { r: Reservation }) {
       ) : null}
       <p className="mt-3 text-sm leading-relaxed text-ink/75">
         {status === "none"
-          ? "핵심 미션과 바탕화면 코드를 마치면 신청할 수 있어요."
+          ? "핵심 미션을 마치고 바탕화면 코드를 적으면 신청할 수 있어요."
           : status === "submitted"
-            ? "반납 검수 뒤 운영자가 확인해요."
+            ? "돌려주신 기기를 점검한 뒤 운영자가 확인해요."
             : status === "approved"
-              ? "데모에서는 실제 지급이 없어요."
+              ? "데모라서 실제로 지급되지는 않아요."
               : "궁금한 점은 운영자에게 물어봐 주세요."}
       </p>
       <Link
         href={myHref(r.id, "missions/")}
         className="mt-auto inline-flex min-h-10 items-center gap-1 pt-4 text-sm font-bold text-coral-ink underline-offset-4 hover:underline"
       >
-        리워드 카드 보기 <span aria-hidden>→</span>
+        미션과 리워드 보기 <span aria-hidden>→</span>
       </Link>
     </section>
   );
@@ -290,30 +294,32 @@ function ReturnCard({ r }: { r: Reservation }) {
   return (
     <Card aria-labelledby="ret">
       <CardTitle id="ret" eyebrow="Return" sub={`마지막 날 결정: ${decisionText(r.decision)}`}>
-        반납·구매
+        반납과 구매
       </CardTitle>
       <ul className="space-y-2">
         {KEYS.map((k) => (
           <li key={k} data-testid={`return-${k}`} className="flex flex-wrap items-center justify-between gap-2 rounded-2xl bg-bg px-4 py-3 text-[15px]">
             <DeviceName kind={k} />
             <span className={cx("font-semibold", k !== sale ? "text-ink" : r.ops.sale === "confirmed" ? "text-success-ink" : "text-warn")}>
-              {k === sale ? SALE_LABEL[r.ops.sale] : "반납 · 검수"}
+              {k === sale ? SALE_LABEL[r.ops.sale] : "반납 · 점검"}
             </span>
           </li>
         ))}
       </ul>
       {sale ? (
         <p className="mt-3 text-[15px] leading-relaxed text-ink">
-          고른 기기는 딜러 판매가 확인돼야 구매로 확정돼요. 확인되지 않으면 그 기기도 반납·검수해요.
+          고른 기기는 딜러가 판매를 확인하면 구매가 확정돼요. 확인되지 않으면 그 기기도 돌려주셔야 해요.
         </p>
       ) : null}
       {r.decision?.choice === "buy_new" ? (
-        <p className="mt-3 text-[15px] text-sub">체험한 두 대는 모두 반납해요. 새 제품 구매는 딜러 판매 조건에 따라 따로 안내해요.</p>
+        <p className="mt-3 text-[15px] text-sub">체험한 두 대는 모두 돌려주시면 돼요. 새 제품은 딜러의 판매 조건에 맞춰 따로 안내해 드려요.</p>
       ) : null}
-      <Notice className="mt-4" title="후속 설문">
-        체험이 끝나면 7일·30일 뒤 짧은 후속 설문을 드려요. 산 제품에 실제로 만족하는지 확인하기 위해서예요. (데모에서는 발송하지
-        않아요.)
-      </Notice>
+      {/* 완료 단계에서는 STATUS_HELP 가 같은 설문 안내를 하므로 반복하지 않는다 */}
+      {r.status !== "completed" ? (
+        <Notice className="mt-4" title="짧은 설문을 보내 드릴게요">
+          체험이 끝나고 7일 뒤와 30일 뒤에 보내 드려요. 고른 맥이 정말 잘 맞는지 알고 싶어서예요. 데모에서는 보내지 않아요.
+        </Notice>
+      ) : null}
     </Card>
   );
 }
@@ -324,8 +330,8 @@ function StagePanel({ r }: { r: Reservation }) {
     case "requested":
     case "operator_check":
       return (
-        <Notice title="아직 확정되지 않았어요">
-          <p>운영자가 두 기기와 픽업 일정을 확인한 뒤, 결제 기한과 함께 안내해요.</p>
+        <Notice title="다음 안내를 기다려 주세요">
+          <p>두 기기가 준비되면 결제 기한과 함께 알려 드릴게요.</p>
           <p className="mt-1 text-sub">{RESPONSE_TARGET}</p>
         </Notice>
       );
@@ -346,13 +352,13 @@ function StagePanel({ r }: { r: Reservation }) {
           </div>
           {expired ? (
             <Notice tone="danger" className="mt-3" title="결제 기한이 지났어요">
-              자동으로 확정되지 않아요. 운영자가 취소 또는 대체 일정으로 안내해요.
+              예약이 저절로 확정되지는 않아요. 운영자가 취소하거나 다른 일정을 안내해 드릴게요.
             </Notice>
           ) : null}
           <p className="mt-4 text-[15px] leading-relaxed text-ink">{PAYMENT_RULE}</p>
-          <p className="mt-2 text-sm text-sub">보류된 기기: {KEYS.map((k) => DEVICE_LABEL[k]).join(" · ")} (운영자가 두 대 모두 확보)</p>
+          <p className="mt-2 text-sm text-sub">잡아 둔 기기: {KEYS.map((k) => DEVICE_LABEL[k]).join(", ")}</p>
           <button type="button" disabled aria-disabled="true" className={cx(btn.secondary, "mt-5 w-full border-dashed")}>
-            결제 링크 (데모 — 실제 결제 없음)
+            결제하기 (데모라서 실제 결제는 없어요)
           </button>
         </Card>
       );
@@ -362,14 +368,14 @@ function StagePanel({ r }: { r: Reservation }) {
       return (
         <Card aria-labelledby="pickup">
           <CardTitle id="pickup" eyebrow="Pick up" sub={`${fmtDateKey(r.request.startDate)} · ${r.request.pickupStore}`}>
-            픽업 때 함께 확인할 것
+            픽업하는 날 이렇게 해요
           </CardTitle>
           <ul className="space-y-2.5 text-[15px] text-ink">
             {[
-              "두 기기의 외관·작동 상태를 운영자와 함께 확인하고 기록",
-              "기기별 부속품(충전기·케이블 등)과 배터리 상태 확인",
-              "두 맥 바탕화면에 적힌 4자리 코드 — 미션 화면에 적어 주세요",
-              "맥이 처음이라면 켜고 끄는 법·트랙패드 사용법을 편하게 물어보기",
+              "두 기기의 겉모습과 작동 상태를 운영자와 함께 확인하고 기록해요.",
+              "기기마다 구성품(충전기, 케이블 등)과 배터리 상태를 확인해요.",
+              "두 맥 바탕화면에 뜬 4자리 코드를 미션 화면에 적어 주세요.",
+              "맥이 처음이라면 켜고 끄는 법이나 트랙패드 쓰는 법을 편하게 물어보세요.",
             ].map((t) => (
               <li key={t} className="flex gap-3">
                 <span aria-hidden className="mt-1 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border border-line-strong bg-surface" />
@@ -377,7 +383,7 @@ function StagePanel({ r }: { r: Reservation }) {
               </li>
             ))}
           </ul>
-          <p className="mt-4 text-sm text-sub">두 기기의 출고 기록이 끝나면 운영자가 &lsquo;체험 중&rsquo;으로 바꿔요.</p>
+          <p className="mt-4 text-sm text-sub">두 기기를 건네받으면 &lsquo;체험 중&rsquo;으로 바뀌어요.</p>
         </Card>
       );
 
@@ -392,7 +398,7 @@ function StagePanel({ r }: { r: Reservation }) {
                 <h2 id="dec" className="text-[17px] font-bold text-ink">
                   마지막 날 결정
                 </h2>
-                <p className="text-sm text-sub">지금 결정: {decisionText(r.decision)} · 반납 접수 전까지 바꿀 수 있어요</p>
+                <p className="text-sm text-sub">지금 결정: {decisionText(r.decision)} · 반납하기 전까지 바꿀 수 있어요</p>
               </div>
             </div>
             <ButtonLink href={myHref(r.id, "decide/")} variant="secondary" className="shrink-0 sm:px-6">

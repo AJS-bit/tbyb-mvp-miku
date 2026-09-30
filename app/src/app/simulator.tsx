@@ -23,7 +23,7 @@ import {
   SwitchRow,
   T,
 } from '@/components/ui';
-import { Screen } from '@/components/screen';
+import { Screen, ScrollTarget } from '@/components/screen';
 import {
   DECISION_LABEL,
   DEVICE_LABEL,
@@ -74,7 +74,7 @@ import { themed, useTheme } from '@/lib/theme-context';
 const KINDS: DeviceKey[] = ['air', 'pro'];
 
 const SUGGESTED_REASON: Partial<Record<ReservationStatus, string>> = {
-  operator_check: '딜러에 두 기기·검수 여유 확인 시작',
+  operator_check: '딜러에 두 기기 재고와 반납 뒤 검수 일정 확인 시작',
   payment_pending: 'Air·Pro 두 대 확보, 결제 요청',
   confirmed: '거래내역·예약ID 대조 완료',
   in_trial: '픽업 · 두 기기 출고 기록 완료',
@@ -117,10 +117,10 @@ export default function SimulatorScreen() {
         <Icon ios="exclamationmark.triangle.fill" web="warning" size={18} color={c.ivory} style={{ marginTop: 2 }} />
         <View style={{ flex: 1, gap: 2 }}>
           <T variant="headline" color={c.ivory}>
-            데모 — 실제 운영자 기능 아님
+            데모 화면입니다 — 실제 운영자 기능이 아닙니다
           </T>
           <T variant="footnote" color={c.onInkSub}>
-            운영자 인증 없이 이 기기에 저장된 데모 데이터만 바꿉니다. 고객 흐름을 끝까지 시연하기 위한 화면입니다.
+            운영자 인증 없이, 이 기기에 저장된 데모 데이터만 바꿉니다. 고객 흐름을 끝까지 보여 주기 위한 화면입니다.
           </T>
         </View>
       </View>
@@ -129,12 +129,12 @@ export default function SimulatorScreen() {
         <Card style={{ gap: 10 }}>
           <T variant="title3">진행할 요청이 없습니다</T>
           <T variant="callout" color={c.sub}>
-            먼저 비교팩 탭에서 데모 일정 요청을 만들면 여기서 단계를 진행할 수 있습니다.
+            비교팩 탭에서 데모 일정을 요청하면 여기서 단계를 진행할 수 있습니다.
           </T>
           <Button
             small
             variant="secondary"
-            label="비교팩으로"
+            label="비교팩으로 가기"
             onPress={() => {
               if (router.canGoBack()) router.back();
               router.navigate({ pathname: '/', params: { section: 'form' } });
@@ -152,7 +152,11 @@ export default function SimulatorScreen() {
             <RequestSummary r={current} compact />
           </Card>
           <StepPanel key={`${current.id}-${current.status}`} r={current} demo={demo} />
-          {current.ops.wallCodes ? <WallCodes r={current} /> : null}
+          {current.ops.wallCodes ? (
+            <ScrollTarget name="codes">
+              <WallCodes r={current} />
+            </ScrollTarget>
+          ) : null}
           <NextStep key={`next-${current.id}-${current.status}`} r={current} demo={demo} />
           {showReward ? (
             <View onLayout={(e) => setRewardY(e.nativeEvent.layout.y)}>
@@ -186,7 +190,7 @@ function StepPanel({ r, demo }: { r: Reservation; demo: DemoState }) {
 
   switch (r.status) {
     case 'requested':
-      body = <T variant="callout">요청을 확인했다면 사유를 적고 &lsquo;운영 확인 중&rsquo;으로 넘기세요.</T>;
+      body = <T variant="callout">요청을 확인했으면 아래에 사유를 적고 &lsquo;운영 확인 중&rsquo;으로 넘기세요.</T>;
       break;
     case 'operator_check':
       title = '기기 확보 (Air·Pro 두 대 모두)';
@@ -218,10 +222,10 @@ function StepPanel({ r, demo }: { r: Reservation; demo: DemoState }) {
                   ))}
                   {!options.length && !assigned ? (
                     <T variant="footnote" color={c.error}>
-                      배정 가능한 기기가 없습니다 (보류·사용 중·검수 대기·구매 대기 제외).
+                      배정할 수 있는 기기가 없습니다. 보류·사용 중·검수 대기·구매 대기 기기는 제외됩니다.
                     </T>
                   ) : null}
-                  {!options.length && assigned ? <T variant="footnote">다른 배정 가능 기기 없음</T> : null}
+                  {!options.length && assigned ? <T variant="footnote">다른 기기는 배정할 수 없습니다</T> : null}
                 </Row>
               </View>
             );
@@ -242,7 +246,7 @@ function StepPanel({ r, demo }: { r: Reservation; demo: DemoState }) {
               {formatRemaining(r.ops.paymentDeadline)}
             </T>
           </KeyValue>
-          {expired ? <Notice tone="error">기한이 지났습니다. 자동 확정하지 않습니다 — 취소·환불 또는 대체 일정으로 처리하세요.</Notice> : null}
+          {expired ? <Notice tone="error">결제 기한이 지났습니다. 자동으로 확정하지 않으니 취소·환불 또는 대체 일정으로 처리하세요.</Notice> : null}
           <T variant="footnote">{PAYMENT_RULE}</T>
           <View style={{ gap: 6 }}>
             <T variant="footnote" weight="700" color={c.ink}>
@@ -275,7 +279,7 @@ function StepPanel({ r, demo }: { r: Reservation; demo: DemoState }) {
           </View>
           <SwitchRow
             label="거래내역·예약ID 대조 완료"
-            sub="결제 서비스의 실제 거래내역을 봤다는 뜻입니다 (데모에서는 흉내만)."
+            sub="결제 서비스에서 실제 거래내역을 확인했다는 뜻입니다. 데모에서는 흉내만 냅니다."
             value={r.ops.txMatched}
             onValueChange={(v) => run((s) => setPaymentCheck(s, r.id, txDraft, v)).then(setError)}
           />
@@ -312,7 +316,7 @@ function StepPanel({ r, demo }: { r: Reservation; demo: DemoState }) {
             v={r.decision ? `${DECISION_LABEL[r.decision.choice]}${r.decision.model ? ` · ${DEVICE_LABEL[r.decision.model]}` : ''}` : '아직 없음'}
           />
           {!r.decision ? (
-            <T variant="footnote">반납 접수 전에 고객이 결정(아직 결정 못 함 포함)을 남겨야 합니다. 결정·반납 탭에서 남길 수 있습니다.</T>
+            <T variant="footnote">{`반납 접수 전에 고객이 결정을 남겨야 합니다('${DECISION_LABEL.undecided}'도 결정입니다). 결정·반납 탭에서 남길 수 있습니다.`}</T>
           ) : null}
         </View>
       );
@@ -353,7 +357,7 @@ function StepPanel({ r, demo }: { r: Reservation; demo: DemoState }) {
                       />
                     ))
                   ) : (
-                    <T variant="footnote">반납 기기 — &lsquo;검수 중&rsquo;으로 넘기면 검수 항목이 열립니다.</T>
+                    <T variant="footnote">반납 기기 — &lsquo;{STATUS_LABEL.inspecting}&rsquo; 단계로 넘기면 검수 항목이 열립니다.</T>
                   )
                 ) : (
                   <T variant="footnote" color={c.warnText}>
@@ -371,14 +375,14 @@ function StepPanel({ r, demo }: { r: Reservation; demo: DemoState }) {
       title = '완료';
       body = (
         <T variant="callout">
-          반납 기기는 검수를 마쳐 다시 &lsquo;요청 가능&rsquo;입니다.
+          반납 기기는 검수를 마쳐 다시 &lsquo;요청 가능&rsquo; 상태입니다.
           {saleDevice(r.decision) ? ` 구매 선택 기기: ${SALE_LABEL[r.ops.sale]}.` : ''}
         </T>
       );
       break;
     case 'cancelled':
       title = '취소됨';
-      body = <T variant="callout">보류했던 기기는 풀렸습니다.</T>;
+      body = <T variant="callout">보류했던 기기는 다시 배정할 수 있습니다.</T>;
       break;
   }
 
@@ -448,7 +452,7 @@ function WallCodes({ r }: { r: Reservation }) {
   const styles = useStyles();
   const codes = r.ops.wallCodes!;
   return (
-    <Section eyebrow="Wallpaper codes" title="출고 때 바탕화면에 띄울 코드" caption="예약·기기마다 다른 4자리 — 고객 화면에는 보이지 않아요">
+    <Section eyebrow="Wallpaper codes" title="출고 때 바탕화면에 띄울 코드" caption="예약·기기마다 다른 4자리입니다. 고객 화면에는 보이지 않습니다.">
       <Card style={{ gap: 12 }}>
         <Row gap={10}>
           {KINDS.map((k) => (
@@ -466,7 +470,7 @@ function WallCodes({ r }: { r: Reservation }) {
           ))}
         </Row>
         <T variant="footnote">
-          픽업 전에 두 맥 바탕화면에 크게 띄워 두세요. 고객은 미션 탭에서 이 코드를 적고, 리워드 확인 때 참고 단서로만 봐요.
+          픽업 전에 두 맥 바탕화면에 크게 띄워 두세요. 고객이 미션 탭에 이 코드를 적고, 리워드를 확인할 때 참고 단서로만 씁니다.
         </T>
       </Card>
     </Section>
@@ -505,7 +509,7 @@ function RewardReview({ r }: { r: Reservation }) {
     <Section
       eyebrow="Reward review"
       title="리워드 확인"
-      caption="표시는 자동 거절이 아니라 검토 신호예요. 고객 화면에는 상태만 보이고 표시 내용은 보이지 않아요.">
+      caption="표시는 자동 거절이 아니라 검토 신호입니다. 고객 화면에는 상태만 보이고 표시 내용은 보이지 않습니다.">
       <Card style={{ gap: 16 }}>
         <Row style={{ justifyContent: 'space-between', flexWrap: 'wrap' }} gap={8}>
           <Row gap={8}>
@@ -603,7 +607,7 @@ function RewardReview({ r }: { r: Reservation }) {
               <Button small label="승인 · 지급 예정" onPress={() => review('approved')} disabled={busy} style={{ flex: 1 }} />
               <Button small variant="danger" label="거절" onPress={() => review('rejected')} disabled={busy} style={{ flex: 0.6 }} />
             </Row>
-            <T variant="caption">반납 검수 단계부터 확인해요 (기기 사용 흔적과 함께 대조). 한 번 정하면 바꿀 수 없어요.</T>
+            <T variant="caption">반납 검수 단계부터 기기 사용 흔적과 함께 확인합니다. 한 번 정하면 바꿀 수 없습니다.</T>
           </View>
         ) : status === 'approved' || status === 'rejected' ? (
           <View style={styles.reviewed}>
@@ -613,7 +617,7 @@ function RewardReview({ r }: { r: Reservation }) {
             {r.reward.reviewNote ? <T variant="footnote">{r.reward.reviewNote}</T> : null}
           </View>
         ) : (
-          <T variant="footnote">고객이 핵심 미션과 바탕화면 코드를 채우고 신청하면 여기서 확인해요.</T>
+          <T variant="footnote">고객이 핵심 미션과 바탕화면 코드를 채워 신청하면 여기서 확인합니다.</T>
         )}
         <ErrorText message={error} />
         <View style={{ gap: 0 }}>
@@ -690,13 +694,13 @@ function NextStep({ r, demo }: { r: Reservation; demo: DemoState }) {
   };
 
   return (
-    <Section title="다음 단계" caption="허용된 다음 단계만 보입니다 — 건너뛰기 불가, 사유 필수">
+    <Section title="다음 단계" caption="허용된 다음 단계만 보입니다. 단계를 건너뛸 수 없고, 사유를 적어야 합니다.">
       <Card style={{ gap: 12 }}>
         <View style={{ gap: 6 }}>
           <T variant="footnote" weight="700" color={c.ink}>
             변경 사유 (필수)
           </T>
-          <Input value={reason} onChangeText={setReason} placeholder="이력에 남는 사유" accessibilityLabel="상태 변경 사유" />
+          <Input value={reason} onChangeText={setReason} placeholder="이력에 남을 사유" accessibilityLabel="상태 변경 사유" />
           {forward && SUGGESTED_REASON[forward] ? (
             <Pressable
               accessibilityRole="button"
@@ -745,7 +749,7 @@ function History({ r }: { r: Reservation }) {
   const { c } = useTheme();
   const styles = useStyles();
   return (
-    <Section title="이력" caption="최근 순">
+    <Section title="이력" caption="최근 것부터">
       <Card style={{ gap: 0, paddingVertical: 6 }}>
         {[...r.history].reverse().map((h, i) => (
           <View key={`${h.at}-${i}`} style={[styles.hist, i > 0 && styles.histLine]}>
@@ -862,7 +866,7 @@ function ResetBlock() {
   const [done, setDone] = useState(false);
   const { c } = useTheme();
   return (
-    <Section title="데모 초기화" caption="모든 요청·기록·기기 상태·예약된 알림을 지웁니다">
+    <Section title="데모 초기화" caption="모든 요청과 기록, 기기 상태, 예약된 알림을 지웁니다. 화면 모드는 그대로 둡니다.">
       {!confirming ? (
         <Button
           variant="danger"
@@ -897,7 +901,7 @@ function ResetBlock() {
           </Row>
         </Card>
       )}
-      {done ? <Notice tone="done">초기 상태로 돌렸습니다.</Notice> : null}
+      {done ? <Notice tone="done">처음 상태로 되돌렸습니다.</Notice> : null}
     </Section>
   );
 }

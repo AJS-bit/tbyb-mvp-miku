@@ -34,3 +34,13 @@ export function weekdayOf(key: string): number {
 }
 
 export const WEEKDAY_LABELS = WEEKDAY;
+
+/**
+ * 받침에 맞는 조사를 고른다 — josa("예약 확정", "으로", "로") → "으로", josa("MacBook Pro 14형", "이", "가") → "이".
+ * '으로/로' 는 ㄹ 받침 뒤에서도 '로'. 한글이 아닌 끝 글자(예: "Air")는 받침 없음으로 본다.
+ */
+export function josa(word: string, withBatchim: string, without: string): string {
+  const code = word.charCodeAt(word.length - 1) - 0xac00;
+  const final = code >= 0 && code <= 11171 ? code % 28 : 0;
+  return final === 0 || (withBatchim === "으로" && final === 8) ? without : withBatchim;
+}

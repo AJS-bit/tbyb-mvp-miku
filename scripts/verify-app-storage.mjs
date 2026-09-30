@@ -3,6 +3,7 @@
 // + 리워드 검토 메모·표시(flag)는 고객 화면에 나오지 않는다 (거절 사유만 고객에게 보인다).
 // + 화면 모드(시스템/라이트/다크): 고른 값은 새로고침 뒤에도 남고, 저장 실패 시 이번 실행에만 적용 + 저장 오류 표시,
 //   기기 설정이 다크(colorScheme: 'dark')면 첫 화면 바탕이 다크.
+// + 노트북 화면 문구·브랜드 워드마크가 고운바탕(같은 사이트의 ttf)으로 그려지는지.
 //
 // 사용 (저장소 루트에서):
 //   (cd app && rm -rf dist && EXPO_BASE_URL=/tbyb-mvp-miku/app npx expo export --platform web --output-dir dist)
@@ -145,10 +146,13 @@ const local = target ? null : await serveDist();
 const base = target ?? local.base;
 const browser = await chromium.launch();
 
+// 결정 선택지 라디오 이름 = '라벨. 설명' (RadioRow) — 라벨은 도메인 문구 그대로
+const RETURN_BOTH = new RegExp(`^${D.DECISION_LABEL.return_both}\\.`);
+
 await check('결정 저장 실패 → 저장됨 표시 없음·입력 유지·재시도 성공·새로고침 복원', async () => {
   const page = await newPage(browser, trialState());
   await page.goto(`${base}decide/`, { waitUntil: 'domcontentloaded', timeout: 60_000 });
-  await page.getByRole('radio', { name: /^두 대 모두 반납\./ }).click();
+  await page.getByRole('radio', { name: RETURN_BOTH }).click();
   await page.getByRole('radio', { name: /체험 후.* 4점$/ }).click();
   const reason = page.getByLabel('결정 이유, 필수');
   await reason.fill('저장 실패 검증 — 두 대 모두 반납');
@@ -157,7 +161,7 @@ await check('결정 저장 실패 → 저장됨 표시 없음·입력 유지·�
   await expect(writeError(page)).toBeVisible();
   await expect(page.getByRole('button', { name: '저장됨', exact: true })).toHaveCount(0);
   await expect(page.getByRole('button', { name: '결정 저장', exact: true })).toBeEnabled();
-  await expect(page.getByText('결정이 저장됐습니다')).toHaveCount(0);
+  await expect(page.getByText('결정을 저장했어요')).toHaveCount(0);
   await expect(reason).toHaveValue('저장 실패 검증 — 두 대 모두 반납');
   if ((await stored(page)).reservations[0].decision) throw new Error('실패했는데 결정이 저장됨');
   await restoreWrites(page);
@@ -223,7 +227,7 @@ await check('운영 시뮬레이터 상태 변경 저장 실패 → 단계 그�
 });
 
 async function fillDecision(page) {
-  await page.getByRole('radio', { name: /^두 대 모두 반납\./ }).click();
+  await page.getByRole('radio', { name: RETURN_BOTH }).click();
   await page.getByRole('radio', { name: /체험 후.* 4점$/ }).click();
   await page.getByLabel('결정 이유, 필수').fill('부분 실패 검증');
 }
@@ -272,7 +276,7 @@ await check('초기화 중 UI 키만 실패 → 저장된 도메인 초기화는
 });
 
 // 고객 화면 — 화면마다 다 그려졌는지 확인할 글자
-const CUSTOMER_PAGES = { 'my/': '요청 내용', missions: '미션 리워드', 'decide/': '반납·구매 결과' };
+const CUSTOMER_PAGES = { 'my/': '요청 내용', missions: '미션 리워드', 'decide/': '기기별 결과' };
 const FLAG_TEXTS = Object.values(D.REWARD_FLAG_LABEL);
 async function customerText(page, path) {
   await page.goto(`${base}${path}`, { waitUntil: 'domcontentloaded', timeout: 60_000 });
@@ -319,6 +323,29 @@ await check('리워드 거절 → 거절 사유는 미션 탭 리워드 카드�
   await page.context().close();
 });
 
+// ───────── 글꼴·브랜드 ─────────
+await check('노트북 화면 문구·브랜드 워드마크 — 고운바탕(자체 호스팅 ttf)으로 그려짐', async () => {
+  const page = await newPage(browser, null);
+  const fontRequests = [];
+  page.on('response', (r) => /GowunBatang-Bold-subset.*\.ttf/.test(r.url()) && fontRequests.push(r.status()));
+  await page.goto(base, { waitUntil: 'domcontentloaded', timeout: 60_000 });
+  // 히어로 SVG 안의 두 노트북 화면 문구 (줄마다 <text> 하나)
+  for (const line of ['어디로 갈까?', '어디까지 해 볼까?']) {
+    const el = page.locator('svg text', { hasText: line }).first();
+    await el.waitFor({ state: 'attached' });
+    const family = await el.evaluate((n) => getComputedStyle(n).fontFamily);
+    if (!family.includes('GowunBatang_700Bold')) throw new Error(`'${line}' 글꼴이 고운바탕이 아님: ${family}`);
+  }
+  const mark = await page.getByText('Try Before You Buy', { exact: true }).first().evaluate((n) => getComputedStyle(n).fontFamily);
+  if (!mark.includes('GowunBatang_700Bold')) throw new Error(`워드마크 글꼴이 고운바탕이 아님: ${mark}`);
+  // 글꼴 파일이 실제로 받아지고(같은 사이트) 브라우저가 불러온 상태
+  await expect
+    .poll(() => page.evaluate(() => [...document.fonts].some((f) => f.family.replace(/["']/g, '') === 'GowunBatang_700Bold' && f.status === 'loaded')), { timeout: 20_000 })
+    .toBe(true);
+  if (!fontRequests.length || fontRequests.some((st) => st >= 400)) throw new Error(`글꼴 파일 응답: ${fontRequests.join(', ') || '요청 없음'}`);
+  await page.context().close();
+});
+
 // ───────── 화면 모드 ─────────
 const LIGHT_BG = 'rgb(250, 246, 239)'; // palette.ts light.bg #FAF6EF
 const DARK_BG = 'rgb(22, 19, 15)'; // palette.ts dark.bg #16130F
@@ -346,7 +373,7 @@ const themeRadio = (page, name) => page.getByRole('radio', { name, exact: true }
 await check('화면 모드 다크 선택 → UI 키에 저장, 새로고침 뒤에도 다크 (기기 설정은 라이트)', async () => {
   const page = await newPage(browser, trialState());
   await page.goto(`${base}my/`, { waitUntil: 'domcontentloaded', timeout: 60_000 });
-  await expect(themeRadio(page, '시스템 설정 따라가기')).toBeChecked();
+  await expect(themeRadio(page, '기기 설정 따라가기')).toBeChecked();
   await expect.poll(async () => (await docTheme(page)).theme).toBe('light');
   await themeRadio(page, '다크').click();
   await expect(themeRadio(page, '다크')).toBeChecked();
@@ -374,7 +401,7 @@ await check('화면 모드 다크 선택 → UI 키에 저장, 새로고침 뒤�
 await check('화면 모드 저장 실패 → 이번 실행에만 적용·저장 오류 표시·앱은 계속 쓸 수 있음, 새로고침하면 이전 모드', async () => {
   const page = await newPage(browser, trialState());
   await page.goto(`${base}my/`, { waitUntil: 'domcontentloaded', timeout: 60_000 });
-  await expect(themeRadio(page, '시스템 설정 따라가기')).toBeChecked();
+  await expect(themeRadio(page, '기기 설정 따라가기')).toBeChecked();
   await failWritesFor(page, UI_KEY);
   await themeRadio(page, '다크').click();
   await expect(writeError(page)).toBeVisible();

@@ -82,6 +82,35 @@ function Sparkle({ x, y, r, fill }: { x: number; y: number; r: number; fill: str
 }
 
 // ───────── 히어로: 기울어진 두 노트북 + 따뜻한 해 ─────────
+// 화면 문구(SPEC '다듬기'): Air "오늘은 어디로 갈까?" ↔ Pro "오늘은 어디까지 해 볼까?" — 고운바탕 Bold.
+// 작은 "오늘은" 위에 큰 두 줄을 얹어, 대비되는 말(어디로 · 어디까지)이 두 화면의 같은 자리에 오게 했다.
+
+const serif: CSSProperties = { fontFamily: "var(--font-serif)", fontWeight: 700 };
+
+/** 화면 가운데 문구 — y 는 첫 줄("오늘은") 글자 기준선 */
+function ScreenLines({ x, y, lines }: { x: number; y: number; lines: [string, string] }) {
+  return (
+    <g textAnchor="middle" style={{ ...serif, fill: C.screenText }}>
+      <text x={x} y={y} fontSize="19" opacity="0.94">
+        오늘은
+      </text>
+      {lines.map((l, i) => (
+        <text key={l} x={x} y={y + 38 + i * 37} fontSize="30" letterSpacing="-0.3">
+          {l}
+        </text>
+      ))}
+    </g>
+  );
+}
+
+/** 화면 오른쪽 아래 작은 AIR / PRO 표시 */
+function ScreenMark({ x, y, children }: { x: number; y: number; children: ReactNode }) {
+  return (
+    <text x={x} y={y} textAnchor="end" fontSize="9" fontWeight="700" letterSpacing="2.4" opacity="0.72" style={{ fill: C.screenText }}>
+      {children}
+    </text>
+  );
+}
 
 export function HeroIllustration({ className }: { className?: string }) {
   const s = (fill: string) => ink(fill, 2.5);
@@ -90,7 +119,7 @@ export function HeroIllustration({ className }: { className?: string }) {
       viewBox="0 0 560 450"
       className={className}
       role="img"
-      aria-label="따뜻한 해 앞에 기울어 놓인 두 노트북. 얇은 Air 화면에는 '가볍게', Pro 화면에는 '끝까지'라고 적혀 있다."
+      aria-label="따뜻한 해 앞에 기울어 놓인 노트북 두 대. 왼쪽 얇은 MacBook Air 화면에는 '오늘은 어디로 갈까?', 오른쪽 MacBook Pro 화면에는 '오늘은 어디까지 해 볼까?'라고 적혀 있어요."
     >
       <defs>
         {/* 라이트: 꽉 찬 복숭아색 해 · 다크: 가운데만 은은하게 빛나고 가장자리로 스러지는 호박색 빛 */}
@@ -127,11 +156,10 @@ export function HeroIllustration({ className }: { className?: string }) {
         <rect x="250" y="90" width="250" height="168" rx="14" {...s(C.proBody)} />
         <rect x="262" y="102" width="226" height="144" rx="6" fill="url(#hero-pro)" />
         <rect x="362" y="101" width="26" height="8" rx="3" {...fl(C.proBody)} />
-        <text x="375" y="182" textAnchor="middle" fontSize="40" fontWeight="800" letterSpacing="-1" {...fl(C.screenText)}>
-          끝까지
-        </text>
-        <rect x="316" y="202" width="118" height="7" rx="3.5" opacity="0.28" {...fl(C.screenText)} />
-        <rect x="316" y="202" width="118" height="7" rx="3.5" opacity="0.85" {...fl(C.screenText)} />
+        <ScreenLines x={375} y={142} lines={["어디까지", "해 볼까?"]} />
+        <ScreenMark x={475} y={237}>
+          PRO
+        </ScreenMark>
         <path d="M236 258H514L507 275Q505 280 499 280H251Q245 280 243 275Z" {...s(C.proBase)} />
         <path d="M352 258h46v3a3 3 0 0 1-3 3h-40a3 3 0 0 1-3-3Z" {...fl(C.proHinge)} />
       </g>
@@ -140,11 +168,10 @@ export function HeroIllustration({ className }: { className?: string }) {
       <g transform="rotate(-7 190 285)">
         <rect x="60" y="182" width="236" height="150" rx="13" {...s(C.airBody)} />
         <rect x="70" y="192" width="216" height="130" rx="6" fill="url(#hero-air)" />
-        <path d="M150 238C160 222 184 214 200 216C194 230 176 240 150 238Z" opacity="0.9" {...fl(C.screenText)} />
-        <path d="M150 238L186 222" {...st(C.air)} />
-        <text x="178" y="286" textAnchor="middle" fontSize="36" fontWeight="800" letterSpacing="-1" {...fl(C.screenText)}>
-          가볍게
-        </text>
+        <ScreenLines x={178} y={224} lines={["어디로", "갈까?"]} />
+        <ScreenMark x={273} y={313}>
+          AIR
+        </ScreenMark>
         <path d="M46 334H310L305 341Q303 344 298 344H58Q53 344 51 341Z" {...s(C.airBase)} />
         <path d="M160 334h36v2a2 2 0 0 1-2 2h-32a2 2 0 0 1-2-2Z" {...fl(C.airHinge)} />
       </g>
@@ -166,7 +193,7 @@ export function HeroIllustration({ className }: { className?: string }) {
   );
 }
 
-// ───────── 작은 노트북 (비교팩 머리) ─────────
+// ───────── 작은 노트북 (비교팩 머리) — 히어로 화면 문구의 큰 두 줄만 ─────────
 
 export function LaptopMini({ kind, className }: { kind: DeviceKey; className?: string }) {
   const air = kind === "air";
@@ -175,9 +202,10 @@ export function LaptopMini({ kind, className }: { kind: DeviceKey; className?: s
       <rect x="16" y="8" width="88" height="58" rx="6" {...ink(air ? C.airBody : C.proBody)} />
       <rect x="21" y="13" width="78" height="48" rx="3" {...fl(air ? C.airScreen : C.proScreen)} />
       {!air ? <rect x="54" y="12.5" width="12" height="4" rx="1.5" {...fl(C.proBody)} /> : null}
-      <text x="60" y="43" textAnchor="middle" fontSize="15" fontWeight="800" {...fl(C.screenText)}>
-        {air ? "가볍게" : "끝까지"}
-      </text>
+      <g textAnchor="middle" fontSize="14" style={{ ...serif, fill: C.screenText }}>
+        <text x="60" y="34">{air ? "어디로" : "어디까지"}</text>
+        <text x="60" y="51">{air ? "갈까?" : "해 볼까?"}</text>
+      </g>
       {air ? (
         <path d="M6 68h108l-3 4.5a2 2 0 0 1-1.7 1H10.7a2 2 0 0 1-1.7-1Z" {...ink(C.airBase)} />
       ) : (
@@ -194,8 +222,8 @@ const MISSION_ART: Record<MissionId, ReactNode> = {
   carry: (
     <>
       <path d="M17 27v-6a15 13 0 0 1 30 0v6" {...ink()} />
-      <rect x="22" y="9" width="22" height="20" rx="2.5" {...ink(C.airSoft)} transform="rotate(-7 33 19)" />
-      <path d="M29.5 13.5h8" {...st(C.air)} transform="rotate(-7 33 19)" />
+      <rect x="21" y="9" width="22" height="20" rx="2.5" {...ink(C.airSoft)} />
+      <path d="M28 13.5h8" {...st(C.air)} />
       <path d="M11 27h42l-3.2 25.3A4 4 0 0 1 45.8 56H18.2a4 4 0 0 1-4-3.7Z" {...ink(C.coralSoft)} />
       <path d="M19 37h26" {...st(C.coral)} strokeDasharray="0.5 5" />
     </>

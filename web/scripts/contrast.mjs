@@ -152,7 +152,7 @@ const PAIRS = [
   P("sub/80", "surface", "disabled", "위험 버튼 비활성"),
   P("sub/80", "mute-soft/70>surface", "disabled", "달력 마감일 (+ 취소선·'마감' 글자)"),
   // 그림 속 글자 (WCAG 1.4.3 예외 — 참고)
-  ...each(["ill-screen-text"], ["ill-air-screen", "ill-pro-screen", "ill-air-screen-a", "ill-air-screen-b", "ill-pro-screen-a", "ill-pro-screen-b"], "picture", "노트북 화면 글자 '가볍게'·'끝까지'"),
+  ...each(["ill-screen-text"], ["ill-air-screen", "ill-pro-screen", "ill-air-screen-a", "ill-air-screen-b", "ill-pro-screen-a", "ill-pro-screen-b"], "picture", "노트북 화면 글자 '오늘은 어디로 갈까?'·'오늘은 어디까지 해 볼까?' (고운바탕, 큰 글자 · 그림 속 글자)"),
   // 장식·보조 (글자가 같은 정보를 주거나, 글자가 있는 버튼·칩·카드라 경계 없이도 알아볼 수 있음 — 참고)
   ...each(["coral"], ["surface/80>coral-soft", "surface"], "info", "진행 막대 채움 (옆에 'n/5' 글자가 항상 있음)"),
   ...each(["line"], ["bg", "surface"], "info", "카드 테두리"),

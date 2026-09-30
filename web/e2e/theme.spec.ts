@@ -376,7 +376,7 @@ for (const scheme of ["light", "dark"] as const) {
 
       await page.goto("request/");
       await page.locator('[data-testid="calendar-day"]:not([data-status="closed"])').nth(1).click();
-      await page.locator("label", { has: page.getByRole("radio", { name: "Pro 쪽" }) }).click();
+      await page.locator("label", { has: page.getByRole("radio", { name: "Pro 쪽이에요" }) }).click();
       await page.locator("label", { has: page.getByRole("radio", { name: "그 마음, 얼마나 확실해요? 3점" }) }).click();
       await page.getByRole("button", { name: "데모 일정 요청 보내기" }).click(); // 매장을 고르지 않아 오류 문구
       await expect(page.locator("main").getByRole("alert")).toBeVisible();
@@ -396,7 +396,7 @@ for (const scheme of ["light", "dark"] as const) {
       await expectReadable(page, "미션 (신청 후)");
 
       await page.goto("my/decide/?id=TB-0001");
-      await page.locator("label", { has: page.getByRole("radio", { name: /체험한 기기 그대로 구매/ }) }).click();
+      await page.locator("label", { has: page.getByRole("radio", { name: /써 본 기기를 그대로 살게요/ }) }).click();
       await page.locator("label", { has: page.getByRole("radio", { name: "MacBook Pro 14형", exact: true }) }).click();
       await page.getByRole("button", { name: "결정 저장" }).click(); // 오류 문구
       await expect(page.locator("main").getByRole("alert")).toBeVisible();
