@@ -42,6 +42,19 @@ function toTokens(v) {
 
 const light = toTokens({ ...vars(block(/@theme\s*\{/)), ...vars(block(/\n:root\s*\{/)) });
 const dark = { ...light, ...toTokens(vars(block(/:root\[data-theme="dark"\]\s*\{/))) };
+
+// 노트북 일러스트(Laptop.tsx · TETO 색) — .laptop / .laptop.pro 블록과 다크 덮어쓰기를 'laptop-air-screen-ink' 같은 이름으로
+const prefixed = (prefix, v) => Object.fromEntries(Object.entries(v).map(([k, val]) => [`${prefix}${k}`, val]));
+const airLight = vars(block(/\n\.laptop\s*\{/));
+const proLight = { ...airLight, ...vars(block(/\n\.laptop\.pro\s*\{/)) };
+const laptopDark = vars(block(/:root\[data-theme="dark"\] \.laptop\s*\{/));
+const laptopProDark = vars(block(/:root\[data-theme="dark"\] \.laptop\.pro\s*\{/));
+Object.assign(light, prefixed("laptop-air-", airLight), prefixed("laptop-pro-", proLight));
+Object.assign(
+  dark,
+  prefixed("laptop-air-", { ...airLight, ...laptopDark }),
+  prefixed("laptop-pro-", { ...proLight, ...laptopDark, ...laptopProDark }),
+);
 const THEMES = { light, dark };
 
 // ───────── 색 계산 ─────────
@@ -163,7 +176,10 @@ const PAIRS = [
   P("sub/80", "surface", "disabled", "위험 버튼 비활성"),
   P("sub/80", "mute-soft/70>surface", "disabled", "달력 마감일 (+ 취소선·'마감' 글자)"),
   // 그림 속 글자 (WCAG 1.4.3 예외 — 참고)
-  ...each(["ill-screen-text"], ["ill-air-screen", "ill-pro-screen", "ill-air-screen-a", "ill-air-screen-b", "ill-pro-screen-a", "ill-pro-screen-b"], "picture", "노트북 화면 글자 '오늘은 어디로 갈까?'·'오늘은 어디까지 해 볼까?' (고운바탕, 큰 글자 · 그림 속 글자)"),
+  ...["air", "pro"].flatMap((d) =>
+    each([`laptop-${d}-screen-ink`], [`laptop-${d}-screen-paper`, `laptop-${d}-screen-wave`, `laptop-${d}-screen-wave-back`], "picture", `노트북 화면 글자 (${d === "air" ? "'오늘은 어디로 갈까?'" : "'오늘은 어디까지 해 볼까?'"} · 고운바탕, 큰 글자 · 그림 속 글자)`),
+  ),
+  ...["air", "pro"].flatMap((d) => each([`laptop-${d}-device-key-legend`], [`laptop-${d}-device-keys`], "picture", "노트북 키캡 글자 (그림 속 글자)")),
   // 장식·보조 (글자가 같은 정보를 주거나, 글자가 있는 버튼·칩·카드라 경계 없이도 알아볼 수 있음 — 참고)
   ...each(["coral"], ["surface/80>coral-soft", "surface"], "info", "진행 막대 채움 (옆에 'n/5' 글자가 항상 있음)"),
   ...each(["line"], ["bg", "surface"], "info", "카드 테두리"),

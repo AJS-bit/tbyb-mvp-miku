@@ -9,7 +9,7 @@ import {
   type DeviceKey,
 } from "@/lib/domain";
 import { ButtonLink, Card, CardTitle, DeviceName, Eyebrow, PageHeader, cx, delay, deviceTone } from "@/components/ui";
-import { LaptopMini } from "@/components/illustrations";
+import { Laptop } from "@/components/Laptop";
 
 export const metadata: Metadata = { title: "첫 비교팩" };
 
@@ -62,7 +62,7 @@ export default function PackPage() {
       <div className="grid grid-cols-2 gap-3 sm:gap-5">
         {KEYS.map((k, i) => (
           <div key={k} className={cx("fade-up rounded-3xl p-4 sm:p-7", deviceTone[k].soft)} style={delay(i + 1)}>
-            <LaptopMini kind={k} className="h-auto w-full max-w-[180px]" />
+            <Laptop type={k} copy="lines" className="h-auto w-full max-w-[200px]" />
             <p className="eyebrow mt-4 text-sub">Device 0{i + 1}</p>
             <p className={cx("mt-1 text-[17px] font-extrabold leading-snug sm:text-[22px]", deviceTone[k].text)}>{DEVICE_LABEL[k]}</p>
             <p className="mt-1 text-sm leading-relaxed text-ink/80">{MOOD[k]}</p>

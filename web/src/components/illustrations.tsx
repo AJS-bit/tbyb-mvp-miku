@@ -1,9 +1,11 @@
 // 직접 그린 인라인 SVG 일러스트 (SPEC v2 감성 디자인).
 // 선은 모두 잉크색·같은 굵기(64 기준 2px), 면은 부드러운 파스텔. Apple 로고·제품 사진은 쓰지 않는다.
-// 색은 globals.css 의 --ill-* 변수에서 온다 — 다크에서는 선이 밝은 잉크, 해는 은은한 호박색 빛, 화면은 채도를 조금 낮춘다.
+// 색은 globals.css 의 --ill-* 변수에서 온다 — 다크에서는 선이 밝은 잉크, 해는 은은한 호박색 빛.
+// 히어로의 노트북 두 대는 TETO 투시 보정판 Laptop.tsx(색은 globals.css 의 .laptop 변수).
 // (SVG 속성 fill="var(--x)" 는 브라우저마다 지원이 달라, 색은 항상 style 로 준다.)
 import type { CSSProperties, ReactNode, SVGProps } from "react";
-import type { DeviceKey, MissionId } from "@/lib/domain";
+import type { MissionId } from "@/lib/domain";
+import { Laptop } from "./Laptop";
 
 const v = (name: string) => `var(--ill-${name})`;
 const C = {
@@ -26,15 +28,6 @@ const C = {
   ivory: v("ivory"),
   track: v("track"),
   dot: v("dot"),
-  airBody: v("air-body"),
-  airBase: v("air-base"),
-  airHinge: v("air-hinge"),
-  proBody: v("pro-body"),
-  proBase: v("pro-base"),
-  proHinge: v("pro-hinge"),
-  screenText: v("screen-text"),
-  airScreen: v("air-screen"),
-  proScreen: v("pro-screen"),
   sunA: v("sun-a"),
   sunB: v("sun-b"),
   sunC: v("sun-c"),
@@ -82,38 +75,9 @@ function Sparkle({ x, y, r, fill }: { x: number; y: number; r: number; fill: str
 }
 
 // ───────── 히어로: 기울어진 두 노트북 + 따뜻한 해 ─────────
-// 화면 문구(SPEC '다듬기'): Air "오늘은 어디로 갈까?" ↔ Pro "오늘은 어디까지 해 볼까?" — 고운바탕 Bold.
-// 작은 "오늘은" 위에 큰 두 줄을 얹어, 대비되는 말(어디로 · 어디까지)이 두 화면의 같은 자리에 오게 했다.
-
-const serif: CSSProperties = { fontFamily: "var(--font-serif)", fontWeight: 700 };
-
-/** 화면 가운데 문구 — y 는 첫 줄("오늘은") 글자 기준선 */
-function ScreenLines({ x, y, lines }: { x: number; y: number; lines: [string, string] }) {
-  return (
-    <g textAnchor="middle" style={{ ...serif, fill: C.screenText }}>
-      <text x={x} y={y} fontSize="19" opacity="0.94">
-        오늘은
-      </text>
-      {lines.map((l, i) => (
-        <text key={l} x={x} y={y + 38 + i * 37} fontSize="30" letterSpacing="-0.3">
-          {l}
-        </text>
-      ))}
-    </g>
-  );
-}
-
-/** 화면 오른쪽 아래 작은 AIR / PRO 표시 */
-function ScreenMark({ x, y, children }: { x: number; y: number; children: ReactNode }) {
-  return (
-    <text x={x} y={y} textAnchor="end" fontSize="9" fontWeight="700" letterSpacing="2.4" opacity="0.72" style={{ fill: C.screenText }}>
-      {children}
-    </text>
-  );
-}
+// 노트북은 TETO 투시 보정판(components/Laptop.tsx). 화면 문구(SPEC '다듬기'): Air "오늘은 어디로 갈까?" ↔ Pro "오늘은 어디까지 해 볼까?" — 고운바탕 Bold.
 
 export function HeroIllustration({ className }: { className?: string }) {
-  const s = (fill: string) => ink(fill, 2.5);
   return (
     <svg
       viewBox="0 0 560 450"
@@ -128,14 +92,10 @@ export function HeroIllustration({ className }: { className?: string }) {
           <stop offset="70%" style={{ stopColor: C.sunB, stopOpacity: "var(--ill-sun-b-o)" }} />
           <stop offset="100%" style={{ stopColor: C.sunC, stopOpacity: "var(--ill-sun-c-o)" }} />
         </radialGradient>
-        <linearGradient id="hero-air" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" style={{ stopColor: v("air-screen-a") }} />
-          <stop offset="100%" style={{ stopColor: v("air-screen-b") }} />
-        </linearGradient>
-        <linearGradient id="hero-pro" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" style={{ stopColor: v("pro-screen-a") }} />
-          <stop offset="100%" style={{ stopColor: v("pro-screen-b") }} />
-        </linearGradient>
+        {/* 기기 아래 은은한 그림자 (TETO .laptop drop-shadow 를 SVG 필터로) */}
+        <filter id="hero-device-shadow" x="-10%" y="-10%" width="120%" height="130%">
+          <feDropShadow dx="1" dy="9" stdDeviation="7" style={{ floodColor: "var(--ill-device-shadow)", floodOpacity: "var(--ill-device-shadow-o)" }} />
+        </filter>
       </defs>
 
       {/* 해 · 궤도 */}
@@ -148,69 +108,30 @@ export function HeroIllustration({ className }: { className?: string }) {
       <circle cx="528" cy="250" r="3.5" opacity="0.7" {...fl(C.pro)} />
 
       {/* 그림자 */}
-      <ellipse cx="385" cy="300" rx="150" ry="9" {...fl(C.shadow)} />
-      <ellipse cx="185" cy="368" rx="140" ry="9" {...fl(C.shadow)} />
+      <ellipse cx="404" cy="298" rx="128" ry="8" {...fl(C.shadow)} />
+      <ellipse cx="166" cy="380" rx="136" ry="9" {...fl(C.shadow)} />
 
-      {/* Pro — 뒤, 오른쪽으로 기울임 */}
-      <g transform="rotate(5 380 230)">
-        <rect x="250" y="90" width="250" height="168" rx="14" {...s(C.proBody)} />
-        <rect x="262" y="102" width="226" height="144" rx="6" fill="url(#hero-pro)" />
-        <rect x="362" y="101" width="26" height="8" rx="3" {...fl(C.proBody)} />
-        <ScreenLines x={375} y={142} lines={["어디까지", "해 볼까?"]} />
-        <ScreenMark x={475} y={237}>
-          PRO
-        </ScreenMark>
-        <path d="M236 258H514L507 275Q505 280 499 280H251Q245 280 243 275Z" {...s(C.proBase)} />
-        <path d="M352 258h46v3a3 3 0 0 1-3 3h-40a3 3 0 0 1-3-3Z" {...fl(C.proHinge)} />
+      {/* 노트북 두 대 — TETO 투시 보정판(components/Laptop.tsx). Pro 는 뒤·오른쪽으로, Air 는 앞·왼쪽으로 살짝 기울인다 */}
+      <g transform="rotate(5 402 188)" filter="url(#hero-device-shadow)">
+        <Laptop type="pro" x={266} y={80} width={272} height={217} />
       </g>
-
-      {/* Air — 앞, 왼쪽으로 기울임 · 얇게 */}
-      <g transform="rotate(-7 190 285)">
-        <rect x="60" y="182" width="236" height="150" rx="13" {...s(C.airBody)} />
-        <rect x="70" y="192" width="216" height="130" rx="6" fill="url(#hero-air)" />
-        <ScreenLines x={178} y={224} lines={["어디로", "갈까?"]} />
-        <ScreenMark x={273} y={313}>
-          AIR
-        </ScreenMark>
-        <path d="M46 334H310L305 341Q303 344 298 344H58Q53 344 51 341Z" {...s(C.airBase)} />
-        <path d="M160 334h36v2a2 2 0 0 1-2 2h-32a2 2 0 0 1-2-2Z" {...fl(C.airHinge)} />
+      <g transform="rotate(-5 164 264)" filter="url(#hero-device-shadow)">
+        <Laptop type="air" x={24} y={152} width={280} height={223} />
       </g>
 
       {/* 이름표 */}
       <g>
-        <rect x="46" y="392" width="126" height="32" rx="16" {...ink(C.airSoft, 1.5)} />
-        <text x="109" y="413" textAnchor="middle" fontSize="14" fontWeight="700" {...fl(C.airInk)}>
+        <rect x="40" y="400" width="126" height="32" rx="16" {...ink(C.airSoft, 1.5)} />
+        <text x="103" y="421" textAnchor="middle" fontSize="14" fontWeight="700" {...fl(C.airInk)}>
           MacBook Air
         </text>
       </g>
       <g>
-        <rect x="392" y="36" width="150" height="32" rx="16" {...ink(C.proSoft, 1.5)} />
-        <text x="467" y="57" textAnchor="middle" fontSize="14" fontWeight="700" {...fl(C.proInk)}>
+        <rect x="392" y="22" width="150" height="32" rx="16" {...ink(C.proSoft, 1.5)} />
+        <text x="467" y="43" textAnchor="middle" fontSize="14" fontWeight="700" {...fl(C.proInk)}>
           MacBook Pro 14형
         </text>
       </g>
-    </svg>
-  );
-}
-
-// ───────── 작은 노트북 (비교팩 머리) — 히어로 화면 문구의 큰 두 줄만 ─────────
-
-export function LaptopMini({ kind, className }: { kind: DeviceKey; className?: string }) {
-  const air = kind === "air";
-  return (
-    <svg viewBox="0 0 120 84" className={className} aria-hidden focusable="false">
-      <rect x="16" y="8" width="88" height="58" rx="6" {...ink(air ? C.airBody : C.proBody)} />
-      <rect x="21" y="13" width="78" height="48" rx="3" {...fl(air ? C.airScreen : C.proScreen)} />
-      {!air ? <rect x="54" y="12.5" width="12" height="4" rx="1.5" {...fl(C.proBody)} /> : null}
-      <g textAnchor="middle" fontSize="14" style={{ ...serif, fill: C.screenText }}>
-        <text x="60" y="34">{air ? "어디로" : "어디까지"}</text>
-        <text x="60" y="51">{air ? "갈까?" : "해 볼까?"}</text>
-      </g>
-      {air ? (
-        <path d="M6 68h108l-3 4.5a2 2 0 0 1-1.7 1H10.7a2 2 0 0 1-1.7-1Z" {...ink(C.airBase)} />
-      ) : (
-        <path d="M5 67h110l-3.5 7a2 2 0 0 1-1.8 1.1H10.3A2 2 0 0 1 8.5 74Z" {...ink(C.proBase)} />
-      )}
     </svg>
   );
 }
