@@ -1,0 +1,31 @@
+import {test,expect} from '@playwright/test';
+test('device choice is explicit, survives retry and clears when purchase intent is removed',async({page})=>{
+  const key='tbyb-teto-demo-v1';
+  await page.setViewportSize({width:320,height:844});
+  await page.goto('/app/');await page.getByRole('button',{name:'체험 중인 화면 둘러보기'}).click();
+  await expect(page.locator('#toast')).not.toHaveClass(/visible/);
+  await page.goto('/app/#decision');
+  const device=page.locator('[name="device"]'),reason=page.locator('[name="reason"]');
+  await expect(device).toBeHidden();await expect(device).toBeDisabled();
+  await page.locator('[name="choice"][value="used"]').check();
+  await expect(device).toBeVisible();await expect(device).toHaveValue('');
+  await reason.fill('같은 작업을 해보니 Pro가 편했어요.');
+  await page.getByRole('button',{name:'선택과 이유 저장'}).click();
+  expect(await page.evaluate(k=>JSON.parse(localStorage.getItem(k)).decision.saved,key)).toBe(false);
+  await device.selectOption('pro');
+  const before=await page.evaluate(k=>localStorage.getItem(k),key);
+  await page.evaluate(k=>{const original=Storage.prototype.setItem;window.restoreSetItem=()=>Storage.prototype.setItem=original;Storage.prototype.setItem=function(key,value){if(key===k)throw new DOMException('test quota','QuotaExceededError');return original.call(this,key,value);};},key);
+  await page.getByRole('button',{name:'선택과 이유 저장'}).click();
+  await expect(page.locator('#form-error')).toContainText('저장');await expect(device).toHaveValue('pro');await expect(reason).toHaveValue('같은 작업을 해보니 Pro가 편했어요.');
+  expect(await page.evaluate(k=>localStorage.getItem(k),key)).toBe(before);
+  await page.evaluate(()=>window.restoreSetItem());
+  await page.getByRole('button',{name:'선택과 이유 저장'}).click();await page.reload();
+  await expect(device).toHaveValue('pro');await expect(reason).toHaveValue('같은 작업을 해보니 Pro가 편했어요.');
+  await page.locator('[name="choice"][value="undecided"]').check();await expect(device).toBeHidden();
+  await page.getByRole('button',{name:'선택과 이유 저장'}).click();await page.reload();
+  expect(await page.evaluate(k=>JSON.parse(localStorage.getItem(k)).decision.device,key)).toBeNull();
+  await expect(device).toBeHidden();
+  // Older data with an incidental Air default stays intact on load and cannot preselect a new purchase.
+  await page.evaluate(k=>{const s=JSON.parse(localStorage.getItem(k));s.decision.device='air';localStorage.setItem(k,JSON.stringify(s));},key);
+  await page.reload();await page.locator('[name="choice"][value="used"]').check();await expect(device).toHaveValue('');
+});

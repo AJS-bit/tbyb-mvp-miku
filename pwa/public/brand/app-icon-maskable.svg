@@ -1,0 +1,4 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 128 128"><title>TBYB app icon</title><rect width="128" height="128" fill="#F7F3EA"/><g transform="translate(19 28) scale(.9)"><path fill="#193D35" d="M42 8H24C13 8 4 17 4 28V52C4 63 13 72 24 72H42V56H27C23 56 20 53 20 49V31C20 27 23 24 27 24H42Z"/>
+  <path fill="#F18463" d="M58 8H76C87 8 96 17 96 28V52C96 63 87 72 76 72H58V56H73C77 56 80 53 80 49V31C80 27 77 24 73 24H58Z"/>
+  <circle cx="50" cy="40" r="6" fill="#193D35"/>
+</g></svg>

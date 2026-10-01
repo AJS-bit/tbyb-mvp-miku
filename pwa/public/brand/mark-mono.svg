@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="480" viewBox="0 0 100 80" role="img" aria-labelledby="title desc">
+  <title id="title">TBYB — 두 선택 사이, 나의 기준</title>
+  <desc id="desc">같은 크기의 열린 프레임 두 개가 가운데 점을 마주 봅니다. 두 선택을 같은 기준으로 체험하고, 나에게 맞는 쪽을 고르는 비교 플랫폼의 심볼입니다.</desc>
+  <path fill="#193D35" d="M42 8H24C13 8 4 17 4 28V52C4 63 13 72 24 72H42V56H27C23 56 20 53 20 49V31C20 27 23 24 27 24H42Z"/>
+  <path fill="#193D35" d="M58 8H76C87 8 96 17 96 28V52C96 63 87 72 76 72H58V56H73C77 56 80 53 80 49V31C80 27 77 24 73 24H58Z"/>
+  <circle cx="50" cy="40" r="6" fill="#193D35"/>
+</svg>

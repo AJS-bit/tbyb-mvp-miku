@@ -1,0 +1,2 @@
+import {defineConfig} from '@playwright/test';
+export default defineConfig({testDir:'./e2e',fullyParallel:false,workers:1,timeout:30000,reporter:'list',use:{baseURL:'http://127.0.0.1:4317',headless:true,screenshot:'only-on-failure'},projects:[{name:'light',use:{colorScheme:'light'}},{name:'dark',use:{colorScheme:'dark'}}],outputDir:'artifacts/playwright',webServer:{command:'npm run dev',url:'http://127.0.0.1:4317',reuseExistingServer:true}});
