@@ -1,8 +1,11 @@
 #!/bin/sh
-# 웹(web/out)과 앱 웹 미리보기(app/dist)를 하나로 묶어 GitHub Pages(gh-pages 브랜치)에 올린다.
-#   https://<owner>.github.io/tbyb-mvp-miku/      ← 웹
-#   https://<owner>.github.io/tbyb-mvp-miku/app/  ← 앱 (Expo 웹 빌드)
+# 웹(web/out)과 앱(pwa/dist/app, TETO PWA)을 하나로 묶어 GitHub Pages(gh-pages 브랜치)에 올린다.
+#   https://<owner>.github.io/tbyb-mvp-miku/             ← 웹
+#   https://<owner>.github.io/tbyb-mvp-miku/app/         ← 앱 (PWA, 상대경로라 basePath 무관)
+#   https://<owner>.github.io/tbyb-mvp-miku/app/studio/  ← 운영
+# Expo 앱(app/)은 2026-10-01 통일 결정으로 배포에서 뺐다(코드는 보존).
 # 사용: scripts/deploy-pages.sh <github-owner>/tbyb-mvp-miku
+#       DRY_RUN=1 scripts/deploy-pages.sh <owner>/<repo>   ← 묶음만 만들고 올리지 않음
 set -e
 REPO="${1:?usage: deploy-pages.sh <owner>/<repo>}"
 BASE="/$(basename "$REPO")"
@@ -14,11 +17,13 @@ sh "$ROOT/scripts/sync-domain.sh" --check
 (cd "$ROOT/web" && PAGES_BASE_PATH="$BASE" npm run build)
 cp -R "$ROOT/web/out/." "$OUT/"
 
-(cd "$ROOT/app" && rm -rf dist && EXPO_BASE_URL="$BASE/app" npx expo export --platform web --output-dir dist)
+(cd "$ROOT/pwa" && npm run build)
 mkdir -p "$OUT/app"
-cp -R "$ROOT/app/dist/." "$OUT/app/"
+cp -R "$ROOT/pwa/dist/app/." "$OUT/app/"
 
-touch "$OUT/.nojekyll" # _next, _expo 폴더를 Jekyll 이 숨기지 않게
+touch "$OUT/.nojekyll" # _next 폴더를 Jekyll 이 숨기지 않게
+
+if [ -n "$DRY_RUN" ]; then echo "dry run: bundle at $OUT"; exit 0; fi
 
 cd "$OUT"
 git init -q -b gh-pages

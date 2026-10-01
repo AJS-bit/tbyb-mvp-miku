@@ -8,6 +8,8 @@ const nextConfig: NextConfig = {
   trailingSlash: true,
   images: { unoptimized: true },
   basePath,
+  // /app/ 은 Next 라우트가 아닌 TETO PWA 라 next/link 대신 <a> 로 연다 — 그때 쓸 basePath
+  env: { NEXT_PUBLIC_BASE_PATH: basePath },
 };
 
 export default nextConfig;

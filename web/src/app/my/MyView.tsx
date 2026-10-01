@@ -111,7 +111,29 @@ function List({ reservations }: { reservations: Reservation[] }) {
           })}
         </ul>
       )}
+      <AppEntryCard />
     </div>
+  );
+}
+
+/** 웹 → 체험 앱(TETO PWA, 같은 사이트 /app/) 입구. Next 라우트가 아니라 <a> 로 전체 이동한다. */
+function AppEntryCard() {
+  return (
+    <Card aria-labelledby="app-entry" className="mt-6">
+      <CardTitle id="app-entry" eyebrow="App">
+        체험 앱으로 이어가기
+      </CardTitle>
+      <p className="text-[15px] text-sub">
+        빌린 동안 평소처럼 써 본 느낌은 체험 앱에 남겨요. 앱을 처음 열면 이 기기에서 고른 시작 날짜가 미리 채워져요.
+      </p>
+      <a
+        href={`${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/app/`}
+        data-testid="app-entry"
+        className={cx(btn.secondary, "mt-5 w-full sm:w-auto sm:px-8")}
+      >
+        체험 앱 열기
+      </a>
+    </Card>
   );
 }
 
@@ -197,6 +219,7 @@ function Detail({ r }: { r: Reservation }) {
           <HistoryList history={r.history} />
         </Card>
       </div>
+      <AppEntryCard />
     </div>
   );
 }
