@@ -107,3 +107,14 @@
 :root[data-theme="dark"] .tiny-scene>i:before { border-color:#886c4b; }
 :root[data-theme="dark"] .tiny-scene>b { background:#7d9c61; }
 @media(max-width:540px) { :root[data-theme="dark"] .studio-stats>div+div { border-color:var(--line)!important; } }
+
+/* v12 unify: compact theme control. The native <select> keeps a 16px font (no iOS focus zoom) and a
+   44px hit area, but is transparent over a small visible face showing the current choice. */
+.theme-picker { position:relative; display:flex; align-items:center; min-height:44px; }
+.theme-face { display:inline-flex; align-items:center; gap:5px; height:36px; padding:0 9px 0 11px; border:1px solid var(--theme-edge); border-radius:11px; background:var(--theme-surface); color:var(--ink); font-size:12.5px; font-weight:500; line-height:1; white-space:nowrap; pointer-events:none; }
+.theme-face svg { flex-shrink:0; opacity:.7; }
+label.theme-picker>select[data-theme-picker] { position:absolute; inset:0; width:100%; height:100%; min-height:44px; margin:0; padding:0; opacity:0; font-size:16px; cursor:pointer; }
+.theme-picker:focus-within .theme-face { border-color:#508660; box-shadow:0 0 0 3px #c6e6b766; }
+:root[data-theme="dark"] .theme-picker:focus-within .theme-face { border-color:var(--night-accent); box-shadow:0 0 0 3px #b0d49330; }
+/* Korean wraps between words, as on the website (web/ globals.css); long tokens still break instead of overflowing. */
+body { word-break:keep-all; overflow-wrap:break-word; }

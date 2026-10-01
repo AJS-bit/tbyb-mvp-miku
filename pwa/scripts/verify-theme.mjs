@@ -12,7 +12,7 @@ async function capture(name,path,width=390){
   await page.setViewportSize({width,height:width>1000?1000:844});
   if(path)await page.goto(new URL(path,base).href,{waitUntil:'domcontentloaded'});
   await page.getByRole('combobox',{name:'화면 테마'}).waitFor();
-  if(new URL(page.url()).pathname.startsWith('/app')){
+  if(await page.evaluate(()=>document.documentElement.dataset.view==='app')){
     const tab=new URL(page.url()).hash||'#home';
     await expect(page.locator('.bottom-nav [aria-current="page"]')).toHaveAttribute('href',tab);
   }
@@ -60,7 +60,7 @@ try{
   await page.locator('.advanced-record>summary').click();await capture('ADVANCED_RECORD_DARK',null);
   await page.getByRole('button',{name:'앱 더 보기'}).click();await capture('APP_MENU_DARK',null);
   await page.getByRole('button',{name:'닫기',exact:true}).click();
-  await capture('STUDIO_DARK','/studio/',1440);
+  await capture('STUDIO_DARK','/app/studio/',1440);
   await capture('APP_DESKTOP_DARK','/app/',1440);
   await page.getByRole('combobox',{name:'화면 테마'}).selectOption('light');
   await page.setViewportSize({width:390,height:844});await page.screenshot({path:`${output}/APP_HOME_LIGHT.png`,fullPage:true});

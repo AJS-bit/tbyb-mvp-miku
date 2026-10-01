@@ -36,3 +36,48 @@ body.app-v2 #toast:not(.visible){transition:none}
 :root[data-theme="light"] .app-device :is(.reward-top .badge,.reward-card>p,.reward-link,.reward-steps li,.reward-wait,.reward-rules summary,.reward-rules p,.claim-status p){color:#655d4d}
 :root[data-theme="light"] .app-device :is(input,textarea)::placeholder{color:#65715d;opacity:1}
 :root[data-theme="light"] .app-device :is(.pair-plus,.guide-card p,.record-heading div>span,.input-unit>span,.return-status>div,.return-status p,.info-note p){color:#59664f}
+
+/* v12 unify fixes (2026-10-01). Today card: the copy and the small scene sit in their own grid columns
+   so neither overlaps nor overflows the card; the screen text fits on two lines inside the screen. */
+.today-card{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:8px;align-items:start}
+.today-card .today-copy{grid-column:1;grid-row:1;padding-right:0;min-height:0}
+.today-card .today-copy h2{word-break:keep-all;overflow-wrap:normal}
+.today-card .today-copy p{max-width:none}
+.today-card>.button{grid-column:1/-1}
+.today-card .tiny-scene{position:relative;grid-column:2;grid-row:1;right:auto;top:auto;width:114px;height:100px;margin:2px 0 0;transform:rotate(7deg);transform-origin:center}
+.tiny-scene .tiny-screen{left:6px;top:24px;width:84px;height:58px;border-width:4px}
+.tiny-scene .tiny-screen span{font:italic 600 12px/1.15 Georgia,serif;letter-spacing:-.1px;white-space:nowrap;padding:7px 0 0 7px}
+.tiny-scene .tiny-screen:after{left:-7px;right:-7px}
+.tiny-scene>i{right:auto;left:84px;top:61px;width:26px;height:33px}
+.tiny-scene>i:before{height:12px;width:11px;right:-8px;top:6px;border-width:3px}
+.tiny-scene>b{left:16px;top:0}
+@media(max-width:360px){.today-card .tiny-scene{transform:scale(.86) rotate(7deg);transform-origin:right top;margin-left:-16px}.today-card .today-copy p{max-width:none}}
+/* Numerals: Georgia's old-style figures make 0 read as "o"; counters and steps use the UI sans with lining, tabular figures. */
+.count-badge,.compact-progress i,.wizard-meta>span:first-child{font-family:-apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo','Noto Sans KR','Segoe UI',sans-serif;font-style:normal;font-variant-numeric:lining-nums tabular-nums}
+.count-badge{font-size:12px;font-weight:600;line-height:1;min-width:24px;text-align:center}
+.compact-progress i{font-size:10px;font-weight:600}
+.wizard-meta>span:first-child{font-size:12px;font-weight:650}
+/* Placeholders: field text stays 16px (no iOS focus zoom) but hints read as hints, not as bold body text. */
+.app-device :is(input,textarea,select){font-weight:400}
+.app-device :is(input,textarea)::placeholder,.app-device .decision-form textarea::placeholder{font-size:13px;font-weight:400;line-height:1.6}
+/* In-app request form (empty state) */
+.v2-request{margin-top:10px}
+.v2-request>summary{list-style:none;cursor:pointer;gap:8px;font-size:12px;min-height:48px;border-radius:12px}
+.v2-request>summary::-webkit-details-marker{display:none}
+.v2-request[open]>summary svg{transform:rotate(180deg)}
+.v2-request>#request-form{margin-top:14px;background:#fff;border:1px solid var(--line);border-radius:18px;padding:18px 16px}
+.v2-request .form-title{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px}
+.v2-request .form-title h3{font-size:16px}
+.v2-request .request-ease,.v2-request .field-help,.v2-request .form-footnote,.v2-request .center-note{font-size:12px}
+.v2-request .request-inclusions{display:grid;gap:6px;margin:12px 0;font-size:12px}
+.v2-request .request-inclusions span{display:flex;gap:6px;align-items:center}
+.v2-request .form-row input{font-size:16px}
+.bridge-note{display:flex;gap:8px;align-items:flex-start;margin-top:12px;padding:11px 13px;border-radius:12px;background:#eef3e6;color:#3f5a3c;font-size:12px;line-height:1.55}
+.bridge-note svg{flex-shrink:0;margin-top:2px}
+:root[data-theme="dark"] .v2-request>#request-form{background:var(--night-card);border-color:var(--line)}
+:root[data-theme="dark"] .bridge-note{background:var(--night-soft);color:var(--ink)}
+.v2-welcome .v2-request>summary{min-height:48px}
+.v2-request .form-row{display:grid;grid-template-columns:minmax(0,1fr);gap:10px}.v2-request .form-row label{min-width:0}.v2-request .form-row input{width:100%;min-width:0}
+.v2-request,.bridge-note{word-break:keep-all}
+/* Reward step numbers: the original `font:9px/19px inherit` shorthand is invalid, so the digits sat off-centre. */
+.reward-steps i{display:inline-grid;place-items:center;flex-shrink:0;font-size:9px;line-height:1;font-weight:600;font-variant-numeric:lining-nums tabular-nums}

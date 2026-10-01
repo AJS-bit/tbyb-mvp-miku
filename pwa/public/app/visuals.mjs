@@ -1,5 +1,7 @@
 // Approved platform identity: two equal, open frames and the user's center point.
-export const brand = () => `<a class="brand" href="/" aria-label="TBYB 홈"><span class="brand-mark" aria-hidden="true"><img class="brand-light" src="/brand/mark.svg" width="100" height="80" alt=""><img class="brand-dark" src="/brand/mark-dark.svg" width="100" height="80" alt=""></span><span class="brand-word">tbyb</span></a>`;
+// Asset and home links resolve from this module's directory so they work under any base path.
+const asset = path => new URL(path, import.meta.url).href;
+export const brand = () => `<a class="brand" href="${asset('../')}" aria-label="TBYB 홈"><span class="brand-mark" aria-hidden="true"><img class="brand-light" src="${asset('brand/mark.svg')}" width="100" height="80" alt=""><img class="brand-dark" src="${asset('brand/mark-dark.svg')}" width="100" height="80" alt=""></span><span class="brand-word">tbyb</span></a>`;
 
 let drawingId = 0;
 

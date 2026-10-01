@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {initialState,createRequest,transition,saveRecords,saveDecision,requiredReturns,availableAgain,loadState} from '../public/model.mjs';
+import {initialState,createRequest,transition,saveRecords,saveDecision,requiredReturns,availableAgain,loadState} from '../public/app/model.mjs';
 const now=new Date('2026-09-29T01:00:00Z');
 const request=()=>createRequest(initialState(),{start:'2026-10-01',end:'2026-10-04',task:'development'},now);
 const step=(s,a,e={})=>transition(s,a,e,'테스트 확인',now);

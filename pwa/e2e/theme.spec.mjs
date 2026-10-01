@@ -1,5 +1,5 @@
 import {test,expect} from '@playwright/test';
-const themeKey='tbyb-teto-theme', dataKey='tbyb-teto-demo-v1';
+const themeKey='tbyb-miku-theme', dataKey='tbyb-teto-demo-v1';
 const picker=page=>page.getByRole('combobox',{name:'화면 테마'});
 const theme=(page,value)=>expect(page.locator('html')).toHaveAttribute('data-theme',value);
 
@@ -8,7 +8,7 @@ test('system changes apply live; manual choice persists across routes and reload
   await theme(page,'dark');await expect(picker(page)).toHaveValue('system');
   await page.emulateMedia({colorScheme:'light'});await theme(page,'light');
   await picker(page).selectOption('dark');await page.emulateMedia({colorScheme:'light'});await theme(page,'dark');
-  for(const path of ['/app/','/studio/','/']){await page.goto(path);await theme(page,'dark');await expect(picker(page)).toHaveValue('dark');}
+  for(const path of ['/app/','/app/studio/','/']){await page.goto(path);await theme(page,'dark');await expect(picker(page)).toHaveValue('dark');}
   await page.reload();await theme(page,'dark');
   await picker(page).selectOption('system');await theme(page,'light');
   await page.emulateMedia({colorScheme:'dark'});await theme(page,'dark');
@@ -20,7 +20,7 @@ test('stored theme is applied in the head before app rendering',async({page,cont
   await context.addInitScript(key=>localStorage.setItem(key,'dark'),themeKey);
   await page.emulateMedia({colorScheme:'light'});
   await page.route('**/ui.mjs',route=>route.abort());
-  for(const path of ['/','/app/','/studio/']){
+  for(const path of ['/','/app/','/app/studio/']){
     await page.goto(path);await theme(page,'dark');
     expect(await page.evaluate(()=>getComputedStyle(document.documentElement).colorScheme)).toBe('dark');
     expect(await page.evaluate(()=>getComputedStyle(document.documentElement).backgroundColor)).toBe('rgb(17, 28, 23)');
@@ -34,7 +34,7 @@ test('theme changes sync between tabs without replacing unfinished input or demo
   await page.goto('/app/#decision');await page.locator('[name="reason"]').fill('아직 작성 중인 내 선택');
   const before=await page.evaluate(key=>localStorage.getItem(key),dataKey);
   await picker(page).selectOption('dark');await expect(page.locator('[name="reason"]')).toHaveValue('아직 작성 중인 내 선택');
-  const second=await context.newPage();await second.goto('/studio/');await expect(picker(second)).toHaveValue('dark');
+  const second=await context.newPage();await second.goto('/app/studio/');await expect(picker(second)).toHaveValue('dark');
   await picker(second).selectOption('light');await theme(page,'light');await expect(picker(page)).toHaveValue('light');
   await expect(page.locator('[name="reason"]')).toHaveValue('아직 작성 중인 내 선택');
   expect(await page.evaluate(key=>localStorage.getItem(key),dataKey)).toBe(before);
@@ -69,7 +69,7 @@ test('theme control stays reachable and layouts fit small phones through desktop
   await page.goto('/app/');await page.getByRole('button',{name:'체험 중인 화면 둘러보기'}).click();
   for(const width of [320,390,768,1440]){
     await page.setViewportSize({width,height:900});
-    for(const path of ['/','/app/#home','/app/#compare','/app/#decision','/app/#return','/studio/']){
+    for(const path of ['/','/app/#home','/app/#compare','/app/#decision','/app/#return','/app/studio/']){
       await page.goto(path);await expect(picker(page)).toBeVisible();
       const box=await picker(page).boundingBox();expect(box.x).toBeGreaterThanOrEqual(0);expect(box.x+box.width).toBeLessThanOrEqual(width);expect(box.height).toBeGreaterThanOrEqual(44);
       expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),`${path} at ${width}px`).toBe(true);
