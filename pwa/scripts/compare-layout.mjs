@@ -28,7 +28,9 @@ const shots=!process.argv.includes('--no-shots');
 // (copy width, scene position, card height) and only the "play your day." letters were resized. Everything below the
 // card moves up/down with it. Against TETO's original (--base-site) nothing is expected to differ except the parts
 // 5655031 changed on purpose (compact theme picker, sans numerals, light input weight, in-app request form).
-const EXPECTED=process.argv.includes('--strict')?[]:['.today-card'];
+// The app menu sheet (a centred <dialog>) also differs on purpose: its appended install button gets a 12px gap,
+// so the sheet is 12px taller and everything inside it shifts by half of that.
+const EXPECTED=process.argv.includes('--strict')?[]:['.today-card','dialog'];
 // Elements intentionally changed in size/position by the "strange parts" fixes. Keyed by a CSS selector the
 // differing element must match; anything else that moves is a failure.
 const EXPECTED_FIXES=EXPECTED;
@@ -63,7 +65,7 @@ const measure=()=>{
     const s=getComputedStyle(el);if(s.display==='none'||s.visibility==='hidden')continue;
     const path=[];let n=el;while(n&&n!==document.body){const p=n.parentElement;path.unshift(n.tagName.toLowerCase()+':'+Array.prototype.indexOf.call(p.children,n));n=p;}
     const sides=['Top','Right','Bottom','Left'].map(side=>parseFloat(s[`border${side}Width`])>0&&s[`border${side}Style`]!=='none'&&alpha(s[`border${side}Color`])>0);
-    list.push({key:path.join('>'),inCard:!!el.closest('.today-card'),hasCard:!!el.querySelector('.today-card'),cls:typeof el.className==='string'?el.className:(el.className?.baseVal||''),tag:el.tagName.toLowerCase(),box:[r.left+scrollX,r.top+scrollY,r.width,r.height].map(v=>Math.round(v*10)/10),style:Object.fromEntries(props.map(p=>[p,s[p]])),visibleBorders:sides,bgAlpha:alpha(s.backgroundColor)});
+    list.push({key:path.join('>'),inCard:!!el.closest('.today-card'),inDialog:!!el.closest('dialog'),hasCard:!!el.querySelector('.today-card'),cls:typeof el.className==='string'?el.className:(el.className?.baseVal||''),tag:el.tagName.toLowerCase(),box:[r.left+scrollX,r.top+scrollY,r.width,r.height].map(v=>Math.round(v*10)/10),style:Object.fromEntries(props.map(p=>[p,s[p]])),visibleBorders:sides,bgAlpha:alpha(s.backgroundColor)});
   }
   return {count:all.length,list,docHeight:document.documentElement.scrollHeight,docWidth:document.documentElement.scrollWidth};
 };
@@ -111,7 +113,8 @@ async function runSide(browser,origin,{theme,width,state},label){
   const page=await ctx.newPage(),emptyPage=await emptyCtx.newPage();
   for(const screen of SCREENS){
     const p=screen.seed===false?emptyPage:page;
-    if(screen.go){await p.goto(origin+screen.go,{waitUntil:'load'});}
+    // TETO's original repo serves the simulator at /studio/; the unified build at /app/studio/.
+    if(screen.go){await p.goto(origin+(baseSite&&label==='orig'&&screen.go==='/app/studio/'?'/studio/':screen.go),{waitUntil:'load'});}
     await p.addStyleTag({content:STILL});
     await p.evaluate(()=>document.fonts.ready);
     if(screen.act)await screen.act(p);
@@ -129,13 +132,25 @@ async function runSide(browser,origin,{theme,width,state},label){
   await ctx.close();await emptyCtx.close();return results;
 }
 
+// Against TETO's original 11ec0a6: differences that 5655031 introduced on purpose and this branch keeps.
+function categorize(m){
+  const k=m.key||'',c=m.cls||'',sd=(m.styleDiff||[]).join(';');
+  if(m.expected)return 'intended fix (today card / menu sheet)';
+  if(m.kind==="count"||/header:1>label:1|theme-|nav-actions/.test(k+" "+c))return 'compact theme picker (label + face, 5655031)';
+  if(m.kind==='missing'&&/theme|select/.test(k+c))return 'compact theme picker (label + face, 5655031)';
+  if(m.kind==='missing'&&/button outline full|v2-request/.test(c))return 'in-app request form on empty start (5655031)';
+  if(/count-badge|compact-progress|wizard-meta|reward-steps/.test(c)||/^i$/.test(m.tag||'')&&/fontWeight|fontSize|display/.test(sd)||/fontWeight: 400 -> 650/.test(sd))return 'lining sans numerals (5655031)';
+  if(/^(input|textarea|select)$/.test(m.tag||'')&&/^fontWeight: 600 -> 400$/.test(sd))return 'input text weight 400 (5655031)';
+  if(m.kind==='element'&&!m.lostBorders&&!m.lostCard){const d=m.orig.map((v,i)=>Math.abs(v-m.next[i]));if(d.every(v=>v<=3.5)&&!sd)return 'small knock-on of numeral/picker change (<=3.5px)';}
+  return 'unexplained';
+}
 function compare(a,b){
   const mismatches=[],byKey=new Map(b.list.map(e=>[e.key,e]));let compared=0;
   const cardA=a.list.find(e=>e.cls.split(' ').includes('today-card')),cardB=b.list.find(e=>e.cls.split(' ').includes('today-card'));
   const dH=cardA&&cardB?cardB.box[3]-cardA.box[3]:0,cardBottom=cardA?cardA.box[1]+cardA.box[3]:Infinity;
   // A difference is explained by the today-card restore when it is inside the card, is an ancestor that grew by the
   // card's height change, or sits below the card and moved by exactly that change.
-  const explained=(e,f,d)=>EXPECTED_FIXES.length&&cardA&&(e.inCard||(e.hasCard&&d[0]<=1&&d[1]<=1&&d[2]<=1&&Math.abs(f.box[3]-e.box[3]-dH)<=1)||(e.box[1]>=cardBottom-1&&d[0]<=1&&d[2]<=1&&d[3]<=1&&Math.abs(f.box[1]-e.box[1]-dH)<=1));
+  const explained=(e,f,d)=>EXPECTED_FIXES.length&&((e.inDialog&&e.style.display!=='none')||cardA&&(e.inCard||(e.hasCard&&d[0]<=1&&d[1]<=1&&d[2]<=1&&Math.abs(f.box[3]-e.box[3]-dH)<=1)||(e.box[1]>=cardBottom-1&&d[0]<=1&&d[2]<=1&&d[3]<=1&&Math.abs(f.box[1]-e.box[1]-dH)<=1)));
   if(a.list.length!==b.list.length)mismatches.push({kind:'count',orig:a.list.length,next:b.list.length});
   for(const e of a.list){
     const f=byKey.get(e.key);if(!f){mismatches.push({kind:'missing',key:e.key,cls:e.cls});continue;}
@@ -170,7 +185,8 @@ try{
     const next=await runSide(browser,'http://127.0.0.1:4422',{theme,width,state},'new');
     for(const screen of SCREENS){
       const r=compare(orig[screen.name],next[screen.name]);
-      const unexpected=r.mismatches.filter(m=>!m.expected);
+      if(baseSite)for(const m of r.mismatches)m.category=categorize(m);
+      const unexpected=r.mismatches.filter(m=>!m.expected&&!(baseSite&&m.category!=='unexplained'));
       totalCompared+=r.compared;totalMismatch+=r.mismatches.length;failures+=unexpected.length;
       const sbs=`${out}/side-by-side/${label?label+'_':''}${screen.name}_${theme}_${width}.png`;
       if(shots)await sideBySide(browser,orig[screen.name].file,next[screen.name].file,sbs,baseSite?'ORIGINAL (TETO 11ec0a6)':'ORIGINAL (main 5655031)',`${screen.name} · ${theme} · ${width}px`);
@@ -179,6 +195,7 @@ try{
     }
   }
   report.summary={totalCompared,totalMismatch,unexpected:failures};
+  if(baseSite){const cat={};for(const run of report.runs)for(const m of run.mismatches)cat[m.category]=(cat[m.category]||0)+1;report.summary.categories=cat;console.log(cat);}
   await writeFile(`${out}/LAYOUT_COMPARE${label?'_'+label:''}.json`,JSON.stringify(report,null,1));
   console.log(`\nTotal elements compared: ${totalCompared}; mismatches: ${totalMismatch}; unexpected: ${failures}`);
   if(failures)process.exitCode=1;

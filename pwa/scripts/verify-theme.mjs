@@ -51,6 +51,8 @@ try{
   page=await context.newPage();page.on('pageerror',error=>errors.push(error.message));
   await capture('WEB_'+T,'/',1440);
   await capture('WELCOME_'+T,'/app/');
+  // Empty start screen with the in-app date request form open (.request-ease, .request-inclusions, .form-footnote).
+  await page.locator('.v2-request>summary').click();await page.locator('#request-form').waitFor();await capture('WELCOME_REQUEST_FORM_'+T,null);
   await page.getByRole('button',{name:'체험 중인 화면 둘러보기'}).click();
   for(const route of ['home','compare','decision','return'])await capture(`APP_${route.toUpperCase()}_${T}`,`/app/#${route}`);
   await page.goto(new URL('/app/#compare',base).href);

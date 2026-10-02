@@ -2,7 +2,7 @@
 :root{--brand-air:#bfede3;--brand-pro:#d5caff;--display:'Gowun Batang TBYB','AppleMyungjo','Batang',serif}
 .brand{display:inline-flex;align-items:center;gap:9px;flex-shrink:0;letter-spacing:0;color:var(--ink)}
 .brand .brand-mark{width:37px;height:37px}
-.brand .brand-word{font:600 41px/.9 Georgia,serif;letter-spacing:-2.5px;color:inherit;margin:0;vertical-align:baseline}
+.brand .brand-word{font:600 41px/.9 Georgia,serif;letter-spacing:-2.5px;color:#193d35;margin:0;vertical-align:baseline}
 .v2-top>.brand{gap:6px}.v2-top>.brand .brand-mark{width:27px;height:27px}.v2-top>.brand .brand-word{font-size:31px;letter-spacing:-1.8px;margin:0}
 .laptop{--device-shell:#28323b;--device-edge:#6b7c8c;--device-deck:#d1dce1;--device-keys:#627889;--device-rim:#a4b4bf;--screen-paper:#e4f0f6;--screen-wave:#b8d6e8;--screen-wave-back:#89b5d1;--screen-sun:#fff9d7;--screen-ink:#294453}
 .laptop.pro{--device-shell:#22242f;--device-edge:#5e6475;--device-deck:#969ba9;--device-keys:#434859;--device-rim:#747989;--screen-paper:#f2d7c8;--screen-wave:#b09fbc;--screen-wave-back:#807693;--screen-sun:#eaa582;--screen-ink:#4b3548}
@@ -24,7 +24,7 @@
 .mini-laptop .laptop{transform:translateX(-50%);filter:drop-shadow(0 9px 8px #1f1b161c)}
 .mini-device.air{color:#11695c!important;background:#e3f4f0!important}.mini-device.pro{color:#4b2fc9!important;background:#eeeaff!important}
 :root[data-theme="dark"]{--brand-air:#9ed9cd;--brand-pro:#c4b8f5}
-:root[data-theme="dark"] .brand .brand-word{color:var(--ink)}
+:root[data-theme="dark"] .brand .brand-word{color:#f7f3ea}
 :root[data-theme="dark"] .laptop{--screen-paper:#294554;--screen-wave:#345c73;--screen-wave-back:#477e9b;--screen-sun:#cbbd8a;--screen-ink:#f5f0dc;--device-deck-top:#93aab7;--device-deck:#aabec9;--device-trackpad:#a1b7c3;--device-trackpad-edge:#718d9b;--device-rim:#839da9}
 :root[data-theme="dark"] .laptop.pro{--screen-paper:#4c3a4e;--screen-wave:#70576f;--screen-wave-back:#937489;--screen-sun:#a16f5c;--screen-ink:#ffedda;--device-deck-top:#696c79;--device-deck:#818593;--device-trackpad:#787e8c;--device-trackpad-edge:#525a6a;--device-rim:#606879}
 :root[data-theme="dark"] .mini-device.air{color:#7fe0cf!important;background:#13322d!important}

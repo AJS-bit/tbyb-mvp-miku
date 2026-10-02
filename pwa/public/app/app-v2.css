@@ -71,3 +71,5 @@ body.app-v2 #toast:not(.visible){transition:none}
 .v2-request,.bridge-note{word-break:keep-all}
 /* Reward step numbers: the original `font:9px/19px inherit` shorthand is invalid, so the digits sat off-centre. */
 .reward-steps i{display:inline-grid;place-items:center;flex-shrink:0;font-size:9px;line-height:1;font-weight:600;font-variant-numeric:lining-nums tabular-nums}
+/* App menu sheet: the install button is appended after the action row and sat flush against "닫기" (0px gap). Same 12px gap as the row. */
+dialog>[data-action="install"]{margin-top:12px}
