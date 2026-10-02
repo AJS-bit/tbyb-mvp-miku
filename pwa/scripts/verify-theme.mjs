@@ -4,9 +4,10 @@ const base=process.env.TBYB_BASE_URL||'http://127.0.0.1:4317';
 const output=process.env.TBYB_THEME_OUTPUT||'artifacts/theme';
 await mkdir(output,{recursive:true});
 const browser=await chromium.launch({headless:true});
-const context=await browser.newContext({colorScheme:'dark',viewport:{width:390,height:844}});
-const page=await context.newPage();
-const errors=[];page.on('pageerror',error=>errors.push(error.message));
+// Both themes (MIKU recolour, 2026-10-02): the same screens are checked in dark and in light.
+const themes=(process.env.TBYB_THEMES||'dark,light').split(',');
+let page;
+const errors=[];
 const checks=[];
 async function capture(name,path,width=390){
   await page.setViewportSize({width,height:width>1000?1000:844});
@@ -43,28 +44,33 @@ async function capture(name,path,width=390){
   checks.push({name,path,width,contrast,overflow:await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth)});
 }
 try{
-  await capture('WEB_DARK','/',1440);
-  await capture('WELCOME_DARK','/app/');
+  for(const theme of themes){
+  const T=theme.toUpperCase();
+  const context=await browser.newContext({colorScheme:theme,viewport:{width:390,height:844}});
+  await context.addInitScript(value=>{try{localStorage.setItem('tbyb-miku-theme',value);}catch{}},theme);
+  page=await context.newPage();page.on('pageerror',error=>errors.push(error.message));
+  await capture('WEB_'+T,'/',1440);
+  await capture('WELCOME_'+T,'/app/');
   await page.getByRole('button',{name:'체험 중인 화면 둘러보기'}).click();
-  for(const route of ['home','compare','decision','return'])await capture(`APP_${route.toUpperCase()}_DARK`,`/app/#${route}`);
+  for(const route of ['home','compare','decision','return'])await capture(`APP_${route.toUpperCase()}_${T}`,`/app/#${route}`);
   await page.goto(new URL('/app/#compare',base).href);
   for(const label of ['영상 · 웹 서핑','두 대 다 써봤어요','같은 걸 해봤어요'])await page.locator('#reflection-form').getByText(label,{exact:true}).click();
-  await capture('ANSWERS_SELECTED_DARK',null);
+  await capture('ANSWERS_SELECTED_'+T,null);
   await page.getByRole('button',{name:'다음',exact:true}).click();
   for(const label of ['차이를 못 느꼈어요','화면을 볼 때'])await page.locator('#reflection-form').getByText(label,{exact:true}).click();
-  await capture('REFLECTION_STEP_2_DARK',null);
+  await capture('REFLECTION_STEP_2_'+T,null);
   await page.getByRole('button',{name:'다음',exact:true}).click();
   await page.locator('#reflection-form').getByText('둘 다 하던 일에 충분했어요',{exact:true}).click();
-  await capture('REFLECTION_STEP_3_DARK',null);
-  await page.getByRole('button',{name:'경험 저장하기'}).click();await capture('REFLECTION_SAVED_DARK',null);
-  await page.locator('.advanced-record>summary').click();await capture('ADVANCED_RECORD_DARK',null);
-  await page.getByRole('button',{name:'앱 더 보기'}).click();await capture('APP_MENU_DARK',null);
+  await capture('REFLECTION_STEP_3_'+T,null);
+  await page.getByRole('button',{name:'경험 저장하기'}).click();await capture('REFLECTION_SAVED_'+T,null);
+  await page.locator('.advanced-record>summary').click();await capture('ADVANCED_RECORD_'+T,null);
+  await page.getByRole('button',{name:'앱 더 보기'}).click();await capture('APP_MENU_'+T,null);
   await page.getByRole('button',{name:'닫기',exact:true}).click();
-  await capture('STUDIO_DARK','/app/studio/',1440);
-  await capture('APP_DESKTOP_DARK','/app/',1440);
-  await page.getByRole('combobox',{name:'화면 테마'}).selectOption('light');
-  await page.setViewportSize({width:390,height:844});await page.screenshot({path:`${output}/APP_HOME_LIGHT.png`,fullPage:true});
-  const result={base,checks,errors};await writeFile(`${output}/CHECK.json`,JSON.stringify(result,null,2));
+  await capture('STUDIO_'+T,'/app/studio/',1440);
+  await capture('APP_DESKTOP_'+T,'/app/',1440);
+  await context.close();
+  }
+  const result={base,themes,checks,errors};await writeFile(`${output}/CHECK.json`,JSON.stringify(result,null,2));
   console.log(JSON.stringify(result,null,2));
   if(errors.length||checks.some(c=>c.overflow||c.contrast.failures.length))process.exitCode=1;
 }finally{await browser.close();}
