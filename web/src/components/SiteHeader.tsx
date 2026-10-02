@@ -7,11 +7,14 @@ import { HeaderLockup } from "./Brand";
 import { ThemeSwitcher } from "./ThemeSwitcher";
 import { cx } from "./ui";
 
-const NAV = [
+const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+
+const NAV: { href: string; label: string; external?: boolean }[] = [
   { href: "/", label: "소개" },
   { href: "/pack/", label: "비교팩" },
   { href: "/request/", label: "일정 요청" },
-  { href: "/my/", label: "내 체험" },
+  // 체험 앱은 Next 라우트가 아닌 같은 사이트의 PWA(/app/)라서 basePath 를 붙인 <a> 로 연다.
+  { href: "/app/", label: "내 체험", external: true },
   { href: "/ops/", label: "운영 시뮬레이터" },
 ];
 
@@ -43,19 +46,22 @@ export function SiteHeader() {
         <nav aria-label="주 메뉴" className="col-span-2 row-start-2 -mx-5 overflow-x-auto px-5 sm:-mx-8 sm:px-8 lg:mx-0 lg:min-w-0 lg:px-0">
           <ul className="flex min-w-max items-center gap-1">
             {NAV.map((item) => {
-              const active = isActive(pathname, item.href);
+              const active = !item.external && isActive(pathname, item.href);
+              const className = cx(
+                "inline-flex min-h-9 items-center whitespace-nowrap rounded-full px-3 text-[13px] font-semibold transition-colors sm:px-3.5 sm:text-sm",
+                active ? "bg-ink text-ivory" : "text-sub hover:bg-cream hover:text-ink",
+              );
               return (
                 <li key={item.href}>
-                  <Link
-                    href={item.href}
-                    aria-current={active ? "page" : undefined}
-                    className={cx(
-                      "inline-flex min-h-9 items-center whitespace-nowrap rounded-full px-3 text-[13px] font-semibold transition-colors sm:px-3.5 sm:text-sm",
-                      active ? "bg-ink text-ivory" : "text-sub hover:bg-cream hover:text-ink",
-                    )}
-                  >
-                    {item.label}
-                  </Link>
+                  {item.external ? (
+                    <a href={`${BASE_PATH}${item.href}`} className={className}>
+                      {item.label}
+                    </a>
+                  ) : (
+                    <Link href={item.href} aria-current={active ? "page" : undefined} className={className}>
+                      {item.label}
+                    </Link>
+                  )}
                 </li>
               );
             })}
