@@ -28,7 +28,7 @@
     root.dataset.themePreference = preference;
     root.style.colorScheme = dark ? 'dark' : 'light';
     const meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) meta.content = dark ? '#111c17' : root.dataset.view === 'app' ? '#faf9f5' : '#fbfbf7';
+    if (meta) meta.content = dark ? '#16130f' : root.dataset.view === 'app' ? '#faf6ef' : '#faf6ef';
     document.querySelectorAll('[data-theme-picker]').forEach(select => { select.value = preference; });
     document.querySelectorAll('[data-theme-face]').forEach(face => { face.textContent = labels[preference]; });
   }

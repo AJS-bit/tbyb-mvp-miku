@@ -6,7 +6,7 @@ const BASE = new URL('./', self.location.href);
 // Cache names include the scope path: Cache Storage is shared by every project on the same
 // origin (e.g. ajs-bit.github.io), so never touch caches this app did not create.
 const PREFIX = 'tbyb-pwa:' + BASE.pathname + ':';
-const CACHE = PREFIX + 'v12-unify';
+const CACHE = PREFIX + 'v13-miku-color';
 const SHELL = ['./', 'index.html', 'studio/', 'studio/index.html', 'styles.css', 'identity.css', 'visuals.mjs', 'fonts/gowun-batang.woff2', 'theme.js', 'theme.css', 'ui.mjs', 'app-view.mjs', 'bridge.mjs', 'reflection.mjs', 'app-v2.css', 'model.mjs', 'manifest.webmanifest', 'icon.svg', 'icon-192.png', 'icon-512.png', 'icon-maskable-512.png', 'brand/mark.svg', 'brand/mark-dark.svg', 'brand/mark-mono.svg', 'brand/mark-reverse.svg', 'brand/app-icon.svg', 'brand/app-icon-dark.svg', 'brand/app-icon-maskable.svg'].map(path => new URL(path, BASE).href);
 const SHELL_PATHS = new Set(SHELL.map(href => new URL(href).pathname));
 self.addEventListener('install', event => { event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(SHELL)).then(() => self.skipWaiting())); });

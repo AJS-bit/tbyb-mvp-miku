@@ -24,9 +24,14 @@ const out=path.resolve(arg('out','/Users/anjusung/.buzz/OUTBOX/TBYB_APP_MIKU_COL
 const themes=arg('themes','light,dark').split(',');
 const widths=arg('width','390').split(',').map(Number);
 const shots=!process.argv.includes('--no-shots');
+// Against main 5655031 the today card is intentionally different: it is restored to TETO's original 11ec0a6 geometry
+// (copy width, scene position, card height) and only the "play your day." letters were resized. Everything below the
+// card moves up/down with it. Against TETO's original (--base-site) nothing is expected to differ except the parts
+// 5655031 changed on purpose (compact theme picker, sans numerals, light input weight, in-app request form).
+const EXPECTED=process.argv.includes('--strict')?[]:['.today-card'];
 // Elements intentionally changed in size/position by the "strange parts" fixes. Keyed by a CSS selector the
 // differing element must match; anything else that moves is a failure.
-const EXPECTED_FIXES=[];
+const EXPECTED_FIXES=EXPECTED;
 
 const types={'.html':'text/html; charset=utf-8','.css':'text/css; charset=utf-8','.mjs':'text/javascript; charset=utf-8','.js':'text/javascript; charset=utf-8','.svg':'image/svg+xml','.webmanifest':'application/manifest+json','.png':'image/png','.woff2':'font/woff2','.json':'application/json'};
 function serve(root,port,site=false){
@@ -45,6 +50,8 @@ function serve(root,port,site=false){
   });server.listen(port,'127.0.0.1',()=>resolve(server));});
 }
 
+// Same wall clock for both sides so saved-record timestamps (and their text width) match.
+const FIXED_TIME=new Date('2026-10-02T15:00:00+09:00');
 const STILL='*,*::before,*::after{transition:none!important;animation:none!important;caret-color:transparent!important}';
 // Every element under <body> with a non-empty box: document-relative box and geometry-defining computed styles.
 const measure=()=>{
@@ -56,13 +63,13 @@ const measure=()=>{
     const s=getComputedStyle(el);if(s.display==='none'||s.visibility==='hidden')continue;
     const path=[];let n=el;while(n&&n!==document.body){const p=n.parentElement;path.unshift(n.tagName.toLowerCase()+':'+Array.prototype.indexOf.call(p.children,n));n=p;}
     const sides=['Top','Right','Bottom','Left'].map(side=>parseFloat(s[`border${side}Width`])>0&&s[`border${side}Style`]!=='none'&&alpha(s[`border${side}Color`])>0);
-    list.push({key:path.join('>'),cls:typeof el.className==='string'?el.className:(el.className?.baseVal||''),tag:el.tagName.toLowerCase(),box:[r.left+scrollX,r.top+scrollY,r.width,r.height].map(v=>Math.round(v*10)/10),style:Object.fromEntries(props.map(p=>[p,s[p]])),visibleBorders:sides,bgAlpha:alpha(s.backgroundColor)});
+    list.push({key:path.join('>'),inCard:!!el.closest('.today-card'),hasCard:!!el.querySelector('.today-card'),cls:typeof el.className==='string'?el.className:(el.className?.baseVal||''),tag:el.tagName.toLowerCase(),box:[r.left+scrollX,r.top+scrollY,r.width,r.height].map(v=>Math.round(v*10)/10),style:Object.fromEntries(props.map(p=>[p,s[p]])),visibleBorders:sides,bgAlpha:alpha(s.backgroundColor)});
   }
   return {count:all.length,list,docHeight:document.documentElement.scrollHeight,docWidth:document.documentElement.scrollWidth};
 };
 
 async function snapshotDemoState(browser,origin){
-  const ctx=await browser.newContext({serviceWorkers:'block'});const page=await ctx.newPage();
+  const ctx=await browser.newContext({serviceWorkers:'block'});await ctx.clock.setFixedTime(FIXED_TIME);const page=await ctx.newPage();
   await page.goto(origin+'/app/');await page.getByRole('button',{name:'체험 중인 화면 둘러보기'}).click();
   await page.waitForFunction(()=>localStorage.getItem('tbyb-teto-demo-v1'));
   const state=await page.evaluate(()=>localStorage.getItem('tbyb-teto-demo-v1'));await ctx.close();return state;
@@ -92,12 +99,14 @@ async function runSide(browser,origin,{theme,width,state},label){
   const tag=globalThis.RUN_TAG||'';
   const results={};
   const ctx=await browser.newContext({serviceWorkers:'block',colorScheme:theme,viewport:{width,height:844},deviceScaleFactor:2});
+  await ctx.clock.setFixedTime(FIXED_TIME);
   await ctx.addInitScript(([theme,state])=>{
     try{localStorage.setItem('tbyb-miku-theme',theme);localStorage.setItem('tbyb-teto-theme',theme);
       if(state&&!sessionStorage.getItem('seeded')){localStorage.setItem('tbyb-teto-demo-v1',state);sessionStorage.setItem('seeded','1');}}catch{}
   },[theme,state]);
   // A separate context for the empty (unseeded) welcome screen.
   const emptyCtx=await browser.newContext({serviceWorkers:'block',colorScheme:theme,viewport:{width,height:844},deviceScaleFactor:2});
+  await emptyCtx.clock.setFixedTime(FIXED_TIME);
   await emptyCtx.addInitScript(theme=>{try{localStorage.setItem('tbyb-miku-theme',theme);localStorage.setItem('tbyb-teto-theme',theme);}catch{}},theme);
   const page=await ctx.newPage(),emptyPage=await emptyCtx.newPage();
   for(const screen of SCREENS){
@@ -109,14 +118,24 @@ async function runSide(browser,origin,{theme,width,state},label){
     await p.evaluate(()=>window.scrollTo(0,0));await p.waitForTimeout(150);
     await p.evaluate(()=>{const t=document.querySelector('#toast');if(t)t.classList.remove('visible');});
     const file=`${out}/shots/${label}${tag}_${screen.name}_${theme}_${width}.png`;
-    if(shots)await p.screenshot({path:file,fullPage:!screen.viewportOnly});
     results[screen.name]={file,...await p.evaluate(measure)};
+    // Screenshot with the viewport stretched to the page height so the fixed bottom bar sits at the end of the page
+    // instead of over the middle of a full-page capture (measurements above are taken at the normal 844px height).
+    if(shots){
+      if(screen.viewportOnly)await p.screenshot({path:file});
+      else{const h=await p.evaluate(()=>document.documentElement.scrollHeight);await p.setViewportSize({width,height:Math.max(844,h)});await p.waitForTimeout(100);await p.screenshot({path:file});await p.setViewportSize({width,height:844});}
+    }
   }
   await ctx.close();await emptyCtx.close();return results;
 }
 
 function compare(a,b){
   const mismatches=[],byKey=new Map(b.list.map(e=>[e.key,e]));let compared=0;
+  const cardA=a.list.find(e=>e.cls.split(' ').includes('today-card')),cardB=b.list.find(e=>e.cls.split(' ').includes('today-card'));
+  const dH=cardA&&cardB?cardB.box[3]-cardA.box[3]:0,cardBottom=cardA?cardA.box[1]+cardA.box[3]:Infinity;
+  // A difference is explained by the today-card restore when it is inside the card, is an ancestor that grew by the
+  // card's height change, or sits below the card and moved by exactly that change.
+  const explained=(e,f,d)=>EXPECTED_FIXES.length&&cardA&&(e.inCard||(e.hasCard&&d[0]<=1&&d[1]<=1&&d[2]<=1&&Math.abs(f.box[3]-e.box[3]-dH)<=1)||(e.box[1]>=cardBottom-1&&d[0]<=1&&d[2]<=1&&d[3]<=1&&Math.abs(f.box[1]-e.box[1]-dH)<=1));
   if(a.list.length!==b.list.length)mismatches.push({kind:'count',orig:a.list.length,next:b.list.length});
   for(const e of a.list){
     const f=byKey.get(e.key);if(!f){mismatches.push({kind:'missing',key:e.key,cls:e.cls});continue;}
@@ -125,7 +144,7 @@ function compare(a,b){
     const lostBorders=e.visibleBorders.map((v,i)=>v&&!f.visibleBorders[i]).some(Boolean);
     const lostCard=e.bgAlpha>0&&f.bgAlpha===0;
     if(d.some(v=>v>1)||styleDiff.length||lostBorders||lostCard){
-      mismatches.push({kind:'element',key:e.key,tag:e.tag,cls:e.cls,orig:e.box,next:f.box,styleDiff:styleDiff.map(k=>`${k}: ${e.style[k]} -> ${f.style[k]}`),lostBorders,lostCard});
+      mismatches.push({kind:'element',key:e.key,tag:e.tag,cls:e.cls,orig:e.box,next:f.box,styleDiff:styleDiff.map(k=>`${k}: ${e.style[k]} -> ${f.style[k]}`),lostBorders,lostCard,expected:!lostBorders&&!lostCard&&Boolean(explained(e,f,d))});
     }
   }
   return {compared,mismatches};
@@ -151,7 +170,7 @@ try{
     const next=await runSide(browser,'http://127.0.0.1:4422',{theme,width,state},'new');
     for(const screen of SCREENS){
       const r=compare(orig[screen.name],next[screen.name]);
-      const unexpected=r.mismatches.filter(m=>!(m.kind==='element'&&EXPECTED_FIXES.some(sel=>m.cls&&m.cls.split(' ').some(c=>sel.includes('.'+c)))));
+      const unexpected=r.mismatches.filter(m=>!m.expected);
       totalCompared+=r.compared;totalMismatch+=r.mismatches.length;failures+=unexpected.length;
       const sbs=`${out}/side-by-side/${label?label+'_':''}${screen.name}_${theme}_${width}.png`;
       if(shots)await sideBySide(browser,orig[screen.name].file,next[screen.name].file,sbs,baseSite?'ORIGINAL (TETO 11ec0a6)':'ORIGINAL (main 5655031)',`${screen.name} · ${theme} · ${width}px`);

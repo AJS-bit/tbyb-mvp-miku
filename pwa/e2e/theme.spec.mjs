@@ -13,7 +13,7 @@ test('system changes apply live; manual choice persists across routes and reload
   await picker(page).selectOption('system');await theme(page,'light');
   await page.emulateMedia({colorScheme:'dark'});await theme(page,'dark');
   await picker(page).selectOption('light');await theme(page,'light');await page.reload();await theme(page,'light');
-  await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute('content','#fbfbf7');
+  await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute('content','#faf6ef');
 });
 
 test('stored theme is applied in the head before app rendering',async({page,context})=>{
@@ -23,8 +23,8 @@ test('stored theme is applied in the head before app rendering',async({page,cont
   for(const path of ['/','/app/','/app/studio/']){
     await page.goto(path);await theme(page,'dark');
     expect(await page.evaluate(()=>getComputedStyle(document.documentElement).colorScheme)).toBe('dark');
-    expect(await page.evaluate(()=>getComputedStyle(document.documentElement).backgroundColor)).toBe('rgb(17, 28, 23)');
-    await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute('content','#111c17');
+    expect(await page.evaluate(()=>getComputedStyle(document.documentElement).backgroundColor)).toBe('rgb(22, 19, 15)');
+    await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute('content','#16130f');
     await expect(page.locator('#root')).toBeEmpty();
   }
 });
