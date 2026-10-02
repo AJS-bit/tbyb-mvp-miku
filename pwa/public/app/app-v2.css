@@ -37,21 +37,11 @@ body.app-v2 #toast:not(.visible){transition:none}
 :root[data-theme="light"] .app-device :is(input,textarea)::placeholder{color:#65715d;opacity:1}
 :root[data-theme="light"] .app-device :is(.pair-plus,.guide-card p,.record-heading div>span,.input-unit>span,.return-status>div,.return-status p,.info-note p){color:#59664f}
 
-/* v12 unify fixes (2026-10-01). Today card: the copy and the small scene sit in their own grid columns
-   so neither overlaps nor overflows the card; the screen text fits on two lines inside the screen. */
-.today-card{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:8px;align-items:start}
-.today-card .today-copy{grid-column:1;grid-row:1;padding-right:0;min-height:0}
-.today-card .today-copy h2{word-break:keep-all;overflow-wrap:normal}
-.today-card .today-copy p{max-width:none}
-.today-card>.button{grid-column:1/-1}
-.today-card .tiny-scene{position:relative;grid-column:2;grid-row:1;right:auto;top:auto;width:114px;height:100px;margin:2px 0 0;transform:rotate(7deg);transform-origin:center}
-.tiny-scene .tiny-screen{left:6px;top:24px;width:84px;height:58px;border-width:4px}
-.tiny-scene .tiny-screen span{font:italic 600 12px/1.15 Georgia,serif;letter-spacing:-.1px;white-space:nowrap;padding:7px 0 0 7px}
-.tiny-scene .tiny-screen:after{left:-7px;right:-7px}
-.tiny-scene>i{right:auto;left:84px;top:61px;width:26px;height:33px}
-.tiny-scene>i:before{height:12px;width:11px;right:-8px;top:6px;border-width:3px}
-.tiny-scene>b{left:16px;top:0}
-@media(max-width:360px){.today-card .tiny-scene{transform:scale(.86) rotate(7deg);transform-origin:right top;margin-left:-16px}.today-card .today-copy p{max-width:none}}
+/* Today card (2026-10-02): the card, copy and scene keep TETO's original geometry (11ec0a6); only the "play your day."
+   letters change — smaller, on two unwrapped lines, so they stay inside the screen and clear of the mug. */
+.tiny-screen span{font:italic 600 10.5px/1.2 Georgia,serif;letter-spacing:-.3px;white-space:nowrap;padding:8px 0 0 5px}
+/* The copy's transparent box (z-index 1, padding-right 65px) reaches under the scene; paint the scene above it. No geometry change. */
+.tiny-scene{z-index:2}
 /* Numerals: Georgia's old-style figures make 0 read as "o"; counters and steps use the UI sans with lining, tabular figures. */
 .count-badge,.compact-progress i,.wizard-meta>span:first-child{font-family:-apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo','Noto Sans KR','Segoe UI',sans-serif;font-style:normal;font-variant-numeric:lining-nums tabular-nums}
 .count-badge{font-size:12px;font-weight:600;line-height:1;min-width:24px;text-align:center}

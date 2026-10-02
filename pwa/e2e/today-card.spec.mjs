@@ -26,6 +26,23 @@ const measure=()=>{
     sceneLeft:screen.getBoundingClientRect().left-7};
 };
 
+// Count pixels (beyond antialiasing noise) that change when the card stops clipping its content.
+async function clippedPixels(page){
+  const card=page.locator('.today-card'),vw=page.viewportSize().width;
+  // Document coordinates, re-measured for each shot, so a scroll in between cannot shift the comparison.
+  const shot=async()=>{const r=await card.evaluate(el=>{const b=el.getBoundingClientRect();return {x:b.x,y:b.y+scrollY,w:b.width,h:b.height};});
+    const x=Math.max(0,r.x-24);return page.screenshot({fullPage:true,animations:'disabled',clip:{x,y:Math.max(0,r.y-24),width:Math.min(vw,r.x+r.w+24)-x,height:r.h+48}});};
+  await page.mouse.move(0,0);// no hover lift on the button between the two shots
+  const hidden=await shot();
+  await card.evaluate(el=>{el.style.overflow='visible';});const visible=await shot();await card.evaluate(el=>{el.style.overflow='';});
+  return page.evaluate(async([a,b])=>{
+    const load=async src=>{const img=new Image();img.src='data:image/png;base64,'+src;await img.decode();const c=new OffscreenCanvas(img.width,img.height),x=c.getContext('2d');x.drawImage(img,0,0);return x.getImageData(0,0,img.width,img.height).data;};
+    const [p,q]=await Promise.all([load(a),load(b)]);let n=0;
+    for(let i=0;i<p.length;i+=4)if(Math.max(Math.abs(p[i]-q[i]),Math.abs(p[i+1]-q[i+1]),Math.abs(p[i+2]-q[i+2]))>24)n++;
+    return n;
+  },[hidden.toString('base64'),visible.toString('base64')]);
+}
+
 test('today card: "play your day." fits its screen, nothing overlaps or overflows, at every width',async({page})=>{
   await page.goto('/app/');await page.getByRole('button',{name:'체험 중인 화면 둘러보기'}).click();
   for(const width of [320,390,768,1440]){
@@ -38,7 +55,10 @@ test('today card: "play your day." fits its screen, nothing overlaps or overflow
     expect(m.local.textBottomInScreen,`${width}: text runs into the stand`).toBeLessThanOrEqual(m.local.screenInnerHeight);
     expect(m.local.textRight+m.local.skew<=m.local.mugLeft||m.local.textBottom<=m.local.mugTop,`${width}: mug covers the text ${JSON.stringify(m.local)}`).toBe(true);
     expect(m.misses,`${width}: every character is painted`).toEqual([]);
-    expect(m.card[0],`${width}: card overflows horizontally`).toBeLessThanOrEqual(m.card[1]);
+    // TETO's scene is a rotated box holding a counter-rotated mug, so the card's scrollWidth counts the invisible
+    // bounding box of a bounding box (~15px). Check what is actually painted instead: the card rendered with
+    // overflow:hidden and with overflow:visible must look the same, i.e. the card clips nothing.
+    expect(await clippedPixels(page),`${width}: the card clips part of the drawing`).toBe(0);
     expect(m.card[2],`${width}: card overflows vertically`).toBeLessThanOrEqual(m.card[3]);
     expect(m.headingRight,`${width}: heading runs under the scene`).toBeLessThanOrEqual(m.sceneLeft);
     expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),`${width}`).toBe(true);
