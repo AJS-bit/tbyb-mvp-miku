@@ -1,0 +1,48 @@
+@font-face{font-family:'Gowun Batang TBYB';src:url('fonts/gowun-batang.woff2') format('woff2');font-weight:400;font-style:normal;font-display:swap}
+:root{--brand-air:#bfede3;--brand-pro:#d5caff;--display:'Gowun Batang TBYB','AppleMyungjo','Batang',serif}
+.brand{display:inline-flex;align-items:center;gap:9px;flex-shrink:0;letter-spacing:0;color:var(--ink)}
+.brand .brand-mark{width:37px;height:37px}
+.brand .brand-word{font:600 41px/.9 Georgia,serif;letter-spacing:-2.5px;color:#193d35;margin:0;vertical-align:baseline}
+.v2-top>.brand{gap:6px}.v2-top>.brand .brand-mark{width:27px;height:27px}.v2-top>.brand .brand-word{font-size:31px;letter-spacing:-1.8px;margin:0}
+.laptop{--device-shell:#28323b;--device-edge:#6b7c8c;--device-deck:#d1dce1;--device-keys:#627889;--device-rim:#a4b4bf;--screen-paper:#e4f0f6;--screen-wave:#b8d6e8;--screen-wave-back:#89b5d1;--screen-sun:#fff9d7;--screen-ink:#294453}
+.laptop.pro{--device-shell:#22242f;--device-edge:#5e6475;--device-deck:#969ba9;--device-keys:#434859;--device-rim:#747989;--screen-paper:#f2d7c8;--screen-wave:#b09fbc;--screen-wave-back:#807693;--screen-sun:#eaa582;--screen-ink:#4b3548}
+.laptop{--device-shell:#171d23;--device-edge:#879ba6;--device-deck-top:#c4d7e2;--device-deck:#d5e0e6;--device-keys:#232a30;--device-key-edge:#46515a;--device-rim:#bfced7;--device-hinge:#343f47;--device-bezel-line:#39434b;--device-trackpad:#cbd9e1;--device-trackpad-edge:#8fa4b0;--device-recess:#7c929e;--device-key-legend:#c9d2d7}
+.laptop.pro{--device-shell:#18191d;--device-edge:#62636c;--device-deck-top:#72737b;--device-deck:#85868f;--device-keys:#202127;--device-key-edge:#42434a;--device-rim:#73757d;--device-hinge:#282a30;--device-bezel-line:#34363e;--device-trackpad:#7d7e87;--device-trackpad-edge:#575962;--device-recess:#43464f;--device-key-legend:#c6c6d0}
+.keycap{fill:var(--device-keys);stroke:var(--device-key-edge);stroke-width:.35}
+.keyboard-well{fill:#14161a;stroke:#535660;stroke-width:.5}
+.touch-id{fill:none;stroke:#8c939b;stroke-width:.45}
+.speaker-field{fill:#30323a;opacity:.08}
+.speaker-perforations{fill:#292b33;opacity:.78}
+.key-legends{fill:var(--device-key-legend);font:6.4px Arial,sans-serif;text-anchor:middle;letter-spacing:0}
+.key-legends .key-modifier{font-size:4.5px}
+.device-drawing{display:block;width:100%;height:auto;overflow:visible}
+.screen-verse{fill:var(--screen-ink);font:400 27px/1.3 var(--display);letter-spacing:-1px}
+.pro .screen-verse{font-size:24px}
+.screen-caption{fill:var(--screen-ink);font:6px sans-serif;letter-spacing:1.5px}
+.screen-tracks{fill:#ead9cd;opacity:.85}
+.screen-tracks path:nth-child(2){fill:#d9d0e7}.screen-tracks path:nth-child(3){fill:#d5b697}
+.mini-laptop .laptop{transform:translateX(-50%);filter:drop-shadow(0 9px 8px #1f1b161c)}
+.mini-device.air{color:#11695c!important;background:#e3f4f0!important}.mini-device.pro{color:#4b2fc9!important;background:#eeeaff!important}
+:root[data-theme="dark"]{--brand-air:#9ed9cd;--brand-pro:#c4b8f5}
+:root[data-theme="dark"] .brand .brand-word{color:#f7f3ea}
+:root[data-theme="dark"] .laptop{--screen-paper:#294554;--screen-wave:#345c73;--screen-wave-back:#477e9b;--screen-sun:#cbbd8a;--screen-ink:#f5f0dc;--device-deck-top:#93aab7;--device-deck:#aabec9;--device-trackpad:#a1b7c3;--device-trackpad-edge:#718d9b;--device-rim:#839da9}
+:root[data-theme="dark"] .laptop.pro{--screen-paper:#4c3a4e;--screen-wave:#70576f;--screen-wave-back:#937489;--screen-sun:#a16f5c;--screen-ink:#ffedda;--device-deck-top:#696c79;--device-deck:#818593;--device-trackpad:#787e8c;--device-trackpad-edge:#525a6a;--device-rim:#606879}
+:root[data-theme="dark"] .mini-device.air{color:#7fe0cf!important;background:#13322d!important}
+:root[data-theme="dark"] .mini-device.pro{color:#c2b6ff!important;background:#251e47!important}
+@media(max-width:540px){.brand{gap:6px}.brand .brand-mark{width:28px;height:28px}.brand .brand-word{font-size:32px;letter-spacing:-2px}.nav-actions>.button svg{display:none}}
+@media(max-width:360px){.web-nav{gap:8px}.nav-actions{gap:6px}.nav-actions .theme-picker select{width:95px}.nav-actions>.button{padding:10px;font-size:11px}.brand .brand-mark{width:25px;height:25px}.brand .brand-word{font-size:30px}.v2-top>.brand .brand-mark{width:24px;height:24px}.v2-top>.brand .brand-word{font-size:29px}}
+
+@media(max-width:540px){.nav-actions .theme-picker select,.v2-top .theme-picker select{width:120px}}
+
+/* Selected platform geometry; the dark variant retains the apricot accent. */
+.brand .brand-mark{display:block;width:43px;height:35px;flex-shrink:0}
+.brand-mark img{display:block;width:100%;height:100%;object-fit:contain}
+.brand-mark .brand-dark{display:none}
+:root[data-theme="dark"] .brand-mark .brand-light{display:none}
+:root[data-theme="dark"] .brand-mark .brand-dark{display:block}
+.v2-top>.brand .brand-mark{width:34px;height:28px}
+.brand:focus-visible{outline:2px solid currentColor;outline-offset:6px;border-radius:4px}
+@media(max-width:540px){.brand .brand-mark{width:35px;height:28px}}
+@media(max-width:360px){.brand .brand-mark{width:31px;height:25px}.v2-top>.brand .brand-mark{width:29px;height:24px}}
+.nav-actions>.button{white-space:nowrap;flex-shrink:0}
+@media(max-width:360px){.web-nav.wrap{width:calc(100% - 24px);gap:8px}.nav-actions>.button{padding-left:10px;padding-right:10px}}

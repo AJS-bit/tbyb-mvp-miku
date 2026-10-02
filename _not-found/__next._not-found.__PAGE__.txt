@@ -1,0 +1,20 @@
+1:"$Sreact.fragment"
+2:I[97367,["/tbyb-mvp-miku/_next/static/chunks/1f5a_rm_l8gaa.js","/tbyb-mvp-miku/_next/static/chunks/1wzc6qln1km9s.js"],"OutletBoundary"]
+3:"$Sreact.suspense"
+7:I[97367,["/tbyb-mvp-miku/_next/static/chunks/1f5a_rm_l8gaa.js","/tbyb-mvp-miku/_next/static/chunks/1wzc6qln1km9s.js"],"ViewportBoundary"]
+8:I[97367,["/tbyb-mvp-miku/_next/static/chunks/1f5a_rm_l8gaa.js","/tbyb-mvp-miku/_next/static/chunks/1wzc6qln1km9s.js"],"MetadataBoundary"]
+9:I[27201,["/tbyb-mvp-miku/_next/static/chunks/1f5a_rm_l8gaa.js","/tbyb-mvp-miku/_next/static/chunks/1wzc6qln1km9s.js"],"IconMark"]
+b:I[39756,["/tbyb-mvp-miku/_next/static/chunks/1f5a_rm_l8gaa.js","/tbyb-mvp-miku/_next/static/chunks/1wzc6qln1km9s.js"],"default"]
+c:I[37457,["/tbyb-mvp-miku/_next/static/chunks/1f5a_rm_l8gaa.js","/tbyb-mvp-miku/_next/static/chunks/1wzc6qln1km9s.js"],"default"]
+6:X
+e:X
+e:C
+0:{"buildId":"niyihzfG8-XSzF1WClDl6","data":[{"rsc":["$","$1","c",{"children":[[["$","title",null,{"children":"404: This page could not be found."}],["$","div",null,{"style":{"fontFamily":"system-ui,\"Segoe UI\",Roboto,Helvetica,Arial,sans-serif,\"Apple Color Emoji\",\"Segoe UI Emoji\"","height":"100vh","textAlign":"center","display":"flex","flexDirection":"column","alignItems":"center","justifyContent":"center"},"children":["$","div",null,{"children":[["$","style",null,{"dangerouslySetInnerHTML":{"__html":"body{color:#000;background:#fff;margin:0}.next-error-h1{border-right:1px solid rgba(0,0,0,.3)}@media (prefers-color-scheme:dark){body{color:#fff;background:#000}.next-error-h1{border-right:1px solid rgba(255,255,255,.3)}}"}}],["$","h1",null,{"className":"next-error-h1","style":{"display":"inline-block","margin":"0 20px 0 0","padding":"0 23px 0 0","fontSize":24,"fontWeight":500,"verticalAlign":"top","lineHeight":"49px"},"children":404}],["$","div",null,{"style":{"display":"inline-block"},"children":["$","h2",null,{"style":{"fontSize":14,"fontWeight":400,"lineHeight":"49px","margin":0},"children":"This page could not be found."}]}]]}]}]],null,["$","$L2",null,{"children":["$","$3",null,{"name":"Next.MetadataOutlet","children":"$@4"}]}]]}],"isPartial":"$@5","staleTime":"$6","varyParams":null},{"rsc":["$","$1","h",{"children":[["$","meta",null,{"name":"robots","content":"noindex"}],["$","$L7",null,{"children":[["$","meta","0",{"charSet":"utf-8"}],["$","meta","1",{"name":"viewport","content":"width=device-width, initial-scale=1"}],["$","meta","2",{"name":"theme-color","content":"#faf6ef","media":"(prefers-color-scheme: light)"}],["$","meta","3",{"name":"theme-color","content":"#16130f","media":"(prefers-color-scheme: dark)"}],["$","meta","4",{"name":"color-scheme","content":"light dark"}]]}],["$","div",null,{"hidden":true,"children":["$","$L8",null,{"children":["$","$3",null,{"name":"Next.Metadata","children":[["$","title","0",{"children":"tbyb — 첫 비교팩: MacBook Air · 14형 Pro"}],["$","meta","1",{"name":"description","content":"써 보고, 나의 기준으로. tbyb는 사기 전에 두 제품을 같은 기준으로 직접 써 보고 고르는 비교 체험이에요. 첫 비교팩: MacBook Air · 14형 Pro. (시연용 데모)"}],["$","meta","2",{"name":"application-name","content":"tbyb"}],["$","meta","3",{"name":"robots","content":"noindex, nofollow"}],["$","link","4",{"rel":"icon","href":"/tbyb-mvp-miku/icon.svg?icon.10k9wq-h450nl.svg","sizes":"any","type":"image/svg+xml"}],["$","link","5",{"rel":"apple-touch-icon","href":"/tbyb-mvp-miku/apple-icon.png?apple-icon.1_6xdxk6h4dak.png","sizes":"180x180","type":"image/png"}],["$","$L9","6",{}]]}]}]}],["$","meta",null,{"name":"next-size-adjust","content":""}]]}],"isPartial":"$@a","staleTime":"$6","varyParams":null},{"rsc":["$","$1","c",{"children":[null,["$","$Lb",null,{"parallelRouterKey":"children","template":["$","$Lc",null,{}]}]]}],"isPartial":"$@d","staleTime":"$6","varyParams":"$e"}],"isUpgradeableISRFallback":false,"a":"$@f","rootVaryParams":null,"needsRuntimeRequest":"$@10"}
+4:null
+10:true
+6:300
+6:C
+f:0
+a:"$undefined"
+d:"$undefined"
+5:"$undefined"
